@@ -25,7 +25,7 @@ namespace CSharpAuthor.Tests.MethodTests
 
             var outputString = context.Output();
 
-            Assert.Equal(helloWorldExpectedOutput, outputString);
+            AssertEqual.WithoutNewLine(helloWorldExpectedOutput, outputString);
         }
 
         private static string helloWorldExpectedOutput = 
