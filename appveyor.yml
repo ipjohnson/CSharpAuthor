@@ -15,8 +15,10 @@ build:
   project: CSharpAuthor.sln
   publish_nuget: true
   verbosity: minimal
-test_script:
-- sh: dotnet test CSharpAuthor.Tests/CSharpAuthor.Tests.csproj
+test:
+  assemblies:
+    only:
+      - '**\*.tests.dll'
 artifacts:
 - path: CSharpAuthor*.nupkg
   name: CSharpAuthor
