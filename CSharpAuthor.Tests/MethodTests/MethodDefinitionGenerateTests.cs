@@ -49,7 +49,7 @@ namespace CSharpAuthor.Tests.MethodTests
 
             var outputString = context.Output();
 
-            Assert.Equal(voidMethodExpectedOutput, outputString);
+            AssertEqual.WithoutNewLine(voidMethodExpectedOutput, outputString);
         }
 
         private static string voidMethodExpectedOutput = 
