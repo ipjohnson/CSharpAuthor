@@ -1,0 +1,25 @@
+environment:
+  build_version: 0.1.0
+  Version: $(build_version)-Beta%APPVEYOR_BUILD_NUMBER%
+version: $(build_version)-{build}
+configuration: Release
+assembly_info:
+  patch: true
+  file: '**\AssemblyInfo.*'
+  assembly_version: '$(build_version).0'
+  assembly_file_version: '$(build_version).{build}'
+  assembly_informational_version: '$(build_version)'
+before_build:
+ - cmd: nuget restore CSharpAuthor.sln
+build:
+  project: CSharpAuthor.sln
+  publish_nuget: true
+  verbosity: minimal
+test_script:
+- sh: dotnet test tests/CSharpAuthor.Tests/CSharpAuthor.Tests.csproj
+artifacts:
+- path: CSharpAuthor*.nupkg
+  name: CSharpAuthor
+image:
+- Visual Studio 2022
+
