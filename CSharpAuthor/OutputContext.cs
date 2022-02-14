@@ -43,7 +43,8 @@ namespace CSharpAuthor
 
         public void WriteLine(string text)
         {
-            output.AppendLine(text);
+            output.Append(text);
+            output.Append(Environment.NewLine);
         }
 
         public string Output()
@@ -71,7 +72,8 @@ namespace CSharpAuthor
         public void WriteIndentedLine(string text)
         {
             output.Append(IndentString);
-            output.AppendLine(text);
+            output.Append(text);
+            output.Append(Environment.NewLine);
         }
     }
 }
