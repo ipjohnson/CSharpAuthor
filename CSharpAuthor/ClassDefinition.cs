@@ -1,18 +1,20 @@
-﻿using CSharpAuthor;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CSharpAuthor
+﻿namespace CSharpAuthor
 {
     public class ClassDefinition : BaseOutputComponent
     {
+        private readonly string _namespace;
+        private readonly string _name;
+        private readonly List<TypeDefinition> baseTypes = new ();
         private readonly List<IOutputComponent> fields = new ();
         private readonly List<IOutputComponent> constructors = new ();
         private readonly List<IOutputComponent> methods = new ();
         private readonly List<IOutputComponent> properties = new ();
+
+        public ClassDefinition(string ns, string name)
+        {
+            _namespace = ns;
+            _name = name;
+        }
 
         public FieldDefinition AddField(TypeDefinition typeDefinition, string fieldName)
         {
@@ -23,31 +25,46 @@ namespace CSharpAuthor
             return definition;
         }
 
+        public MethodDefinition AddMethod(string method)
+        {
+            var definition = new MethodDefinition(method);
+
+            methods.Add(definition);
+
+            return definition;
+        }
+
+        public ClassDefinition AddBaseType(TypeDefinition typeDefinition)
+        {
+            baseTypes.Add(typeDefinition);
+
+            return this;
+        }
+
         public ConstructorDefinition AddConstructor()
         {
-            var definition = new ConstructorDefinition();
+            var definition = new ConstructorDefinition(_name);
 
             constructors.Add(definition);
 
             return definition;
         }
-
-        public override void GetKnownTypes(List<TypeDefinition> types)
-        {
-            ApplyAllComponents(component => component.GetKnownTypes(types));
-        }
-
+        
         public override void WriteOutput(IOutputContext outputContext)
         {
-            WriteUsingStatements(outputContext);
+            WriteNamespaceOpen(outputContext);
 
             WriteClassOpening(outputContext);
 
             ApplyAllComponents(component => component.WriteOutput(outputContext));
 
             WriteClassClosing(outputContext);
-        }
 
+            WriteNamespaceClose(outputContext);
+
+            outputContext.GenerateUsingStatements();
+        }
+        
         private void ApplyAllComponents(Action<IOutputComponent> componentAction)
         {
 
@@ -74,17 +91,58 @@ namespace CSharpAuthor
 
         private void WriteClassClosing(IOutputContext outputContext)
         {
-
+            outputContext.CloseScope();
         }
 
         private void WriteClassOpening(IOutputContext outputContext)
         {
-
+            WriteClassSignature(outputContext);
+            outputContext.OpenScope();
         }
 
-        private void WriteUsingStatements(IOutputContext outputContext)
+        private void WriteClassSignature(IOutputContext outputContext)
         {
+            outputContext.Write(outputContext.IndentString);
+            outputContext.Write(GetAccessModifier(KeyWords.Public));
+            outputContext.WriteSpace();
 
+            if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
+            {
+                outputContext.Write(KeyWords.Static);
+                outputContext.WriteSpace();
+            }
+
+            outputContext.Write(_name);
+
+            if (baseTypes.Count > 0)
+            {
+                outputContext.Write(" : ");
+
+                for (var i = 0; i < baseTypes.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        outputContext.Write(", ");
+                    }
+
+                    var type = baseTypes[i];
+
+                    outputContext.Write(type.Name);
+                }
+            }
+
+            outputContext.WriteLine();
+        }
+
+        private void WriteNamespaceClose(IOutputContext outputContext)
+        {
+            outputContext.CloseScope();
+        }
+
+        private void WriteNamespaceOpen(IOutputContext outputContext)
+        {
+            outputContext.WriteIndentedLine("namespace " + _namespace);
+            outputContext.OpenScope();
         }
     }
 }

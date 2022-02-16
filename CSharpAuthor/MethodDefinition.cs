@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CSharpAuthor
+﻿namespace CSharpAuthor
 {
     public class MethodDefinition : BaseOutputComponent
     {
@@ -42,25 +36,22 @@ namespace CSharpAuthor
 
             return statementOutput;
         }
-
-        public override void GetKnownTypes(List<TypeDefinition> types)
-        {
-            foreach (var parameter in parameters)
-            {
-                parameter.GetKnownTypes(types);
-            }
-
-            foreach (var statement in statements)
-            {
-                statement.GetKnownTypes(types);
-            }
-        }
-
+        
         public override void WriteOutput(IOutputContext outputContext)
         {
+            ProcessNamespaces(outputContext);
+
             WriteMethodSignature(outputContext);
 
             WriteMethodBody(outputContext);
+        }
+
+        private void ProcessNamespaces(IOutputContext outputContext)
+        {
+            if (returnType != null)
+            {
+                outputContext.AddImportNamespace(returnType);
+            }
         }
 
         private void WriteMethodBody(IOutputContext outputContext)
@@ -75,12 +66,11 @@ namespace CSharpAuthor
             outputContext.CloseScope();
         }
 
-        private void WriteMethodSignature(IOutputContext outputContext)
+        protected virtual void WriteMethodSignature(IOutputContext outputContext)
         {
-            outputContext.Write(GetAccessModifier(KeyWords.Private));
-            outputContext.WriteSpace();
+            WriteAccessModifier(outputContext);
 
-            outputContext.Write(returnType != null ? returnType.Name : "void");
+            WriteReturnType(outputContext);
 
             outputContext.WriteSpace();
 
@@ -99,6 +89,30 @@ namespace CSharpAuthor
             }
 
             outputContext.WriteLine(")");
+        }
+
+        protected virtual void WriteAccessModifier(IOutputContext outputContext)
+        {
+            outputContext.WriteIndent();
+            outputContext.Write(GetAccessModifier(KeyWords.Public));
+            outputContext.WriteSpace();
+
+            if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
+            {
+                outputContext.Write(KeyWords.Static);
+                outputContext.WriteSpace();
+            }
+
+            if ((Modifiers & ComponentModifier.Async) == ComponentModifier.Async)
+            {
+                outputContext.Write(KeyWords.Async);
+                outputContext.WriteSpace();
+            }
+        }
+
+        protected virtual void WriteReturnType(IOutputContext outputContext)
+        {
+            outputContext.Write(returnType != null ? returnType.Name : "void");
         }
     }
 }

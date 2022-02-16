@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CSharpAuthor
+﻿namespace CSharpAuthor
 {
     public class StatementOutputComponent : BaseOutputComponent
     {
@@ -14,12 +8,7 @@ namespace CSharpAuthor
         {
             this.statement = statement;
         }
-
-        public override void GetKnownTypes(List<TypeDefinition> types)
-        {
-
-        }
-
+        
         public override void WriteOutput(IOutputContext outputContext)
         {
             outputContext.WriteIndentedLine(statement);

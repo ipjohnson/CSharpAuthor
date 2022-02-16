@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CSharpAuthor
+﻿namespace CSharpAuthor
 {
     public interface IOutputContext
     {
@@ -16,9 +10,13 @@ namespace CSharpAuthor
 
         void Write(string text);
 
+        void WriteLine() => Write(Environment.NewLine);
+
         void WriteLine(string text);
 
         void WriteSpace() => Write(" ");
+
+        void WriteIndent() => Write(IndentString);
 
         void WriteIndentedLine(string text);
 
@@ -27,5 +25,11 @@ namespace CSharpAuthor
         void OpenScope();
 
         void CloseScope();
+
+        void AddImportNamespace(string ns);
+
+        void AddImportNamespace(TypeDefinition typeDefinition) => AddImportNamespace(typeDefinition.Namespace);
+
+        void GenerateUsingStatements();
     }
 }

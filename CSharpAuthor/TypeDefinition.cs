@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CSharpAuthor
+﻿namespace CSharpAuthor
 {
     public class TypeDefinition
     {
@@ -21,18 +14,20 @@ namespace CSharpAuthor
         public string Namespace { get; }
 
         public string Name { get; }
-        
+
 
         public static implicit operator TypeDefinition(Type type)
         {
-            if (typeof(string) == type)
-            {
-                return new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string");
-            }
 
             if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
+            }
+
+
+            if (OpImplicit(type, out var returnTypeDefinition))
+            {
+                return returnTypeDefinition!;
             }
 
             var typeDefinition = CSharpAuthor.TypeDefinitionEnum.ClassDefinition;
@@ -47,6 +42,19 @@ namespace CSharpAuthor
             }
 
             return new TypeDefinition(typeDefinition, type.Namespace ?? "", type.Name);
+        }
+
+        private static bool OpImplicit(Type type, out TypeDefinition? returnTypeDefinition)
+        {
+            if (typeof(string) == type)
+            {
+                returnTypeDefinition = new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string");
+                return true;
+            }
+
+            returnTypeDefinition = null;
+
+            return false;
         }
     }
 }

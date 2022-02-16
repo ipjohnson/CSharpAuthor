@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CSharpAuthor
+﻿namespace CSharpAuthor
 {
     [Flags]
     public enum ComponentModifier
@@ -26,5 +20,7 @@ namespace CSharpAuthor
         Override = 64,
 
         Abstract = 128,
+
+        Async = 256,
     }
 }

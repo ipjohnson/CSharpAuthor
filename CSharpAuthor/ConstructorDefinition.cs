@@ -1,16 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CSharpAuthor
+﻿namespace CSharpAuthor
 {
     public class ConstructorDefinition : MethodDefinition
     {
-        public ConstructorDefinition() : base("")
-        {
 
+        public ConstructorDefinition(string name) : base(name)
+        {
+        }
+
+        protected override void WriteReturnType(IOutputContext outputContext)
+        {
+            // constructors don't have return Types
+        }
+
+        protected override void WriteAccessModifier(IOutputContext outputContext)
+        {
+            outputContext.Write(GetAccessModifier(KeyWords.Public));
+            outputContext.WriteSpace();
         }
     }
 }

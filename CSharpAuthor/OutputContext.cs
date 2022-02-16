@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 
 namespace CSharpAuthor
 {
     public class OutputContext : IOutputContext
     {
+        private readonly HashSet<string> namespaces = new ();
         private readonly char indentChar;
         private readonly int indentCharCount;
         private readonly StringBuilder output;
@@ -63,15 +60,39 @@ namespace CSharpAuthor
             WriteIndentedLine("}");
         }
 
-        private void SetIndentString()
+        public void AddImportNamespace(string ns)
         {
-            IndentString = new string(indentChar, indentCharCount * indentIndex);
+            if (string.IsNullOrEmpty(ns) || namespaces.Contains(ns))
+            {
+                return;
+            }
+
+            namespaces.Add(ns);
+        }
+
+        public void GenerateUsingStatements()
+        {
+            var namespaceList = namespaces.ToList();
+
+            namespaceList.Sort();
+
+            namespaceList.Reverse();
+
+            foreach (string ns in namespaceList)
+            {
+                output.Insert(0, $"using {ns};" + Environment.NewLine);
+            }
         }
 
         public void WriteIndentedLine(string text)
         {
             output.Append(IndentString);
             output.AppendLine(text);
+        }
+
+        private void SetIndentString()
+        {
+            IndentString = new string(indentChar, indentCharCount * indentIndex);
         }
     }
 }

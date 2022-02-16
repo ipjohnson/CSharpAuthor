@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CSharpAuthor
+﻿namespace CSharpAuthor
 {
     public class ParameterDefinition : BaseOutputComponent
     {
-        private TypeDefinition typeDefinition;
-        private string name;
+        private readonly TypeDefinition typeDefinition;
+        private readonly string name;
 
         public ParameterDefinition(TypeDefinition typeDefinition, string name)
         {
@@ -17,14 +11,13 @@ namespace CSharpAuthor
             this.name = name;
         }
 
-        public override void GetKnownTypes(List<TypeDefinition> types)
-        {
-            types.Add(typeDefinition);
-        }
-
         public override void WriteOutput(IOutputContext outputContext)
         {
+            outputContext.AddImportNamespace(typeDefinition);
 
+            outputContext.Write(typeDefinition.Name);
+            outputContext.WriteSpace();
+            outputContext.Write(name);
         }
     }
 }
