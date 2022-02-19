@@ -1,4 +1,6 @@
-﻿namespace CSharpAuthor
+﻿using System;
+
+namespace CSharpAuthor
 {
     public interface IOutputContext
     {
@@ -10,13 +12,13 @@
 
         void Write(string text);
 
-        void WriteLine() => Write(Environment.NewLine);
+        void WriteLine();
 
         void WriteLine(string text);
 
-        void WriteSpace() => Write(" ");
+        void WriteSpace();
 
-        void WriteIndent() => Write(IndentString);
+        void WriteIndent();
 
         void WriteIndentedLine(string text);
 
@@ -28,7 +30,7 @@
 
         void AddImportNamespace(string ns);
 
-        void AddImportNamespace(TypeDefinition typeDefinition) => AddImportNamespace(typeDefinition.Namespace);
+        void AddImportNamespace(TypeDefinition typeDefinition);
 
         void GenerateUsingStatements();
     }

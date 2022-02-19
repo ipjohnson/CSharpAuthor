@@ -1,14 +1,17 @@
-﻿namespace CSharpAuthor
+﻿using System;
+using System.Collections.Generic;
+
+namespace CSharpAuthor
 {
     public class ClassDefinition : BaseOutputComponent
     {
         private readonly string _namespace;
         private readonly string _name;
-        private readonly List<TypeDefinition> baseTypes = new ();
-        private readonly List<IOutputComponent> fields = new ();
-        private readonly List<IOutputComponent> constructors = new ();
-        private readonly List<IOutputComponent> methods = new ();
-        private readonly List<IOutputComponent> properties = new ();
+        private readonly List<TypeDefinition> baseTypes = new List<TypeDefinition>();
+        private readonly List<IOutputComponent> fields = new List<IOutputComponent>();
+        private readonly List<IOutputComponent> constructors = new List<IOutputComponent>();
+        private readonly List<IOutputComponent> methods = new List<IOutputComponent>();
+        private readonly List<IOutputComponent> properties = new List<IOutputComponent>();
 
         public ClassDefinition(string ns, string name)
         {

@@ -1,11 +1,13 @@
-﻿namespace CSharpAuthor
+﻿using System.Collections.Generic;
+
+namespace CSharpAuthor
 {
     public class MethodDefinition : BaseOutputComponent
     {
-        private readonly List<ParameterDefinition> parameters = new ();
-        private readonly List<IOutputComponent> statements = new ();
+        private readonly List<ParameterDefinition> parameters = new List<ParameterDefinition>();
+        private readonly List<IOutputComponent> statements = new List<IOutputComponent>();
         private readonly string name;
-        private TypeDefinition? returnType;
+        private TypeDefinition returnType;
 
         public MethodDefinition(string name)
         {

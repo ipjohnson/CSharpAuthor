@@ -1,4 +1,6 @@
-﻿namespace CSharpAuthor
+﻿using System;
+
+namespace CSharpAuthor
 {
     public class TypeDefinition
     {
@@ -27,7 +29,7 @@
 
             if (OpImplicit(type, out var returnTypeDefinition))
             {
-                return returnTypeDefinition!;
+                return returnTypeDefinition;
             }
 
             var typeDefinition = CSharpAuthor.TypeDefinitionEnum.ClassDefinition;
@@ -44,7 +46,7 @@
             return new TypeDefinition(typeDefinition, type.Namespace ?? "", type.Name);
         }
 
-        private static bool OpImplicit(Type type, out TypeDefinition? returnTypeDefinition)
+        private static bool OpImplicit(Type type, out TypeDefinition returnTypeDefinition)
         {
             if (typeof(string) == type)
             {

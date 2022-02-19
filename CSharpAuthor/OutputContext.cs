@@ -1,10 +1,13 @@
-﻿using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace CSharpAuthor
 {
     public class OutputContext : IOutputContext
     {
-        private readonly HashSet<string> namespaces = new ();
+        private readonly HashSet<string> namespaces = new HashSet<string>();
         private readonly char indentChar;
         private readonly int indentCharCount;
         private readonly StringBuilder output;
@@ -38,9 +41,24 @@ namespace CSharpAuthor
             output.Append(text);
         }
 
+        public void WriteLine()
+        {
+            output.Append(Environment.NewLine);
+        }
+
         public void WriteLine(string text)
         {
             output.AppendLine(text);
+        }
+
+        public void WriteSpace()
+        {
+            output.Append(" ");
+        }
+
+        public void WriteIndent()
+        {
+            output.Append(IndentString);
         }
 
         public string Output()
@@ -68,6 +86,11 @@ namespace CSharpAuthor
             }
 
             namespaces.Add(ns);
+        }
+
+        public void AddImportNamespace(TypeDefinition typeDefinition)
+        {
+            AddImportNamespace(typeDefinition.Name);
         }
 
         public void GenerateUsingStatements()

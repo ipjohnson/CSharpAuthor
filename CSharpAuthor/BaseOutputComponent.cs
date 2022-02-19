@@ -4,7 +4,7 @@
     {
         public ComponentModifier Modifiers { get; set; } = ComponentModifier.None;
 
-        public string? Comment { get; set; }
+        public string Comment { get; set; }
 
         public abstract void WriteOutput(IOutputContext outputContext);
 

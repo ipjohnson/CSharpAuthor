@@ -1,4 +1,6 @@
-﻿namespace CSharpAuthor
+﻿using System;
+
+namespace CSharpAuthor
 {
     [Flags]
     public enum ComponentModifier
