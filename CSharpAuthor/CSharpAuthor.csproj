@@ -1,9 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-	<PackageId>CSharpAuthor</PackageId>
-	<Authors>ipjohnson</Authors>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<PackageId>CSharpAuthor</PackageId>
+		<Authors>ipjohnson</Authors>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Remove="Package\CSharpAuthor.*"/>
+		<Content Include="Package\CSharpAuthor.*">
+			<Pack>true</Pack>
+			<PackagePath>build\</PackagePath>
+			<PackageCopyToOutput>true</PackageCopyToOutput>
+		</Content>
+		<Content Include="**\*.cs" Exclude="**\obj\**;**\bin\**" Visible="true">
+			<Pack>true</Pack>
+			<PackagePath>src\CSharpAuthor\</PackagePath>
+			<PackageCopyToOutput>true</PackageCopyToOutput>
+		</Content>
+	</ItemGroup>
 
 </Project>
