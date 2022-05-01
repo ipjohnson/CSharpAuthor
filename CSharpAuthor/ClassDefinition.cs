@@ -70,7 +70,6 @@ namespace CSharpAuthor
         
         private void ApplyAllComponents(Action<IOutputComponent> componentAction)
         {
-
             foreach (var field in fields)
             {
                 componentAction(field);

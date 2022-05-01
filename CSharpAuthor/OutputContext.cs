@@ -90,7 +90,7 @@ namespace CSharpAuthor
 
         public void AddImportNamespace(TypeDefinition typeDefinition)
         {
-            AddImportNamespace(typeDefinition.Name);
+            AddImportNamespace(typeDefinition.Namespace);
         }
 
         public void GenerateUsingStatements()
