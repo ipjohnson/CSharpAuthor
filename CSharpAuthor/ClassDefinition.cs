@@ -109,6 +109,9 @@ namespace CSharpAuthor
             outputContext.Write(GetAccessModifier(KeyWords.Public));
             outputContext.WriteSpace();
 
+            outputContext.Write(GetAccessModifier(KeyWords.Class));
+            outputContext.WriteSpace();
+
             if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
             {
                 outputContext.Write(KeyWords.Static);

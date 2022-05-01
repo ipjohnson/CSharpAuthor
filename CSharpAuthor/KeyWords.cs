@@ -11,5 +11,7 @@
         public static string ReadOnly => "readonly";
 
         public static string Async => "async";
+
+        public static string Class => "class";
     }
 }

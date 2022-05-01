@@ -30,7 +30,7 @@ namespace CSharpAuthor.Tests.ClassDefinitionTests
         private static readonly string expectedSimpleClass = 
 @"namespace TestNamespace
 {
-    public TestClass
+    public class TestClass
     {
         private string testField;
         public void TestMethod()
