@@ -8,11 +8,11 @@ namespace CSharpAuthor
     {
         private readonly string _namespace;
         private readonly string _name;
-        private readonly List<TypeDefinition> baseTypes = new List<TypeDefinition>();
-        private readonly List<FieldDefinition> fields = new List<FieldDefinition>();
-        private readonly List<IOutputComponent> constructors = new List<IOutputComponent>();
-        private readonly List<MethodDefinition> methods = new List<MethodDefinition>();
-        private readonly List<IOutputComponent> properties = new List<IOutputComponent>();
+        private readonly List<TypeDefinition> _baseTypes = new List<TypeDefinition>();
+        private readonly List<FieldDefinition> _fields = new List<FieldDefinition>();
+        private readonly List<IOutputComponent> _constructors = new List<IOutputComponent>();
+        private readonly List<MethodDefinition> _methods = new List<MethodDefinition>();
+        private readonly List<IOutputComponent> _properties = new List<IOutputComponent>();
 
         public ClassDefinition(string ns, string name)
         {
@@ -20,16 +20,18 @@ namespace CSharpAuthor
             _name = name;
         }
 
+        public int FieldCount => _fields.Count;
+
         public FieldDefinition AddField(TypeDefinition typeDefinition, string fieldName)
         {
-            if (fields.Any(f => f.Name == fieldName))
+            if (_fields.Any(f => f.Name == fieldName))
             {
                 throw new ArgumentException($"{fieldName} field already exists in class");
             }
 
             var definition = new FieldDefinition(typeDefinition, fieldName);
 
-            fields.Add(definition);
+            _fields.Add(definition);
 
             return definition;
         }
@@ -38,16 +40,16 @@ namespace CSharpAuthor
         {
             var definition = new MethodDefinition(method);
 
-            methods.Add(definition);
+            _methods.Add(definition);
 
             return definition;
         }
 
         public ClassDefinition AddBaseType(TypeDefinition typeDefinition)
         {
-            if (!baseTypes.Contains(typeDefinition))
+            if (!_baseTypes.Contains(typeDefinition))
             {
-                baseTypes.Add(typeDefinition);
+                _baseTypes.Add(typeDefinition);
             }
 
             return this;
@@ -57,7 +59,7 @@ namespace CSharpAuthor
         {
             var definition = new ConstructorDefinition(_name);
 
-            constructors.Add(definition);
+            _constructors.Add(definition);
 
             return definition;
         }
@@ -79,22 +81,22 @@ namespace CSharpAuthor
         
         private void ApplyAllComponents(Action<IOutputComponent> componentAction)
         {
-            foreach (var field in fields)
+            foreach (var field in _fields)
             {
                 componentAction(field);
             }
 
-            foreach (var constructor in constructors)
+            foreach (var constructor in _constructors)
             {
                 componentAction(constructor);
             }
 
-            foreach (var method in methods)
+            foreach (var method in _methods)
             {                
                 componentAction(method);
             }
 
-            foreach (var property in properties)
+            foreach (var property in _properties)
             {
                 componentAction(property);
             }
@@ -128,18 +130,18 @@ namespace CSharpAuthor
 
             outputContext.Write(_name);
 
-            if (baseTypes.Count > 0)
+            if (_baseTypes.Count > 0)
             {
                 outputContext.Write(" : ");
 
-                for (var i = 0; i < baseTypes.Count; i++)
+                for (var i = 0; i < _baseTypes.Count; i++)
                 {
                     if (i > 0)
                     {
                         outputContext.Write(", ");
                     }
 
-                    var type = baseTypes[i];
+                    var type = _baseTypes[i];
 
                     outputContext.Write(type.Name);
                 }
