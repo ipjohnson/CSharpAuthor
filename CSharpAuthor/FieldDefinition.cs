@@ -11,6 +11,8 @@
         }
 
         public string Name { get; }
+
+        public string InitializeValue { get; set; }
         
         public override void WriteOutput(IOutputContext outputContext)
         {
@@ -30,7 +32,14 @@
                 staticString = KeyWords.Static + " ";
             }
 
-            outputContext.WriteIndentedLine($"{accessModifier} {readonlyString}{staticString}{_typeDefinition.Name} {Name};");
+            var initValue = "";
+
+            if (!string.IsNullOrEmpty(InitializeValue))
+            {
+                initValue = $" = {InitializeValue}";
+            }
+
+            outputContext.WriteIndentedLine($"{accessModifier} {readonlyString}{staticString}{_typeDefinition.Name} {Name}{initValue};");
         }
     }
 }

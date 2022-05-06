@@ -23,5 +23,26 @@ namespace CSharpAuthor.Tests.FieldDefinitionTests
         private static readonly string expectedWriteFieldString = 
 @"    private string field;
 ";
+        [Fact]
+        public void WriteFieldWithInitValue()
+        {
+            var fieldDefinition = new FieldDefinition(typeof(string), "field");
+
+            fieldDefinition.InitializeValue = "@\"testValue\"";
+
+            var context = new OutputContext();
+
+            context.IncrementIndent();
+
+            fieldDefinition.WriteOutput(context);
+
+            var outputString = context.Output();
+
+            AssertEqual.WithoutNewLine(expectedInitFieldString, outputString);
+        }
+
+        private static readonly string expectedInitFieldString =
+@"    private string field = @""testValue"";
+";
     }
 }
