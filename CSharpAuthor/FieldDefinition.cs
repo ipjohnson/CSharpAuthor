@@ -3,13 +3,14 @@
     public class FieldDefinition : BaseOutputComponent
     {
         private readonly TypeDefinition _typeDefinition;
-        private readonly string _name;
-
+        
         public FieldDefinition(TypeDefinition typeDefinition, string name)
         {
             _typeDefinition = typeDefinition;
-            _name = name;
+            Name = name;
         }
+
+        public string Name { get; }
         
         public override void WriteOutput(IOutputContext outputContext)
         {
@@ -29,7 +30,7 @@
                 staticString = KeyWords.Static + " ";
             }
 
-            outputContext.WriteIndentedLine($"{accessModifier} {readonlyString}{staticString}{_typeDefinition.Name} {_name};");
+            outputContext.WriteIndentedLine($"{accessModifier} {readonlyString}{staticString}{_typeDefinition.Name} {Name};");
         }
     }
 }

@@ -6,13 +6,15 @@ namespace CSharpAuthor
     {
         private readonly List<ParameterDefinition> parameters = new List<ParameterDefinition>();
         private readonly List<IOutputComponent> statements = new List<IOutputComponent>();
-        private readonly string name;
+        
         private TypeDefinition returnType;
 
         public MethodDefinition(string name)
         {
-            this.name = name;
+            Name = name;
         }
+
+        public string Name { get; }
 
         public MethodDefinition SetReturnType(TypeDefinition type)
         {
@@ -76,7 +78,7 @@ namespace CSharpAuthor
 
             outputContext.WriteSpace();
 
-            outputContext.Write(name);
+            outputContext.Write(Name);
 
             outputContext.Write("(");
 

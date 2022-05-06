@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CSharpAuthor
 {
@@ -8,9 +9,9 @@ namespace CSharpAuthor
         private readonly string _namespace;
         private readonly string _name;
         private readonly List<TypeDefinition> baseTypes = new List<TypeDefinition>();
-        private readonly List<IOutputComponent> fields = new List<IOutputComponent>();
+        private readonly List<FieldDefinition> fields = new List<FieldDefinition>();
         private readonly List<IOutputComponent> constructors = new List<IOutputComponent>();
-        private readonly List<IOutputComponent> methods = new List<IOutputComponent>();
+        private readonly List<MethodDefinition> methods = new List<MethodDefinition>();
         private readonly List<IOutputComponent> properties = new List<IOutputComponent>();
 
         public ClassDefinition(string ns, string name)
@@ -21,6 +22,11 @@ namespace CSharpAuthor
 
         public FieldDefinition AddField(TypeDefinition typeDefinition, string fieldName)
         {
+            if (fields.Any(f => f.Name == fieldName))
+            {
+                throw new ArgumentException($"{fieldName} field already exists in class");
+            }
+
             var definition = new FieldDefinition(typeDefinition, fieldName);
 
             fields.Add(definition);
@@ -39,7 +45,10 @@ namespace CSharpAuthor
 
         public ClassDefinition AddBaseType(TypeDefinition typeDefinition)
         {
-            baseTypes.Add(typeDefinition);
+            if (!baseTypes.Contains(typeDefinition))
+            {
+                baseTypes.Add(typeDefinition);
+            }
 
             return this;
         }
