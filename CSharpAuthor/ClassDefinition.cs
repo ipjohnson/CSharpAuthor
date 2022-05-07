@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 
 namespace CSharpAuthor
 {
@@ -8,7 +9,7 @@ namespace CSharpAuthor
     {
         private readonly string _namespace;
         private readonly string _name;
-        private readonly List<TypeDefinition> _baseTypes = new List<TypeDefinition>();
+        private readonly List<ITypeDefinition> _baseTypes = new List<ITypeDefinition>();
         private readonly List<FieldDefinition> _fields = new List<FieldDefinition>();
         private readonly List<IOutputComponent> _constructors = new List<IOutputComponent>();
         private readonly List<MethodDefinition> _methods = new List<MethodDefinition>();
@@ -22,7 +23,12 @@ namespace CSharpAuthor
 
         public int FieldCount => _fields.Count;
 
-        public FieldDefinition AddField(TypeDefinition typeDefinition, string fieldName)
+        public FieldDefinition AddField(Type type, string fieldName)
+        {
+            return AddField(TypeDefinition.Get(type), fieldName);
+        }
+
+        public FieldDefinition AddField(ITypeDefinition typeDefinition, string fieldName)
         {
             if (_fields.Any(f => f.Name == fieldName))
             {
@@ -45,7 +51,7 @@ namespace CSharpAuthor
             return definition;
         }
 
-        public ClassDefinition AddBaseType(TypeDefinition typeDefinition)
+        public ClassDefinition AddBaseType(ITypeDefinition typeDefinition)
         {
             if (!_baseTypes.Contains(typeDefinition))
             {

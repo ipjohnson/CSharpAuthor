@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace CSharpAuthor
 {
-    public class TypeDefinition
+    public class TypeDefinition : ITypeDefinition 
     {
         private readonly int _hashCode;
 
@@ -20,6 +22,16 @@ namespace CSharpAuthor
         public string Namespace { get; }
 
         public string Name { get; }
+
+        public IEnumerable<string> KnownNamespaces
+        {
+            get { yield return Namespace; }
+        }
+
+        public void WriteShortName(StringBuilder builder)
+        {
+            builder.Append(Name);
+        }
 
         public override bool Equals(object obj)
         {
@@ -43,16 +55,16 @@ namespace CSharpAuthor
             return $"{TypeDefinitionEnum}:{Namespace}:{Name}";
         }
 
-        public static implicit operator TypeDefinition(Type type)
+        public static ITypeDefinition Get(Type type)
         {
             if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
-            
-            if (OpImplicit(type, out var returnTypeDefinition))
+
+            if (IsKnownType(type, out var knownDefinition))
             {
-                return returnTypeDefinition;
+                return knownDefinition;
             }
 
             var typeDefinition = CSharpAuthor.TypeDefinitionEnum.ClassDefinition;
@@ -65,20 +77,67 @@ namespace CSharpAuthor
             {
                 typeDefinition = TypeDefinitionEnum.InterfaceDefinition;
             }
-
-            return new TypeDefinition(typeDefinition, type.Namespace ?? "", type.Name);
-        }
-        
-        private static bool OpImplicit(Type type, out TypeDefinition returnTypeDefinition)
-        {
-            if (typeof(string) == type)
+            
+            if (type.IsConstructedGenericType)
             {
-                returnTypeDefinition = new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string");
+                var genericTypeDefinition = type.GetGenericTypeDefinition();
+
+                var tickIndex = genericTypeDefinition.Name.IndexOf('`');
+                var className = genericTypeDefinition.Name.Substring(0, tickIndex);
+
+                var closingTypes = new List<ITypeDefinition>();
+
+                foreach (var genericArgument in type.GetGenericArguments())
+                {
+                    closingTypes.Add(Get(genericArgument));
+                }
+
+                return new GenericTypeDefinition(typeDefinition, className,
+                    genericTypeDefinition.Namespace, closingTypes);
+            }
+
+            return new TypeDefinition(typeDefinition, type.Namespace, type.Name);
+        }
+
+        private static readonly ITypeDefinition _stringDefinition =
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "System", "string");
+
+        private static readonly ITypeDefinition _intDefinition =
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "System", "int");
+
+        private static readonly ITypeDefinition _doubleDefinition =
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "System", "double");
+        
+        private static readonly ITypeDefinition _boolDefinition =
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "System", "bool");
+        
+        private static bool IsKnownType(Type type, out ITypeDefinition typeDefinition)
+        {
+            if (type == typeof(string))
+            {
+                typeDefinition = _stringDefinition;
+                return true;
+            }
+            
+            if (type == typeof(int))
+            {
+                typeDefinition = _intDefinition;
                 return true;
             }
 
-            returnTypeDefinition = null;
+            if (type == typeof(double))
+            {
+                typeDefinition = _doubleDefinition;
+                return true;
+            }
 
+            if (type == typeof(bool))
+            {
+                typeDefinition = _boolDefinition;
+                return true;
+            }
+
+            typeDefinition = null;
             return false;
         }
     }

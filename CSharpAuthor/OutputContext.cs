@@ -41,6 +41,11 @@ namespace CSharpAuthor
             output.Append(text);
         }
 
+        public void Write(ITypeDefinition typeDefinition)
+        {
+            typeDefinition?.WriteShortName(output);
+        }
+
         public void WriteLine()
         {
             output.Append(Environment.NewLine);
@@ -88,11 +93,14 @@ namespace CSharpAuthor
             namespaces.Add(ns);
         }
 
-        public void AddImportNamespace(TypeDefinition typeDefinition)
+        public void AddImportNamespace(ITypeDefinition typeDefinition)
         {
-            AddImportNamespace(typeDefinition.Namespace);
+            foreach (var knownNamespace in typeDefinition.KnownNamespaces)
+            {
+                AddImportNamespace(knownNamespace);
+            }
         }
-
+        
         public void GenerateUsingStatements()
         {
             var namespaceList = namespaces.ToList();

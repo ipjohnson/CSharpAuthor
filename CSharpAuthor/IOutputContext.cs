@@ -12,6 +12,8 @@ namespace CSharpAuthor
 
         void Write(string text);
 
+        void Write(ITypeDefinition typeDefinition);
+
         void WriteLine();
 
         void WriteLine(string text);
@@ -30,7 +32,7 @@ namespace CSharpAuthor
 
         void AddImportNamespace(string ns);
 
-        void AddImportNamespace(TypeDefinition typeDefinition);
+        void AddImportNamespace(ITypeDefinition typeDefinition);
 
         void GenerateUsingStatements();
     }

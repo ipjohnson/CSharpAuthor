@@ -2,9 +2,9 @@
 {
     public class FieldDefinition : BaseOutputComponent
     {
-        private readonly TypeDefinition _typeDefinition;
+        private readonly ITypeDefinition _typeDefinition;
         
-        public FieldDefinition(TypeDefinition typeDefinition, string name)
+        public FieldDefinition(ITypeDefinition typeDefinition, string name)
         {
             _typeDefinition = typeDefinition;
             Name = name;

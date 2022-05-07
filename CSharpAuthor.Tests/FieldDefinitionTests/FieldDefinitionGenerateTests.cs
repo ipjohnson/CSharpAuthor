@@ -7,7 +7,7 @@ namespace CSharpAuthor.Tests.FieldDefinitionTests
         [Fact]
         public void WriteFieldTest()
         {
-            var fieldDefinition = new FieldDefinition(typeof(string), "field");
+            var fieldDefinition = new FieldDefinition(TypeDefinition.Get(typeof(string)), "field");
 
             var context = new OutputContext();
 
@@ -26,7 +26,7 @@ namespace CSharpAuthor.Tests.FieldDefinitionTests
         [Fact]
         public void WriteFieldWithInitValue()
         {
-            var fieldDefinition = new FieldDefinition(typeof(string), "field");
+            var fieldDefinition = new FieldDefinition(TypeDefinition.Get(typeof(string)), "field");
 
             fieldDefinition.InitializeValue = "@\"testValue\"";
 

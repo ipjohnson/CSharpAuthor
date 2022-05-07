@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace CSharpAuthor
 {
@@ -7,7 +8,7 @@ namespace CSharpAuthor
         private readonly List<ParameterDefinition> parameters = new List<ParameterDefinition>();
         private readonly List<IOutputComponent> statements = new List<IOutputComponent>();
         
-        private TypeDefinition returnType;
+        private ITypeDefinition returnType;
 
         public MethodDefinition(string name)
         {
@@ -16,7 +17,12 @@ namespace CSharpAuthor
 
         public string Name { get; }
 
-        public MethodDefinition SetReturnType(TypeDefinition type)
+        public MethodDefinition SetReturnType(Type type)
+        {
+            return SetReturnType(TypeDefinition.Get(type));
+        }
+
+        public MethodDefinition SetReturnType(ITypeDefinition type)
         {
             returnType = type;
 

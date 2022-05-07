@@ -12,6 +12,8 @@
 
         public static string Async => "async";
 
+        public static string Await => "await";
+
         public static string Class => "class";
     }
 }

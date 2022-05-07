@@ -2,10 +2,10 @@
 {
     public class ParameterDefinition : BaseOutputComponent
     {
-        private readonly TypeDefinition typeDefinition;
+        private readonly ITypeDefinition typeDefinition;
         private readonly string name;
 
-        public ParameterDefinition(TypeDefinition typeDefinition, string name)
+        public ParameterDefinition(ITypeDefinition typeDefinition, string name)
         {
             this.typeDefinition = typeDefinition;
             this.name = name;
