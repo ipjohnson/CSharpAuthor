@@ -17,7 +17,7 @@ namespace CSharpAuthor.Tests.TypeDefinitionTests
             Assert.NotNull(definition);
 
             Assert.Equal("Task", definition.Name);
-            Assert.Equal("System.Threading", definition.Namespace);
+            Assert.Equal("System.Threading.Tasks", definition.Namespace);
         }
     }
 }

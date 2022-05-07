@@ -100,16 +100,16 @@ namespace CSharpAuthor
         }
 
         private static readonly ITypeDefinition _stringDefinition =
-            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "System", "string");
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string");
 
         private static readonly ITypeDefinition _intDefinition =
-            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "System", "int");
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "int");
 
         private static readonly ITypeDefinition _doubleDefinition =
-            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "System", "double");
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "double");
         
         private static readonly ITypeDefinition _boolDefinition =
-            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "System", "bool");
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "bool");
         
         private static bool IsKnownType(Type type, out ITypeDefinition typeDefinition)
         {
