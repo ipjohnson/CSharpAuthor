@@ -29,7 +29,12 @@ namespace CSharpAuthor
             return this;
         }
 
-        public ParameterDefinition AddParameter(TypeDefinition typeDefinition, string name)
+        public ParameterDefinition AddParameter(Type type, string name)
+        {
+            return AddParameter(TypeDefinition.Get(type), name);
+        }
+
+        public ParameterDefinition AddParameter(ITypeDefinition typeDefinition, string name)
         {
             var parameter = new ParameterDefinition(typeDefinition, name);
 
