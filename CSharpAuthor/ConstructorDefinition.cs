@@ -14,6 +14,7 @@
 
         protected override void WriteAccessModifier(IOutputContext outputContext)
         {
+            outputContext.WriteIndent();
             outputContext.Write(GetAccessModifier(KeyWords.Public));
             outputContext.WriteSpace();
         }

@@ -76,7 +76,7 @@ namespace CSharpAuthor
 
             WriteClassOpening(outputContext);
 
-            ApplyAllComponents(component => component.WriteOutput(outputContext));
+            ApplyAllComponents(component => component.WriteOutput(outputContext), outputContext);
 
             WriteClassClosing(outputContext);
 
@@ -85,25 +85,31 @@ namespace CSharpAuthor
             outputContext.GenerateUsingStatements();
         }
         
-        private void ApplyAllComponents(Action<IOutputComponent> componentAction)
+        private void ApplyAllComponents(Action<IOutputComponent> componentAction, IOutputContext outputContext)
         {
             foreach (var field in _fields)
             {
                 componentAction(field);
             }
-
+            
             foreach (var constructor in _constructors)
             {
+                outputContext.WriteLine();
+
                 componentAction(constructor);
             }
 
             foreach (var method in _methods)
-            {                
+            {
+                outputContext.WriteLine();
+
                 componentAction(method);
             }
 
             foreach (var property in _properties)
             {
+                outputContext.WriteLine();
+
                 componentAction(property);
             }
         }

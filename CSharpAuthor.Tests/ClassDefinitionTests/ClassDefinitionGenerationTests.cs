@@ -33,6 +33,7 @@ namespace CSharpAuthor.Tests.ClassDefinitionTests
     public class TestClass
     {
         private string testField;
+
         public void TestMethod()
         {
         }
