@@ -8,8 +8,13 @@ namespace CSharpAuthor
     public class GenericTypeDefinition : ITypeDefinition
     {
         private readonly int _hashCode;
-        private readonly string ns;
         private readonly IReadOnlyList<ITypeDefinition> _closingTypes;
+
+        public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes) : 
+            this(TypeDefinitionEnum.ClassDefinition, type.GetGenericName(), type.Namespace, closeTypes)
+        {
+
+        }
 
         public GenericTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string name, string ns, IReadOnlyList<ITypeDefinition> closingTypes)
         {
@@ -37,7 +42,7 @@ namespace CSharpAuthor
                     }
                 }
 
-                yield return ns;
+                yield return Namespace;
             }
         }
 
@@ -63,5 +68,6 @@ namespace CSharpAuthor
 
             builder.Append('>');
         }
+        
     }
 }

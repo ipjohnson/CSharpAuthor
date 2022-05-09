@@ -81,9 +81,8 @@ namespace CSharpAuthor
             if (type.IsConstructedGenericType)
             {
                 var genericTypeDefinition = type.GetGenericTypeDefinition();
-
-                var tickIndex = genericTypeDefinition.Name.IndexOf('`');
-                var className = genericTypeDefinition.Name.Substring(0, tickIndex);
+                
+                var className = genericTypeDefinition.GetGenericName();
 
                 var closingTypes = new List<ITypeDefinition>();
 
