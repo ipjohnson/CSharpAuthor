@@ -127,7 +127,14 @@ namespace CSharpAuthor
 
         protected virtual void WriteReturnType(IOutputContext outputContext)
         {
-            outputContext.Write(returnType != null ? returnType.Name : "void");
+            if (returnType != null)
+            {
+                outputContext.Write(returnType);
+            }
+            else
+            {
+                outputContext.Write("void");
+            }
         }
     }
 }
