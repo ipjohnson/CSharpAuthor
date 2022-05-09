@@ -11,9 +11,9 @@ namespace CSharpAuthor
         private readonly string _name;
         private readonly List<ITypeDefinition> _baseTypes = new List<ITypeDefinition>();
         private readonly List<FieldDefinition> _fields = new List<FieldDefinition>();
-        private readonly List<IOutputComponent> _constructors = new List<IOutputComponent>();
+        private readonly List<ConstructorDefinition> _constructors = new List<ConstructorDefinition>();
         private readonly List<MethodDefinition> _methods = new List<MethodDefinition>();
-        private readonly List<IOutputComponent> _properties = new List<IOutputComponent>();
+        private readonly List<PropertyDefinition> _properties = new List<PropertyDefinition>();
 
         public ClassDefinition(string ns, string name)
         {
@@ -23,6 +23,12 @@ namespace CSharpAuthor
 
         public int FieldCount => _fields.Count;
 
+        public IReadOnlyList<ConstructorDefinition> Constructors => _constructors;
+
+        public IReadOnlyList<MethodDefinition> Methods => _methods;
+
+        public IReadOnlyList<IOutputComponent> Properties => _properties;
+        
         public FieldDefinition AddField(Type type, string fieldName)
         {
             return AddField(TypeDefinition.Get(type), fieldName);

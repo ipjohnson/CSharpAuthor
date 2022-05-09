@@ -17,6 +17,10 @@ namespace CSharpAuthor
 
         public string Name { get; }
 
+        public ITypeDefinition ReturnType => returnType;
+
+        public IReadOnlyList<ParameterDefinition> Parameters => parameters;
+
         public MethodDefinition SetReturnType(Type type)
         {
             return SetReturnType(TypeDefinition.Get(type));
@@ -42,7 +46,11 @@ namespace CSharpAuthor
 
             return parameter;
         }
-        
+
+        public void NewLine()
+        {
+            AddStatement("");
+        }
         public StatementOutputComponent AddStatement(string statement)
         {
             var statementOutput = new StatementOutputComponent(statement);

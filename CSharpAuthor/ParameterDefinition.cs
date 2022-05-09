@@ -2,22 +2,23 @@
 {
     public class ParameterDefinition : BaseOutputComponent
     {
-        private readonly ITypeDefinition typeDefinition;
-        private readonly string name;
-
         public ParameterDefinition(ITypeDefinition typeDefinition, string name)
         {
-            this.typeDefinition = typeDefinition;
-            this.name = name;
+            TypeDefinition = typeDefinition;
+            Name = name;
         }
+
+        public string Name { get; }
+
+        public ITypeDefinition TypeDefinition { get; }
 
         public override void WriteOutput(IOutputContext outputContext)
         {
-            outputContext.AddImportNamespace(typeDefinition);
+            outputContext.AddImportNamespace(TypeDefinition);
 
-            outputContext.Write(typeDefinition.Name);
+            outputContext.Write(TypeDefinition.Name);
             outputContext.WriteSpace();
-            outputContext.Write(name);
+            outputContext.Write(Name);
         }
     }
 }
