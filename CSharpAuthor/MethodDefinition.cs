@@ -9,6 +9,7 @@ namespace CSharpAuthor
         private readonly List<IOutputComponent> statements = new List<IOutputComponent>();
         
         private ITypeDefinition returnType;
+        private int localVariableNameCount = 1;
 
         public MethodDefinition(string name)
         {
@@ -20,6 +21,8 @@ namespace CSharpAuthor
         public ITypeDefinition ReturnType => returnType;
 
         public IReadOnlyList<ParameterDefinition> Parameters => parameters;
+
+        public string NextLocalVariableName => "localVariable" + localVariableNameCount++;
 
         public MethodDefinition SetReturnType(Type type)
         {
