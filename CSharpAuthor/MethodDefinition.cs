@@ -54,6 +54,25 @@ namespace CSharpAuthor
         {
             AddStatement("");
         }
+
+        public OpenScopeComponent OpenScope()
+        {
+            var openScope = new OpenScopeComponent();
+
+            statements.Add(openScope);
+
+            return openScope;
+        }
+
+        public CloseScopeComponent CloseScope()
+        {
+            var closeScope = new CloseScopeComponent();
+
+            statements.Add(closeScope);
+
+            return closeScope;
+        }
+
         public StatementOutputComponent AddStatement(string statement)
         {
             var statementOutput = new StatementOutputComponent(statement);
