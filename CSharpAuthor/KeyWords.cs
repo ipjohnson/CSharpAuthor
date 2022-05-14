@@ -14,6 +14,12 @@
 
         public static string Await => "await";
 
+        public static string Abstract => "abstract";
+
+        public static string Virtual => "Virtual";
+
+        public static string Partial => "partial";
+
         public static string Class => "class";
     }
 }

@@ -146,6 +146,16 @@ namespace CSharpAuthor
             {
                 outputContext.Write(KeyWords.Static);
                 outputContext.WriteSpace();
+            } 
+            else if ((Modifiers & ComponentModifier.Abstract) == ComponentModifier.Abstract)
+            {
+                outputContext.Write(KeyWords.Abstract);
+                outputContext.WriteSpace();
+            }
+            else if ((Modifiers & ComponentModifier.Virtual) == ComponentModifier.Virtual)
+            {
+                outputContext.Write(KeyWords.Virtual);
+                outputContext.WriteSpace();
             }
 
             if ((Modifiers & ComponentModifier.Async) == ComponentModifier.Async)

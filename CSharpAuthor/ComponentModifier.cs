@@ -24,5 +24,7 @@ namespace CSharpAuthor
         Abstract = 128,
 
         Async = 256,
+
+        Partial = 512,
     }
 }
