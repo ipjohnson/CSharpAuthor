@@ -159,10 +159,7 @@ namespace CSharpAuthor
             outputContext.Write(outputContext.IndentString);
             outputContext.Write(GetAccessModifier(KeyWords.Public));
             outputContext.WriteSpace();
-
-            outputContext.Write(GetAccessModifier(KeyWords.Class));
-            outputContext.WriteSpace();
-
+            
             if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
             {
                 outputContext.Write(KeyWords.Static);
@@ -179,6 +176,9 @@ namespace CSharpAuthor
                 outputContext.Write(KeyWords.Partial);
                 outputContext.WriteSpace();
             }
+
+            outputContext.Write(KeyWords.Class);
+            outputContext.WriteSpace();
 
             outputContext.Write(_name);
 
