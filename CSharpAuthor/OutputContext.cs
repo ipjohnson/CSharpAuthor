@@ -109,9 +109,14 @@ namespace CSharpAuthor
 
             namespaceList.Reverse();
 
-            foreach (string ns in namespaceList)
+            if (namespaceList.Count > 0)
             {
-                output.Insert(0, $"using {ns};" + Environment.NewLine);
+                output.Insert(0, Environment.NewLine);
+
+                foreach (string ns in namespaceList)
+                {
+                    output.Insert(0, $"using {ns};" + Environment.NewLine);
+                }
             }
         }
 

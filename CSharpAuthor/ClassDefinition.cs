@@ -14,6 +14,7 @@ namespace CSharpAuthor
         private readonly List<ConstructorDefinition> _constructors = new List<ConstructorDefinition>();
         private readonly List<MethodDefinition> _methods = new List<MethodDefinition>();
         private readonly List<PropertyDefinition> _properties = new List<PropertyDefinition>();
+        private readonly List<ClassDefinition> _classes = new List<ClassDefinition>();
 
         public ClassDefinition(string ns, string name)
         {
@@ -28,7 +29,16 @@ namespace CSharpAuthor
         public IReadOnlyList<MethodDefinition> Methods => _methods;
 
         public IReadOnlyList<IOutputComponent> Properties => _properties;
-        
+
+        public ClassDefinition AddClass(string name)
+        {
+            var classDefinition = new ClassDefinition(null, name);
+
+            _classes.Add(classDefinition);
+
+            return classDefinition;
+        }
+
         public FieldDefinition AddField(Type type, string fieldName)
         {
             return AddField(TypeDefinition.Get(type), fieldName);
@@ -78,17 +88,23 @@ namespace CSharpAuthor
         
         public override void WriteOutput(IOutputContext outputContext)
         {
-            WriteNamespaceOpen(outputContext);
-
+            if (!string.IsNullOrEmpty(_namespace))
+            {
+                WriteNamespaceOpen(outputContext);
+            }
+            
             WriteClassOpening(outputContext);
 
             ApplyAllComponents(component => component.WriteOutput(outputContext), outputContext);
 
             WriteClassClosing(outputContext);
 
-            WriteNamespaceClose(outputContext);
+            if (!string.IsNullOrEmpty(_namespace))
+            {
+                WriteNamespaceClose(outputContext);
 
-            outputContext.GenerateUsingStatements();
+                outputContext.GenerateUsingStatements();
+            }
         }
         
         private void ApplyAllComponents(Action<IOutputComponent> componentAction, IOutputContext outputContext)
@@ -117,6 +133,13 @@ namespace CSharpAuthor
                 outputContext.WriteLine();
 
                 componentAction(property);
+            }
+
+            foreach (var classDefinition in _classes)
+            {
+                outputContext.WriteLine();
+
+                componentAction(classDefinition);
             }
         }
 
