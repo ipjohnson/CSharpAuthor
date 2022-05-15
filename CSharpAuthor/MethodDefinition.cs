@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CSharpAuthor
 {
@@ -73,14 +74,41 @@ namespace CSharpAuthor
             return closeScope;
         }
 
-        public StatementOutputComponent AddStatement(string statement)
+        public StatementOutputComponent AddStatement(string statement, params object[] types)
         {
+            var typeDefinitions = new List<ITypeDefinition>();
+
+            if (types != null && types.Length > 0)
+            {
+                for (var index = 0; index < types.Length; index++)
+                {
+                    var typeSwapString = "{arg" + (index + 1) + "}";
+
+                    var value = types[index];
+
+                    if (value is Type typeValue)
+                    {
+                        value = TypeDefinition.Get(typeValue);
+                    }
+
+                    if (value is ITypeDefinition typeDefinition)
+                    {
+                        typeDefinitions.Add(typeDefinition);
+                    }
+
+                    statement = statement.Replace(typeSwapString, GetObjectStringValue(value));
+                }
+            }
+
             var statementOutput = new StatementOutputComponent(statement);
 
-            statements.Add(statementOutput);
+            statementOutput.AddTypes(typeDefinitions);
 
+            statements.Add(statementOutput);
+            
             return statementOutput;
         }
+        
         
         public override void WriteOutput(IOutputContext outputContext)
         {
@@ -89,6 +117,26 @@ namespace CSharpAuthor
             WriteMethodSignature(outputContext);
 
             WriteMethodBody(outputContext);
+        }
+
+        private string GetObjectStringValue(object value)
+        {
+            if (value is Type type)
+            {
+                value = TypeDefinition.Get(type);
+            }
+
+            if (value is ITypeDefinition typeDefinition)
+            {
+                return typeDefinition.GetShortName();
+            }
+            
+            if (value is string stringValue)
+            {
+                return "\"" + stringValue + "\"";
+            }
+
+            return value.ToString();
         }
 
         private void ProcessNamespaces(IOutputContext outputContext)

@@ -55,6 +55,11 @@ namespace CSharpAuthor
             return $"{TypeDefinitionEnum}:{Namespace}:{Name}";
         }
 
+        public static TypeDefinition Get(string ns, string name)
+        {
+            return new TypeDefinition(TypeDefinitionEnum.ClassDefinition, ns, name);
+        }
+
         public static ITypeDefinition Get(Type type)
         {
             if (type == null)

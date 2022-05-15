@@ -1,4 +1,5 @@
-﻿using Xunit;
+﻿using System;
+using Xunit;
 
 namespace CSharpAuthor.Tests.MethodTests
 {
@@ -50,6 +51,33 @@ namespace CSharpAuthor.Tests.MethodTests
         private static string voidMethodExpectedOutput = 
 @"public void HelloWorld()
 {
+}
+";
+        #endregion
+
+        #region AddStatement ITypeDefinition
+
+        [Fact]
+        public void AddTypeDefinitionTest()
+        {
+            var methodDefinition = new MethodDefinition("HelloWorld")
+                .SetReturnType(typeof(string));
+
+            methodDefinition.AddStatement("return {arg1} + typeof({arg2}) + {arg3};", "Hello World", typeof(string), 15);
+
+            var context = new OutputContext();
+
+            methodDefinition.WriteOutput(context);
+
+            var outputString = context.Output();
+
+            AssertEqual.WithoutNewLine(addTypeDefinitionOutput, outputString);
+        }
+
+        private static string addTypeDefinitionOutput =
+@"public string HelloWorld()
+{
+    return ""Hello World"" + typeof(string) + 15;
 }
 ";
         #endregion

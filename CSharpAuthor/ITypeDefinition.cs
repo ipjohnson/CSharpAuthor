@@ -17,4 +17,16 @@ namespace CSharpAuthor
 
         void WriteShortName(StringBuilder builder);
     }
+
+    public static class ITypeDefinitionExtensions
+    {
+        public static string GetShortName(this ITypeDefinition typeDefinition)
+        {
+            var stringBuilder = new StringBuilder();
+
+            typeDefinition.WriteShortName(stringBuilder);
+
+            return stringBuilder.ToString();
+        }
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace CSharpAuthor
 {
@@ -33,6 +34,8 @@ namespace CSharpAuthor
         void AddImportNamespace(string ns);
 
         void AddImportNamespace(ITypeDefinition typeDefinition);
+
+        void AddImportNamespace(IEnumerable<ITypeDefinition> typeDefinition);
 
         void GenerateUsingStatements();
     }

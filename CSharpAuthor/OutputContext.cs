@@ -100,7 +100,14 @@ namespace CSharpAuthor
                 AddImportNamespace(knownNamespace);
             }
         }
-        
+        public void AddImportNamespace(IEnumerable<ITypeDefinition> typeDefinitions)
+        {
+            foreach (var typeDefinition in typeDefinitions)
+            {
+                AddImportNamespace(typeDefinition);
+            }
+        }
+
         public void GenerateUsingStatements()
         {
             var namespaceList = namespaces.ToList();
