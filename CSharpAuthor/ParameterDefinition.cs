@@ -12,7 +12,7 @@
 
         public ITypeDefinition TypeDefinition { get; }
 
-        public override void WriteOutput(IOutputContext outputContext)
+        protected override void WriteComponentOutput(IOutputContext outputContext)
         {
             outputContext.AddImportNamespace(TypeDefinition);
 

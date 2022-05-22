@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,7 +13,7 @@ namespace CSharpAuthor.Tests.ClassDefinitionTests
         [Fact]
         public void SimpleClassGeneration()
         {
-            var classDefinition = new ClassDefinition("TestNamespace", "TestClass");
+            var classDefinition = new ClassDefinition("TestClass");
 
             classDefinition.AddField(typeof(string), "testField");
 
@@ -27,16 +28,13 @@ namespace CSharpAuthor.Tests.ClassDefinitionTests
             AssertEqual.WithoutNewLine(expectedSimpleClass, outputString);
         }
 
-        private static readonly string expectedSimpleClass = 
-@"namespace TestNamespace
+        private static readonly string expectedSimpleClass =
+@"public class TestClass
 {
-    public class TestClass
-    {
-        private string testField;
+    private string testField;
 
-        public void TestMethod()
-        {
-        }
+    public void TestMethod()
+    {
     }
 }
 ";

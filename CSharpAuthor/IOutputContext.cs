@@ -35,7 +35,9 @@ namespace CSharpAuthor
 
         void AddImportNamespace(ITypeDefinition typeDefinition);
 
-        void AddImportNamespace(IEnumerable<ITypeDefinition> typeDefinition);
+        void AddImportNamespaces(IEnumerable<string> namespaces);
+
+        void AddImportNamespaces(IEnumerable<ITypeDefinition> typeDefinition);
 
         void GenerateUsingStatements();
     }

@@ -7,18 +7,18 @@ namespace CSharpAuthor
 {
     public class OutputContext : IOutputContext
     {
-        private readonly HashSet<string> namespaces = new HashSet<string>();
-        private readonly char indentChar;
-        private readonly int indentCharCount;
-        private readonly StringBuilder output;
-        private int indentIndex;
+        private readonly HashSet<string> _namespaces = new HashSet<string>();
+        private readonly char _indentChar;
+        private readonly int _indentCharCount;
+        private readonly StringBuilder _output;
+        private int _indentIndex;
 
         public OutputContext(char indentChar = ' ', int indentCharCount = 4)
         {
-            this.indentChar = indentChar;
-            this.indentCharCount = indentCharCount;
+            this._indentChar = indentChar;
+            this._indentCharCount = indentCharCount;
 
-            output = new StringBuilder();
+            _output = new StringBuilder();
             IndentString = "";
         }
 
@@ -26,49 +26,49 @@ namespace CSharpAuthor
 
         public void IncrementIndent()
         {
-            indentIndex++;
+            _indentIndex++;
             SetIndentString();
         }
 
         public void DecrementIndent()
         {
-            indentIndex--;
+            _indentIndex--;
             SetIndentString();
         }
 
         public void Write(string text)
         {
-            output.Append(text);
+            _output.Append(text);
         }
 
         public void Write(ITypeDefinition typeDefinition)
         {
-            typeDefinition?.WriteShortName(output);
+            typeDefinition?.WriteShortName(_output);
         }
 
         public void WriteLine()
         {
-            output.Append(Environment.NewLine);
+            _output.Append(Environment.NewLine);
         }
 
         public void WriteLine(string text)
         {
-            output.AppendLine(text);
+            _output.AppendLine(text);
         }
 
         public void WriteSpace()
         {
-            output.Append(" ");
+            _output.Append(" ");
         }
 
         public void WriteIndent()
         {
-            output.Append(IndentString);
+            _output.Append(IndentString);
         }
 
         public string Output()
         {
-            return output.ToString();
+            return _output.ToString();
         }
 
         public void OpenScope()
@@ -85,12 +85,12 @@ namespace CSharpAuthor
 
         public void AddImportNamespace(string ns)
         {
-            if (string.IsNullOrEmpty(ns) || namespaces.Contains(ns))
+            if (string.IsNullOrEmpty(ns) || _namespaces.Contains(ns))
             {
                 return;
             }
 
-            namespaces.Add(ns);
+            _namespaces.Add(ns);
         }
 
         public void AddImportNamespace(ITypeDefinition typeDefinition)
@@ -100,7 +100,16 @@ namespace CSharpAuthor
                 AddImportNamespace(knownNamespace);
             }
         }
-        public void AddImportNamespace(IEnumerable<ITypeDefinition> typeDefinitions)
+
+        public void AddImportNamespaces(IEnumerable<string> namespaces)
+        {
+            foreach (var ns in namespaces)
+            {
+                AddImportNamespace(ns);
+            }
+        }
+
+        public void AddImportNamespaces(IEnumerable<ITypeDefinition> typeDefinitions)
         {
             foreach (var typeDefinition in typeDefinitions)
             {
@@ -110,7 +119,7 @@ namespace CSharpAuthor
 
         public void GenerateUsingStatements()
         {
-            var namespaceList = namespaces.ToList();
+            var namespaceList = _namespaces.ToList();
 
             namespaceList.Sort();
 
@@ -118,24 +127,24 @@ namespace CSharpAuthor
 
             if (namespaceList.Count > 0)
             {
-                output.Insert(0, Environment.NewLine);
+                _output.Insert(0, Environment.NewLine);
 
                 foreach (string ns in namespaceList)
                 {
-                    output.Insert(0, $"using {ns};" + Environment.NewLine);
+                    _output.Insert(0, $"using {ns};" + Environment.NewLine);
                 }
             }
         }
 
         public void WriteIndentedLine(string text)
         {
-            output.Append(IndentString);
-            output.AppendLine(text);
+            _output.Append(IndentString);
+            _output.AppendLine(text);
         }
 
         private void SetIndentString()
         {
-            IndentString = new string(indentChar, indentCharCount * indentIndex);
+            IndentString = new string(_indentChar, _indentCharCount * _indentIndex);
         }
     }
 }

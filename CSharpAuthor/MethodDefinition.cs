@@ -109,8 +109,7 @@ namespace CSharpAuthor
             return statementOutput;
         }
         
-        
-        public override void WriteOutput(IOutputContext outputContext)
+        protected override void WriteComponentOutput(IOutputContext outputContext)
         {
             ProcessNamespaces(outputContext);
 

@@ -31,13 +31,13 @@ namespace CSharpAuthor
 
             _typeDefinitions.AddRange(typeDefinitions);
         }
-        public override void WriteOutput(IOutputContext outputContext)
+        protected override void WriteComponentOutput(IOutputContext outputContext)
         {
             outputContext.WriteIndentedLine(_statement);
 
             if (_typeDefinitions != null)
             {
-                outputContext.AddImportNamespace(_typeDefinitions);
+                outputContext.AddImportNamespaces(_typeDefinitions);
             }
         }
     }

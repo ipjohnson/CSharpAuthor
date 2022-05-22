@@ -13,7 +13,7 @@ namespace CSharpAuthor.Tests.ClassDefinitionTests
         [Fact]
         public void BasicNestedClassTest()
         {
-            var classDefinition = new ClassDefinition("TestNamespace", "TestClass");
+            var classDefinition = new ClassDefinition("TestClass");
 
             classDefinition.AddField(typeof(string), "testField");
 
@@ -35,23 +35,20 @@ namespace CSharpAuthor.Tests.ClassDefinitionTests
         }
 
         private static readonly string expectedSimpleClass =
-@"namespace TestNamespace
+@"public class TestClass
 {
-    public class TestClass
+    private string testField;
+
+    public void TestMethod()
     {
-        private string testField;
+    }
 
-        public void TestMethod()
+    public class NestedClass
+    {
+        private string _field1;
+
+        public void NestedTestMethod()
         {
-        }
-
-        public class NestedClass
-        {
-            private string _field1;
-
-            public void NestedTestMethod()
-            {
-            }
         }
     }
 }

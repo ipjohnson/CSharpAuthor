@@ -4,9 +4,9 @@ using System.Text;
 
 namespace CSharpAuthor
 {
-    public class OpenScopeComponent : IOutputComponent
+    public class OpenScopeComponent : BaseOutputComponent
     {
-        public void WriteOutput(IOutputContext outputContext)
+        protected override void WriteComponentOutput(IOutputContext outputContext)
         {
             outputContext.WriteIndentedLine("{");
             outputContext.IncrementIndent();

@@ -14,7 +14,7 @@
 
         public string InitializeValue { get; set; }
         
-        public override void WriteOutput(IOutputContext outputContext)
+        protected override void WriteComponentOutput(IOutputContext outputContext)
         {
             outputContext.AddImportNamespace(_typeDefinition);
 

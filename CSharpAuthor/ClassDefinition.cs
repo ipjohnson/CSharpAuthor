@@ -7,7 +7,6 @@ namespace CSharpAuthor
 {
     public class ClassDefinition : BaseOutputComponent
     {
-        private readonly string _namespace;
         private readonly string _name;
         private readonly List<ITypeDefinition> _baseTypes = new List<ITypeDefinition>();
         private readonly List<FieldDefinition> _fields = new List<FieldDefinition>();
@@ -16,9 +15,8 @@ namespace CSharpAuthor
         private readonly List<PropertyDefinition> _properties = new List<PropertyDefinition>();
         private readonly List<ClassDefinition> _classes = new List<ClassDefinition>();
 
-        public ClassDefinition(string ns, string name)
+        public ClassDefinition(string name)
         {
-            _namespace = ns;
             _name = name;
         }
 
@@ -32,7 +30,7 @@ namespace CSharpAuthor
 
         public ClassDefinition AddClass(string name)
         {
-            var classDefinition = new ClassDefinition(null, name);
+            var classDefinition = new ClassDefinition(name);
 
             _classes.Add(classDefinition);
 
@@ -86,25 +84,13 @@ namespace CSharpAuthor
             return definition;
         }
         
-        public override void WriteOutput(IOutputContext outputContext)
+        protected override void WriteComponentOutput(IOutputContext outputContext)
         {
-            if (!string.IsNullOrEmpty(_namespace))
-            {
-                WriteNamespaceOpen(outputContext);
-            }
-            
             WriteClassOpening(outputContext);
 
             ApplyAllComponents(component => component.WriteOutput(outputContext), outputContext);
 
             WriteClassClosing(outputContext);
-
-            if (!string.IsNullOrEmpty(_namespace))
-            {
-                WriteNamespaceClose(outputContext);
-
-                outputContext.GenerateUsingStatements();
-            }
         }
         
         private void ApplyAllComponents(Action<IOutputComponent> componentAction, IOutputContext outputContext)
@@ -202,15 +188,5 @@ namespace CSharpAuthor
             outputContext.WriteLine();
         }
 
-        private void WriteNamespaceClose(IOutputContext outputContext)
-        {
-            outputContext.CloseScope();
-        }
-
-        private void WriteNamespaceOpen(IOutputContext outputContext)
-        {
-            outputContext.WriteIndentedLine("namespace " + _namespace);
-            outputContext.OpenScope();
-        }
     }
 }

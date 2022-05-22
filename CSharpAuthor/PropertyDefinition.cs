@@ -3,7 +3,7 @@
     public class PropertyDefinition : BaseOutputComponent
     {
 
-        public override void WriteOutput(IOutputContext outputContext)
+        protected override void WriteComponentOutput(IOutputContext outputContext)
         {
 
         }
