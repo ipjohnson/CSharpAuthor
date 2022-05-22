@@ -26,7 +26,9 @@ namespace CSharpAuthor
 
         public IReadOnlyList<MethodDefinition> Methods => _methods;
 
-        public IReadOnlyList<IOutputComponent> Properties => _properties;
+        public IReadOnlyList<PropertyDefinition> Properties => _properties;
+
+        public IReadOnlyList<FieldDefinition> Fields => _fields;
 
         public ClassDefinition AddClass(string name)
         {
