@@ -1,9 +1,11 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CSharpAuthor.Tests.Models;
 using Xunit;
 
 namespace CSharpAuthor.Tests.ClassDefinitionTests
@@ -15,9 +17,11 @@ namespace CSharpAuthor.Tests.ClassDefinitionTests
         {
             var classDefinition = new ClassDefinition("TestClass");
 
+            classDefinition.AddAttribute(typeof(GeneratedCodeAttribute));
+
             classDefinition.AddField(typeof(string), "testField");
 
-            classDefinition.AddMethod("TestMethod");
+            classDefinition.AddMethod("TestMethod").AddAttribute(typeof(GetAttribute), "Path = \"/Test\"");
 
             var outputContext = new OutputContext();
 
@@ -29,10 +33,12 @@ namespace CSharpAuthor.Tests.ClassDefinitionTests
         }
 
         private static readonly string expectedSimpleClass =
-@"public class TestClass
+@"[GeneratedCode]
+public class TestClass
 {
     private string testField;
 
+    [Get(Path = ""/Test"")]
     public void TestMethod()
     {
     }

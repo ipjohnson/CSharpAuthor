@@ -1,33 +1,68 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace CSharpAuthor
 {
     public abstract class BaseOutputComponent : IOutputComponent
     {
-        protected List<string> _usingNamespaces;
+        protected List<AttributeDefinition> AttributeDefinitions;
+        protected List<string> UsingNamespaces;
 
         public ComponentModifier Modifiers { get; set; } = ComponentModifier.None;
 
         public string Comment { get; set; }
 
-        public void AddUsingNamespace(string ns)
+
+
+        public AttributeDefinition AddAttribute(Type type, string argumentStatement = null)
         {
-            if (_usingNamespaces == null)
+            return AddAttribute(TypeDefinition.Get(type), argumentStatement);
+        }
+
+        public AttributeDefinition AddAttribute(ITypeDefinition typeDefinition, string argumentStatement  = null)
+        {
+            if (AttributeDefinitions == null)
             {
-                _usingNamespaces = new List<string>();
+                AttributeDefinitions = new List<AttributeDefinition>();
             }
 
-            _usingNamespaces.Add(ns);
+            var attribute = new AttributeDefinition(typeDefinition){ ArgumentStatement = argumentStatement };
+
+            AttributeDefinitions.Add(attribute);
+
+            return attribute;
+        }
+
+        public void AddUsingNamespace(string ns)
+        {
+            if (UsingNamespaces == null)
+            {
+                UsingNamespaces = new List<string>();
+            }
+
+            UsingNamespaces.Add(ns);
         }
 
         public void WriteOutput(IOutputContext outputContext)
         {
-            if (_usingNamespaces != null)
+            if (UsingNamespaces != null)
             {
-                outputContext.AddImportNamespaces(_usingNamespaces);
+                outputContext.AddImportNamespaces(UsingNamespaces);
             }
 
+            ProcessAttributes(outputContext);
+
             WriteComponentOutput(outputContext);
+        }
+
+        protected virtual void ProcessAttributes(IOutputContext outputContext)
+        {
+            if (AttributeDefinitions == null) return;
+
+            foreach (var attributeDefinition in AttributeDefinitions)
+            {
+                attributeDefinition.WriteComponentOutput(outputContext);
+            }
         }
 
         protected abstract void WriteComponentOutput(IOutputContext outputContext);
