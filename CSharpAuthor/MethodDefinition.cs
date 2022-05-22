@@ -82,21 +82,33 @@ namespace CSharpAuthor
             {
                 for (var index = 0; index < types.Length; index++)
                 {
+                    var value = types[index];
                     var typeSwapString = "{arg" + (index + 1) + "}";
 
-                    var value = types[index];
-
-                    if (value is Type typeValue)
+                    if (statement.IndexOf(typeSwapString, StringComparison.CurrentCulture) >= 0)
                     {
-                        value = TypeDefinition.Get(typeValue);
-                    }
 
-                    if (value is ITypeDefinition typeDefinition)
+                        if (value is Type typeValue)
+                        {
+                            value = TypeDefinition.Get(typeValue);
+                        }
+
+                        if (value is ITypeDefinition typeDefinition)
+                        {
+                            typeDefinitions.Add(typeDefinition);
+                        }
+
+                        statement = statement.Replace(typeSwapString, GetObjectStringValue(value));
+                    }
+                    else
                     {
-                        typeDefinitions.Add(typeDefinition);
-                    }
+                        var rawSwapString = $"[arg{index + 1}]";
 
-                    statement = statement.Replace(typeSwapString, GetObjectStringValue(value));
+                        if (statement.IndexOf(rawSwapString, StringComparison.CurrentCulture) >= 0)
+                        {
+                            statement = statement.Replace(rawSwapString, value.ToString());
+                        }
+                    }
                 }
             }
 
