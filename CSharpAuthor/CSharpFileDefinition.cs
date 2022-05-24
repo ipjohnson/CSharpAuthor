@@ -22,6 +22,15 @@ namespace CSharpAuthor
 
             return classDefinition;
         }
+
+        public EnumDefinition AddEnum(string name)
+        {
+            var enumDefinition = new EnumDefinition(name);
+
+            _outputComponents.Add(enumDefinition);
+
+            return enumDefinition;
+        }
         
         public void AddComponent(IOutputComponent component)
         {
