@@ -109,9 +109,28 @@ namespace CSharpAuthor
         private static readonly ITypeDefinition _intDefinition =
             new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "int");
 
+        private static readonly ITypeDefinition _uintDefinition =
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "uint");
+
+
+        private static readonly ITypeDefinition _shortDefinition =
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "short");
+
+        private static readonly ITypeDefinition _ushortDefinition =
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ushort");
+
+        private static readonly ITypeDefinition _longDefinition =
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "long");
+
+        private static readonly ITypeDefinition _ulongDefinition =
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ulong");
+
         private static readonly ITypeDefinition _doubleDefinition =
             new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "double");
-        
+
+        private static readonly ITypeDefinition _decimalDefinition =
+            new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "decimal");
+
         private static readonly ITypeDefinition _boolDefinition =
             new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "bool");
         
@@ -126,6 +145,36 @@ namespace CSharpAuthor
             if (type == typeof(int))
             {
                 typeDefinition = _intDefinition;
+                return true;
+            }
+
+            if (type == typeof(uint))
+            {
+                typeDefinition = _uintDefinition;
+                return true;
+            }
+
+            if (type == typeof(short))
+            {
+                typeDefinition = _shortDefinition;
+                return true;
+            }
+
+            if (type == typeof(ushort))
+            {
+                typeDefinition = _ushortDefinition;
+                return true;
+            }
+
+            if (type == typeof(long))
+            {
+                typeDefinition = _longDefinition;
+                return true;
+            }
+
+            if (type == typeof(ulong))
+            {
+                typeDefinition = _ulongDefinition;
                 return true;
             }
 
