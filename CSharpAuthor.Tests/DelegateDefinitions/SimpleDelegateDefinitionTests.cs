@@ -25,7 +25,7 @@ namespace CSharpAuthor.Tests.DelegateDefinitions
 
             var definitionString = outputContext.Output();
 
-            Assert.Equal(SimpleDelegateDefinitionString, definitionString);
+            AssertEqual.WithoutNewLine(SimpleDelegateDefinitionString, definitionString);
         }
 
         private const string SimpleDelegateDefinitionString = 
