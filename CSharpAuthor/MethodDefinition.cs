@@ -51,12 +51,12 @@ namespace CSharpAuthor
             return parameter;
         }
 
-        public void NewLine()
+        public virtual void NewLine()
         {
             AddStatement("");
         }
 
-        public OpenScopeComponent OpenScope()
+        public virtual OpenScopeComponent OpenScope()
         {
             var openScope = new OpenScopeComponent();
 
@@ -65,7 +65,7 @@ namespace CSharpAuthor
             return openScope;
         }
 
-        public CloseScopeComponent CloseScope()
+        public virtual CloseScopeComponent CloseScope()
         {
             var closeScope = new CloseScopeComponent();
 
@@ -74,7 +74,7 @@ namespace CSharpAuthor
             return closeScope;
         }
 
-        public StatementOutputComponent AddStatement(string statement, params object[] types)
+        public virtual StatementOutputComponent AddStatement(string statement, params object[] types)
         {
             var typeDefinitions = new List<ITypeDefinition>();
 
@@ -158,7 +158,7 @@ namespace CSharpAuthor
             }
         }
 
-        private void WriteMethodBody(IOutputContext outputContext)
+        protected virtual void WriteMethodBody(IOutputContext outputContext)
         {
             outputContext.OpenScope();
 
@@ -179,7 +179,7 @@ namespace CSharpAuthor
             outputContext.WriteSpace();
 
             outputContext.Write(Name);
-
+            
             outputContext.Write("(");
 
             for (var i = 0; i < parameters.Count; i++)
@@ -192,7 +192,14 @@ namespace CSharpAuthor
                 parameters[i].WriteOutput(outputContext);
             }
 
-            outputContext.WriteLine(")");
+            outputContext.Write(")");
+
+            WriteEndOfMethodSignature(outputContext);
+        }
+
+        protected virtual void WriteEndOfMethodSignature(IOutputContext outputContext)
+        {
+            outputContext.WriteLine();
         }
 
         protected virtual void WriteAccessModifier(IOutputContext outputContext)
