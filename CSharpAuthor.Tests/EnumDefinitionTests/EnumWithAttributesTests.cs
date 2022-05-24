@@ -29,7 +29,7 @@ namespace CSharpAuthor.Tests.EnumDefinitionTests
 
             var enumDefString = outputContext.Output();
 
-            Assert.Equal(AttributedEnum, enumDefString);
+            AssertEqual.WithoutNewLine(AttributedEnum, enumDefString);
         }
 
         private const string AttributedEnum =

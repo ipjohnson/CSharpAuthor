@@ -24,7 +24,7 @@ namespace CSharpAuthor.Tests.EnumDefinitionTests
 
             var enumDefString = outputContext.Output();
 
-            Assert.Equal(SimpleIntEnum, enumDefString);
+            AssertEqual.WithoutNewLine(SimpleIntEnum, enumDefString);
         }
 
         private const string SimpleIntEnum =
