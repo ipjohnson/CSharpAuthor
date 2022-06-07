@@ -18,7 +18,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.WriteOutput(context);
 
-            Assert.Equal(PropertyDefinitionOutput, context.Output());
+            AssertEqual.WithoutNewLine(PropertyDefinitionOutput, context.Output());
         }
 
         private const string PropertyDefinitionOutput =
@@ -38,7 +38,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.WriteOutput(context);
 
-            Assert.Equal(LambdaGetDefinitionOutput, context.Output());
+            AssertEqual.WithoutNewLine(LambdaGetDefinitionOutput, context.Output());
         }
 
         private const string LambdaGetDefinitionOutput =
@@ -60,7 +60,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.WriteOutput(context);
 
-            Assert.Equal(LambdaGetWithSetDefinitionOutput, context.Output());
+            AssertEqual.WithoutNewLine(LambdaGetWithSetDefinitionOutput, context.Output());
         }
 
         private const string LambdaGetWithSetDefinitionOutput =
@@ -84,7 +84,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.WriteOutput(context);
 
-            Assert.Equal(GetSetDefinitionOutput, context.Output());
+            AssertEqual.WithoutNewLine(GetSetDefinitionOutput, context.Output());
         }
 
         private const string GetSetDefinitionOutput =
@@ -116,7 +116,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.WriteOutput(context);
 
-            Assert.Equal(PrivateStaticGetSetDefinitionOutput, context.Output());
+            AssertEqual.WithoutNewLine(PrivateStaticGetSetDefinitionOutput, context.Output());
         }
 
         private const string PrivateStaticGetSetDefinitionOutput =
@@ -148,7 +148,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.WriteOutput(context);
 
-            Assert.Equal(ProtectedVirtualGetSetDefinitionOutput, context.Output());
+            AssertEqual.WithoutNewLine(ProtectedVirtualGetSetDefinitionOutput, context.Output());
         }
 
         private const string ProtectedVirtualGetSetDefinitionOutput =
@@ -180,7 +180,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.WriteOutput(context);
 
-            Assert.Equal(PublicOverrideGetSetDefinitionOutput, context.Output());
+            AssertEqual.WithoutNewLine(PublicOverrideGetSetDefinitionOutput, context.Output());
         }
 
         private const string PublicOverrideGetSetDefinitionOutput =
@@ -212,7 +212,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.WriteOutput(context);
 
-            Assert.Equal(IndexedGetSetDefinitionOutput, context.Output());
+            AssertEqual.WithoutNewLine(IndexedGetSetDefinitionOutput, context.Output());
         }
 
         private const string IndexedGetSetDefinitionOutput =
