@@ -61,9 +61,10 @@ namespace CSharpAuthor
             _output.Append(" ");
         }
 
-        public void WriteIndent()
+        public void WriteIndent(string text = "")
         {
             _output.Append(IndentString);
+            _output.Append(text);
         }
 
         public string Output()

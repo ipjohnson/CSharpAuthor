@@ -33,7 +33,14 @@ namespace CSharpAuthor
         }
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {
-            outputContext.WriteIndentedLine(_statement);
+            if (Indented)
+            {
+                outputContext.WriteIndentedLine(_statement);
+            }
+            else
+            {
+                outputContext.Write(_statement);
+            }
 
             if (_typeDefinitions != null)
             {

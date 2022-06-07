@@ -6,8 +6,8 @@ namespace CSharpAuthor
 {
     public class MethodDefinition : BaseOutputComponent
     {
-        private readonly List<ParameterDefinition> parameters = new List<ParameterDefinition>();
-        private readonly List<IOutputComponent> statements = new List<IOutputComponent>();
+        protected readonly List<ParameterDefinition> ParameterList = new List<ParameterDefinition>();
+        protected readonly List<IOutputComponent> StatementList = new List<IOutputComponent>();
         
         private ITypeDefinition returnType;
         private int localVariableNameCount = 1;
@@ -21,9 +21,11 @@ namespace CSharpAuthor
 
         public ITypeDefinition ReturnType => returnType;
 
-        public IReadOnlyList<ParameterDefinition> Parameters => parameters;
+        public IReadOnlyList<ParameterDefinition> Parameters => ParameterList;
 
         public string NextLocalVariableName => "localVariable" + localVariableNameCount++;
+
+        public int StatementCount => StatementList.Count;
 
         public MethodDefinition SetReturnType(Type type)
         {
@@ -46,7 +48,7 @@ namespace CSharpAuthor
         {
             var parameter = new ParameterDefinition(typeDefinition, name);
 
-            parameters.Add(parameter);
+            ParameterList.Add(parameter);
 
             return parameter;
         }
@@ -60,7 +62,7 @@ namespace CSharpAuthor
         {
             var openScope = new OpenScopeComponent();
 
-            statements.Add(openScope);
+            StatementList.Add(openScope);
 
             return openScope;
         }
@@ -69,7 +71,7 @@ namespace CSharpAuthor
         {
             var closeScope = new CloseScopeComponent();
 
-            statements.Add(closeScope);
+            StatementList.Add(closeScope);
 
             return closeScope;
         }
@@ -116,7 +118,7 @@ namespace CSharpAuthor
 
             statementOutput.AddTypes(typeDefinitions);
 
-            statements.Add(statementOutput);
+            StatementList.Add(statementOutput);
             
             return statementOutput;
         }
@@ -162,7 +164,7 @@ namespace CSharpAuthor
         {
             outputContext.OpenScope();
 
-            foreach (var outputComponent in statements)
+            foreach (var outputComponent in StatementList)
             {
                 outputComponent.WriteOutput(outputContext);
             }
@@ -182,14 +184,14 @@ namespace CSharpAuthor
             
             outputContext.Write("(");
 
-            for (var i = 0; i < parameters.Count; i++)
+            for (var i = 0; i < ParameterList.Count; i++)
             {
                 if (i > 0)
                 {
                     outputContext.Write(", ");
                 }
 
-                parameters[i].WriteOutput(outputContext);
+                ParameterList[i].WriteOutput(outputContext);
             }
 
             outputContext.Write(")");
@@ -221,6 +223,11 @@ namespace CSharpAuthor
             else if ((Modifiers & ComponentModifier.Virtual) == ComponentModifier.Virtual)
             {
                 outputContext.Write(KeyWords.Virtual);
+                outputContext.WriteSpace();
+            }
+            else if ((Modifiers & ComponentModifier.Override) == ComponentModifier.Override)
+            {
+                outputContext.Write(KeyWords.Override);
                 outputContext.WriteSpace();
             }
 

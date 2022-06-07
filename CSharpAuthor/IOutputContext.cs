@@ -21,7 +21,7 @@ namespace CSharpAuthor
 
         void WriteSpace();
 
-        void WriteIndent();
+        void WriteIndent(string text = "");
 
         void WriteIndentedLine(string text);
 

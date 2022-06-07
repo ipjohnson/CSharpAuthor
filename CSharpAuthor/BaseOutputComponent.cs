@@ -12,7 +12,7 @@ namespace CSharpAuthor
 
         public string Comment { get; set; }
 
-
+        public bool Indented { get; set; } = true;
 
         public AttributeDefinition AddAttribute(Type type, string argumentStatement = null)
         {
@@ -66,6 +66,21 @@ namespace CSharpAuthor
         }
 
         protected abstract void WriteComponentOutput(IOutputContext outputContext);
+
+        protected string GetVirtualModifier()
+        {
+            if ((Modifiers & ComponentModifier.Virtual) == ComponentModifier.Virtual)
+            {
+                return KeyWords.Virtual;
+            }
+
+            if ((Modifiers & ComponentModifier.Override) == ComponentModifier.Override)
+            {
+                return KeyWords.Override;
+            }
+
+            return "";
+        }
 
         protected string GetAccessModifier(string defaultString)
         {

@@ -7,7 +7,6 @@ namespace CSharpAuthor
 {
     public class ClassDefinition : BaseOutputComponent
     {
-        private readonly string _name;
         private readonly List<ITypeDefinition> _baseTypes = new List<ITypeDefinition>();
         private readonly List<FieldDefinition> _fields = new List<FieldDefinition>();
         private readonly List<ConstructorDefinition> _constructors = new List<ConstructorDefinition>();
@@ -17,8 +16,10 @@ namespace CSharpAuthor
 
         public ClassDefinition(string name)
         {
-            _name = name;
+            Name = name;
         }
+
+        public string Name { get; }
 
         public int FieldCount => _fields.Count;
 
@@ -37,6 +38,18 @@ namespace CSharpAuthor
             _classes.Add(classDefinition);
 
             return classDefinition;
+        }
+
+        public PropertyDefinition AddProperty(Type type, string fieldName)
+        {
+            return AddProperty(TypeDefinition.Get(type), fieldName);
+        }
+
+        public PropertyDefinition AddProperty(ITypeDefinition type, string fieldName)
+        {
+            var propertyDefinition = new PropertyDefinition(fieldName, type);
+
+            return propertyDefinition;
         }
 
         public FieldDefinition AddField(Type type, string fieldName)
@@ -79,7 +92,7 @@ namespace CSharpAuthor
 
         public ConstructorDefinition AddConstructor()
         {
-            var definition = new ConstructorDefinition(_name);
+            var definition = new ConstructorDefinition(Name);
 
             _constructors.Add(definition);
 
@@ -168,7 +181,7 @@ namespace CSharpAuthor
             outputContext.Write(KeyWords.Class);
             outputContext.WriteSpace();
 
-            outputContext.Write(_name);
+            outputContext.Write(Name);
 
             if (_baseTypes.Count > 0)
             {
@@ -189,6 +202,5 @@ namespace CSharpAuthor
 
             outputContext.WriteLine();
         }
-
     }
 }
