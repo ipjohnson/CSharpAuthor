@@ -7,12 +7,12 @@ namespace CSharpAuthor
 {
     public class ClassDefinition : BaseOutputComponent
     {
-        private readonly List<ITypeDefinition> _baseTypes = new List<ITypeDefinition>();
-        private readonly List<FieldDefinition> _fields = new List<FieldDefinition>();
-        private readonly List<ConstructorDefinition> _constructors = new List<ConstructorDefinition>();
-        private readonly List<MethodDefinition> _methods = new List<MethodDefinition>();
-        private readonly List<PropertyDefinition> _properties = new List<PropertyDefinition>();
-        private readonly List<ClassDefinition> _classes = new List<ClassDefinition>();
+        private readonly List<ITypeDefinition> _baseTypes = new ();
+        private readonly List<FieldDefinition> _fields = new ();
+        private readonly List<ConstructorDefinition> _constructors = new ();
+        private readonly List<MethodDefinition> _methods = new ();
+        private readonly List<PropertyDefinition> _properties = new ();
+        private readonly List<ClassDefinition> _classes = new ();
 
         public ClassDefinition(string name)
         {
@@ -47,7 +47,7 @@ namespace CSharpAuthor
 
         public PropertyDefinition AddProperty(ITypeDefinition type, string fieldName)
         {
-            var propertyDefinition = new PropertyDefinition(fieldName, type);
+            var propertyDefinition = new PropertyDefinition(type, fieldName);
 
             return propertyDefinition;
         }

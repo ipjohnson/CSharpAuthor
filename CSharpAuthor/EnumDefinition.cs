@@ -6,7 +6,7 @@ namespace CSharpAuthor
 {
     public class EnumDefinition : BaseOutputComponent
     {
-        private readonly List<EnumValueDefinition> _enumValueDefinitions = new List<EnumValueDefinition>();
+        private readonly List<EnumValueDefinition> _enumValueDefinitions = new ();
         private readonly string _enumName;
 
         public EnumDefinition(string enumName)

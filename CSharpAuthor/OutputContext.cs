@@ -7,7 +7,7 @@ namespace CSharpAuthor
 {
     public class OutputContext : IOutputContext
     {
-        private readonly HashSet<string> _namespaces = new HashSet<string>();
+        private readonly HashSet<string> _namespaces = new ();
         private readonly char _indentChar;
         private readonly int _indentCharCount;
         private readonly StringBuilder _output;

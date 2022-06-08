@@ -2,7 +2,7 @@
 {
     public class PropertyDefinition : BaseOutputComponent
     {
-        public PropertyDefinition(string name, ITypeDefinition type)
+        public PropertyDefinition(ITypeDefinition type, string name)
         {
             Name = name;
             Type = type;
@@ -25,21 +25,7 @@
 
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {
-            var modifier = GetAccessModifier("public");
-            var virtualKeyword = GetVirtualModifier();
-
-            outputContext.WriteIndent($"{modifier} ");
-
-            if (!string.IsNullOrEmpty(virtualKeyword))
-            {
-                outputContext.Write(virtualKeyword);
-                outputContext.WriteSpace();
-            }
-            else if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
-            {
-                outputContext.Write(KeyWords.Static);
-                outputContext.WriteSpace();
-            }
+            WriteAccessModifiers(outputContext);
 
             outputContext.Write(Type);
             outputContext.Write($" {Name}");
@@ -86,6 +72,25 @@
             }
 
             outputContext.CloseScope();
+        }
+
+        protected virtual void WriteAccessModifiers(IOutputContext outputContext)
+        {
+            var modifier = GetAccessModifier("public");
+            var virtualKeyword = GetVirtualModifier();
+
+            outputContext.WriteIndent($"{modifier} ");
+
+            if (!string.IsNullOrEmpty(virtualKeyword))
+            {
+                outputContext.Write(virtualKeyword);
+                outputContext.WriteSpace();
+            }
+            else if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
+            {
+                outputContext.Write(KeyWords.Static);
+                outputContext.WriteSpace();
+            }
         }
     }
 }

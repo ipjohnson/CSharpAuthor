@@ -7,7 +7,7 @@ namespace CSharpAuthor
     public class CSharpFileDefinition : BaseOutputComponent
     {
         private string _namespace;
-        private List<IOutputComponent> _outputComponents = new List<IOutputComponent>();
+        private List<IOutputComponent> _outputComponents = new ();
 
         public CSharpFileDefinition(string ns = null)
         {

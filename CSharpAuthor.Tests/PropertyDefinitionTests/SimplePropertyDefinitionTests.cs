@@ -12,7 +12,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
         [Fact]
         public void PropertyDefinition()
         {
-            var propertyDefinition = new PropertyDefinition("Test", TypeDefinition.Get(typeof(int)));
+            var propertyDefinition = new PropertyDefinition( TypeDefinition.Get(typeof(int)), "Test");
 
             var context = new OutputContext();
 
@@ -28,7 +28,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
         [Fact]
         public void LambdaGetDefinition()
         {
-            var propertyDefinition = new PropertyDefinition("Test", TypeDefinition.Get(typeof(int)));
+            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
             propertyDefinition.Get.LambdaSyntax = true;
             propertyDefinition.Set = null;
@@ -48,7 +48,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
         [Fact]
         public void LambdaGetWithSetDefinition()
         {
-            var propertyDefinition = new PropertyDefinition("Test", TypeDefinition.Get(typeof(int)));
+            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
             propertyDefinition.Get.LambdaSyntax = true;
             propertyDefinition.Get.AddStatement("_value;");
@@ -74,7 +74,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
         [Fact]
         public void GetSetDefinition()
         {
-            var propertyDefinition = new PropertyDefinition("Test", TypeDefinition.Get(typeof(int)));
+            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
             
             propertyDefinition.Get.AddStatement("return _value;");
             
@@ -104,7 +104,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
         [Fact]
         public void PrivateStaticGetSetDefinition()
         {
-            var propertyDefinition = new PropertyDefinition("Test", TypeDefinition.Get(typeof(int)));
+            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
             propertyDefinition.Modifiers |= ComponentModifier.Static | ComponentModifier.Private;
 
@@ -136,7 +136,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
         [Fact]
         public void ProtectedVirtualGetSetDefinition()
         {
-            var propertyDefinition = new PropertyDefinition("Test", TypeDefinition.Get(typeof(int)));
+            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
             propertyDefinition.Modifiers |= ComponentModifier.Virtual | ComponentModifier.Protected;
 
@@ -168,7 +168,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
         [Fact]
         public void PublicOverrideGetSetDefinition()
         {
-            var propertyDefinition = new PropertyDefinition("Test", TypeDefinition.Get(typeof(int)));
+            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
             propertyDefinition.Modifiers |= ComponentModifier.Override | ComponentModifier.Public;
 
@@ -200,7 +200,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
         [Fact]
         public void IndexedGetSetDefinition()
         {
-            var propertyDefinition = new PropertyDefinition("Test", TypeDefinition.Get(typeof(int)));
+            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
             propertyDefinition.IndexType = TypeDefinition.Get(typeof(string));
 

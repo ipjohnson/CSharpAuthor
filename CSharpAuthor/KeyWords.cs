@@ -9,6 +9,8 @@
         public static string Await => "await";
         
         public static string Class => "class";
+
+        public static string Interface => "interface";
         
         public static string Override => "override";
 

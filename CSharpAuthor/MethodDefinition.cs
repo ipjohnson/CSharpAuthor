@@ -6,8 +6,8 @@ namespace CSharpAuthor
 {
     public class MethodDefinition : BaseOutputComponent
     {
-        protected readonly List<ParameterDefinition> ParameterList = new List<ParameterDefinition>();
-        protected readonly List<IOutputComponent> StatementList = new List<IOutputComponent>();
+        protected readonly List<ParameterDefinition> ParameterList = new ();
+        protected readonly List<IOutputComponent> StatementList = new ();
         
         private ITypeDefinition returnType;
         private int localVariableNameCount = 1;
