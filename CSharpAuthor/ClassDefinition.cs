@@ -196,7 +196,7 @@ namespace CSharpAuthor
 
                     var type = _baseTypes[i];
 
-                    outputContext.Write(type.Name);
+                    outputContext.Write(type);
                 }
             }
 
