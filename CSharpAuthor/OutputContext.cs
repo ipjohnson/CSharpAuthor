@@ -45,6 +45,8 @@ namespace CSharpAuthor
 
         public void Write(ITypeDefinition typeDefinition)
         {
+            AddImportNamespace(typeDefinition);
+
             typeDefinition?.WriteShortName(_output);
         }
 
