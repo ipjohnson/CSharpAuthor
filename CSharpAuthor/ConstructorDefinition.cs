@@ -2,6 +2,7 @@
 {
     public class ConstructorDefinition : MethodDefinition
     {
+        public string BaseStatement { get; set; }
 
         public ConstructorDefinition(string name) : base(name)
         {
@@ -17,6 +18,20 @@
             outputContext.WriteIndent();
             outputContext.Write(GetAccessModifier(KeyWords.Public));
             outputContext.WriteSpace();
+        }
+
+        protected override void WriteEndOfMethodSignature(IOutputContext outputContext)
+        {
+            base.WriteEndOfMethodSignature(outputContext);
+
+            if (!string.IsNullOrEmpty(BaseStatement))
+            {
+                outputContext.WriteIndent();
+                outputContext.Write(outputContext.SingleIndent);
+                outputContext.Write(" : ");
+                outputContext.Write(BaseStatement);
+                outputContext.WriteLine();
+            }
         }
     }
 }

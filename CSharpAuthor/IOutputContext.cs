@@ -5,6 +5,8 @@ namespace CSharpAuthor
 {
     public interface IOutputContext
     {
+        string SingleIndent { get; }
+
         string IndentString { get; }
 
         void IncrementIndent();

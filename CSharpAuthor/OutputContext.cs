@@ -22,6 +22,8 @@ namespace CSharpAuthor
             IndentString = "";
         }
 
+        public string SingleIndent => new (_indentChar, _indentCharCount);
+
         public string IndentString { get; private set; }
 
         public void IncrementIndent()
