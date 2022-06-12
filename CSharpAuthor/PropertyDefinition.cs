@@ -19,7 +19,7 @@
 
         public PropertyMethodDefinition? Set { get; set; }
 
-        public ITypeDefinition IndexType { get; set; }
+        public ITypeDefinition? IndexType { get; set; }
 
         public string IndexName { get; set; } = "index";
 
