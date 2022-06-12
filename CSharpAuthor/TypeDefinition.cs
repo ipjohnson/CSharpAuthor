@@ -111,7 +111,7 @@ namespace CSharpAuthor
             return new TypeDefinition(typeDefinition, type.Namespace, type.Name, type.IsArray);
         }
 
-        private static Dictionary<Type, ITypeDefinition> _knownTypes = new Dictionary<Type, ITypeDefinition>
+        private static readonly Dictionary<Type, ITypeDefinition> _knownTypes = new Dictionary<Type, ITypeDefinition>
         {
             {typeof(ulong), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ulong", false)},
             {typeof(long), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "long", false)},
@@ -125,7 +125,7 @@ namespace CSharpAuthor
             {typeof(decimal), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "decimal", false)},
             {typeof(bool), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "bool", false)},
         };
-        private static Dictionary<Type,ITypeDefinition> _knownArrayTypes = new Dictionary<Type, ITypeDefinition>
+        private static readonly Dictionary<Type,ITypeDefinition> _knownArrayTypes = new Dictionary<Type, ITypeDefinition>
         {
             {typeof(string[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string", true)},
             {typeof(int[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "int", true)},

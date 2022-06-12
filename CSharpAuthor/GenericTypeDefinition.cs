@@ -10,13 +10,13 @@ namespace CSharpAuthor
         private readonly int _hashCode;
         private readonly IReadOnlyList<ITypeDefinition> _closingTypes;
 
-        public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray) : 
+        public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray = false) : 
             this(TypeDefinitionEnum.ClassDefinition, type.GetGenericName(), type.Namespace, closeTypes, isArray)
         {
 
         }
 
-        public GenericTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string name, string ns, IReadOnlyList<ITypeDefinition> closingTypes, bool isArray)
+        public GenericTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string name, string ns, IReadOnlyList<ITypeDefinition> closingTypes, bool isArray = false)
         {
             TypeDefinitionEnum = typeDefinitionEnum;
             Name = name;

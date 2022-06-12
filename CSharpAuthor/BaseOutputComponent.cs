@@ -5,21 +5,21 @@ namespace CSharpAuthor
 {
     public abstract class BaseOutputComponent : IOutputComponent
     {
-        protected List<AttributeDefinition> AttributeDefinitions;
-        protected List<string> UsingNamespaces;
+        protected List<AttributeDefinition>? AttributeDefinitions;
+        protected List<string>? UsingNamespaces;
 
         public ComponentModifier Modifiers { get; set; } = ComponentModifier.None;
 
-        public string Comment { get; set; }
+        public string? Comment { get; set; }
 
         public bool Indented { get; set; } = true;
 
-        public AttributeDefinition AddAttribute(Type type, string argumentStatement = null)
+        public AttributeDefinition AddAttribute(Type type, string argumentStatement = "")
         {
             return AddAttribute(TypeDefinition.Get(type), argumentStatement);
         }
 
-        public AttributeDefinition AddAttribute(ITypeDefinition typeDefinition, string argumentStatement  = null)
+        public AttributeDefinition AddAttribute(ITypeDefinition typeDefinition, string argumentStatement  = "")
         {
             if (AttributeDefinitions == null)
             {

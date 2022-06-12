@@ -40,6 +40,8 @@ namespace CSharpAuthor
             {
                 outputContext.AddImportNamespaces(_typeDefinitions);
             }
+            
         }
+        public static implicit operator StatementOutputComponent(string statement) => new (statement);
     }
 }

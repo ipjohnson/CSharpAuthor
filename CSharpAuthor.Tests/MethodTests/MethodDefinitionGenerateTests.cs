@@ -14,7 +14,8 @@ namespace CSharpAuthor.Tests.MethodTests
                 .SetReturnType(typeof(string));
 
             methodDefinition.AddStatement("return \"Hello World\";");
-
+            var block = methodDefinition.ForEach("var test in blah");
+            
             var context = new OutputContext();
 
             methodDefinition.WriteOutput(context);

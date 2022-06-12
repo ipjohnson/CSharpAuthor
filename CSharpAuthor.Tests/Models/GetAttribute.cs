@@ -8,6 +8,6 @@ namespace CSharpAuthor.Tests.Models
 {
     public class GetAttribute : Attribute
     {
-        public string Path { get; set; }
+        public string? Path { get; set; }
     }
 }

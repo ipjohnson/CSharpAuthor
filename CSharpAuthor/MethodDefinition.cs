@@ -4,14 +4,12 @@ using System.Linq;
 
 namespace CSharpAuthor
 {
-    public class MethodDefinition : BaseOutputComponent
+    public class MethodDefinition : BaseBlockDefinition
     {
         protected readonly List<ParameterDefinition> ParameterList = new ();
-        protected readonly List<IOutputComponent> StatementList = new ();
         
         private ITypeDefinition? _returnType;
-        private int _localVariableNameCount = 1;
-
+        
         public MethodDefinition(string name)
         {
             Name = name;
@@ -23,10 +21,7 @@ namespace CSharpAuthor
 
         public IReadOnlyList<ParameterDefinition> Parameters => ParameterList;
 
-        public string NextLocalVariableName => "localVariable" + _localVariableNameCount++;
-
-        public int StatementCount => StatementList.Count;
-
+        
         public MethodDefinition SetReturnType(Type type)
         {
             return SetReturnType(TypeDefinition.Get(type));
@@ -52,76 +47,6 @@ namespace CSharpAuthor
 
             return parameter;
         }
-
-        public virtual void NewLine()
-        {
-            AddStatement("");
-        }
-
-        public virtual OpenScopeComponent OpenScope()
-        {
-            var openScope = new OpenScopeComponent();
-
-            StatementList.Add(openScope);
-
-            return openScope;
-        }
-
-        public virtual CloseScopeComponent CloseScope()
-        {
-            var closeScope = new CloseScopeComponent();
-
-            StatementList.Add(closeScope);
-
-            return closeScope;
-        }
-
-        public virtual StatementOutputComponent AddStatement(string statement, params object[] types)
-        {
-            var typeDefinitions = new List<ITypeDefinition>();
-
-            if (types != null && types.Length > 0)
-            {
-                for (var index = 0; index < types.Length; index++)
-                {
-                    var value = types[index];
-                    var typeSwapString = "{arg" + (index + 1) + "}";
-
-                    if (statement.IndexOf(typeSwapString, StringComparison.CurrentCulture) >= 0)
-                    {
-
-                        if (value is Type typeValue)
-                        {
-                            value = TypeDefinition.Get(typeValue);
-                        }
-
-                        if (value is ITypeDefinition typeDefinition)
-                        {
-                            typeDefinitions.Add(typeDefinition);
-                        }
-
-                        statement = statement.Replace(typeSwapString, GetObjectStringValue(value));
-                    }
-                    else
-                    {
-                        var rawSwapString = $"[arg{index + 1}]";
-
-                        if (statement.IndexOf(rawSwapString, StringComparison.CurrentCulture) >= 0)
-                        {
-                            statement = statement.Replace(rawSwapString, value.ToString());
-                        }
-                    }
-                }
-            }
-
-            var statementOutput = new StatementOutputComponent(statement);
-
-            statementOutput.AddTypes(typeDefinitions);
-
-            StatementList.Add(statementOutput);
-            
-            return statementOutput;
-        }
         
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {
@@ -130,26 +55,6 @@ namespace CSharpAuthor
             WriteMethodSignature(outputContext);
 
             WriteMethodBody(outputContext);
-        }
-
-        private string GetObjectStringValue(object value)
-        {
-            if (value is Type type)
-            {
-                value = TypeDefinition.Get(type);
-            }
-
-            if (value is ITypeDefinition typeDefinition)
-            {
-                return typeDefinition.GetShortName();
-            }
-            
-            if (value is string stringValue)
-            {
-                return "\"" + stringValue + "\"";
-            }
-
-            return value.ToString();
         }
 
         private void ProcessNamespaces(IOutputContext outputContext)
@@ -162,14 +67,7 @@ namespace CSharpAuthor
 
         protected virtual void WriteMethodBody(IOutputContext outputContext)
         {
-            outputContext.OpenScope();
-
-            foreach (var outputComponent in StatementList)
-            {
-                outputComponent.WriteOutput(outputContext);
-            }
-            
-            outputContext.CloseScope();
+            WriteBlock(outputContext);
         }
 
         protected virtual void WriteMethodSignature(IOutputContext outputContext)
