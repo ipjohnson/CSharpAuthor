@@ -9,8 +9,8 @@ namespace CSharpAuthor
         protected readonly List<ParameterDefinition> ParameterList = new ();
         protected readonly List<IOutputComponent> StatementList = new ();
         
-        private ITypeDefinition returnType;
-        private int localVariableNameCount = 1;
+        private ITypeDefinition? _returnType;
+        private int _localVariableNameCount = 1;
 
         public MethodDefinition(string name)
         {
@@ -19,11 +19,11 @@ namespace CSharpAuthor
 
         public string Name { get; }
 
-        public ITypeDefinition ReturnType => returnType;
+        public ITypeDefinition? ReturnType => _returnType;
 
         public IReadOnlyList<ParameterDefinition> Parameters => ParameterList;
 
-        public string NextLocalVariableName => "localVariable" + localVariableNameCount++;
+        public string NextLocalVariableName => "localVariable" + _localVariableNameCount++;
 
         public int StatementCount => StatementList.Count;
 
@@ -34,7 +34,7 @@ namespace CSharpAuthor
 
         public MethodDefinition SetReturnType(ITypeDefinition type)
         {
-            returnType = type;
+            _returnType = type;
 
             return this;
         }
@@ -154,9 +154,9 @@ namespace CSharpAuthor
 
         private void ProcessNamespaces(IOutputContext outputContext)
         {
-            if (returnType != null)
+            if (_returnType != null)
             {
-                outputContext.AddImportNamespace(returnType);
+                outputContext.AddImportNamespace(_returnType);
             }
         }
 
@@ -240,9 +240,9 @@ namespace CSharpAuthor
 
         protected virtual void WriteReturnType(IOutputContext outputContext)
         {
-            if (returnType != null)
+            if (_returnType != null)
             {
-                outputContext.Write(returnType);
+                outputContext.Write(_returnType);
             }
             else
             {

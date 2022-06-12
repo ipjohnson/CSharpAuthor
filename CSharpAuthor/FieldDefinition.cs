@@ -12,7 +12,7 @@
 
         public string Name { get; }
 
-        public string InitializeValue { get; set; }
+        public string? InitializeValue { get; set; }
         
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {

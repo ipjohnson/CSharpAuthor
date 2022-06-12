@@ -4,8 +4,8 @@ namespace CSharpAuthor
 {
     public class StatementOutputComponent : BaseOutputComponent
     {
-        private string _statement;
-        private List<ITypeDefinition> _typeDefinitions;
+        private readonly string _statement;
+        private List<ITypeDefinition>? _typeDefinitions;
 
         public StatementOutputComponent(string statement)
         {
@@ -14,20 +14,14 @@ namespace CSharpAuthor
 
         public void AddType(ITypeDefinition typeDefinition)
         {
-            if (_typeDefinitions == null)
-            {
-                _typeDefinitions = new List<ITypeDefinition>();
-            }
+            _typeDefinitions ??= new List<ITypeDefinition>();
 
             _typeDefinitions.Add(typeDefinition);
         }
 
         public void AddTypes(IEnumerable<ITypeDefinition> typeDefinitions)
         {
-            if (_typeDefinitions == null)
-            {
-                _typeDefinitions = new List<ITypeDefinition>();
-            }
+            _typeDefinitions ??= new List<ITypeDefinition>();
 
             _typeDefinitions.AddRange(typeDefinitions);
         }

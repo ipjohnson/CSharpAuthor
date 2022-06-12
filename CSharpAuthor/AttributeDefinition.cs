@@ -7,14 +7,14 @@ namespace CSharpAuthor
     public class AttributeDefinition : BaseOutputComponent
     {
         private const string AttributePostfix = "Attribute";
-        private ITypeDefinition _attributeType;
+        private readonly ITypeDefinition _attributeType;
 
         public AttributeDefinition(ITypeDefinition attributeType)
         {
             _attributeType = attributeType;
         }
 
-        public string ArgumentStatement { get; set; }
+        public string? ArgumentStatement { get; set; }
 
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {

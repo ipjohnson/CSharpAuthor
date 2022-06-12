@@ -6,10 +6,10 @@ namespace CSharpAuthor
 {
     public class CSharpFileDefinition : BaseOutputComponent
     {
-        private string _namespace;
-        private List<IOutputComponent> _outputComponents = new ();
+        private readonly string _namespace;
+        private readonly List<IOutputComponent> _outputComponents = new ();
 
-        public CSharpFileDefinition(string ns = null)
+        public CSharpFileDefinition(string ns = "")
         {
             _namespace = ns;
         }
