@@ -17,7 +17,7 @@
 
         public PropertyMethodDefinition Get { get; }
 
-        public PropertyMethodDefinition Set { get; set; }
+        public PropertyMethodDefinition? Set { get; set; }
 
         public ITypeDefinition IndexType { get; set; }
 
@@ -53,7 +53,8 @@
                     return;
                 }
             }
-            else if (Get.StatementCount == 0 && Set.StatementCount == 0)
+            else if (Get.StatementCount == 0 && 
+                     Set is { StatementCount: 0 })
             {
                 outputContext.WriteLine(" { get; set; }");
                 return;
