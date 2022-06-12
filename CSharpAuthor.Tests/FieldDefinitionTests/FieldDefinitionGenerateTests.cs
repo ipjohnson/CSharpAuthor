@@ -7,7 +7,7 @@ namespace CSharpAuthor.Tests.FieldDefinitionTests
         [Fact]
         public void WriteFieldTest()
         {
-            var fieldDefinition = new FieldDefinition(TypeDefinition.Get(typeof(string)), "field");
+            var fieldDefinition = new FieldDefinition(TypeDefinition.Get(typeof(string[])), "field");
 
             var context = new OutputContext();
 
@@ -21,7 +21,7 @@ namespace CSharpAuthor.Tests.FieldDefinitionTests
         }
 
         private static readonly string expectedWriteFieldString = 
-@"    private string field;
+@"    private string[] field;
 ";
         [Fact]
         public void WriteFieldWithInitValue()

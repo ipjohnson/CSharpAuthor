@@ -10,18 +10,19 @@ namespace CSharpAuthor
         private readonly int _hashCode;
         private readonly IReadOnlyList<ITypeDefinition> _closingTypes;
 
-        public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes) : 
-            this(TypeDefinitionEnum.ClassDefinition, type.GetGenericName(), type.Namespace, closeTypes)
+        public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray) : 
+            this(TypeDefinitionEnum.ClassDefinition, type.GetGenericName(), type.Namespace, closeTypes, isArray)
         {
 
         }
 
-        public GenericTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string name, string ns, IReadOnlyList<ITypeDefinition> closingTypes)
+        public GenericTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string name, string ns, IReadOnlyList<ITypeDefinition> closingTypes, bool isArray)
         {
             TypeDefinitionEnum = typeDefinitionEnum;
             Name = name;
             Namespace = ns;
             _closingTypes = closingTypes;
+            IsArray = isArray;
         }
         
         public TypeDefinitionEnum TypeDefinitionEnum { get; }
@@ -29,6 +30,8 @@ namespace CSharpAuthor
         public string Name { get; }
 
         public string Namespace { get; }
+
+        public bool IsArray { get; }
 
         public IEnumerable<string> KnownNamespaces
         {
@@ -67,6 +70,11 @@ namespace CSharpAuthor
             }
 
             builder.Append('>');
+
+            if (IsArray)
+            {
+                builder.Append("[]");
+            }
         }
         
     }

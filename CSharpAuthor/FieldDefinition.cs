@@ -39,7 +39,9 @@
                 initValue = $" = {InitializeValue}";
             }
 
-            outputContext.WriteIndentedLine($"{accessModifier} {readonlyString}{staticString}{_typeDefinition.Name} {Name}{initValue};");
+            outputContext.WriteIndent($"{accessModifier} {readonlyString}{staticString}");
+            outputContext.Write(_typeDefinition);
+            outputContext.WriteLine($" {Name}{initValue};");
         }
     }
 }

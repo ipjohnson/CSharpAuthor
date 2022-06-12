@@ -9,6 +9,8 @@ namespace CSharpAuthor
     {
         TypeDefinitionEnum TypeDefinitionEnum { get; }
 
+        bool IsArray { get; }
+
         string Name { get; }
 
         string Namespace { get; }
