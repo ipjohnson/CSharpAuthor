@@ -12,6 +12,18 @@ namespace CSharpAuthor
             _statement = statement;
         }
 
+        public static IOutputComponent Get(object? value, bool indented = false)
+        {
+            return value switch
+            {
+                null => new StatementOutputComponent("") { Indented = indented },
+
+                IOutputComponent outputComponent => outputComponent,
+
+                _ => new StatementOutputComponent(value.ToString()) { Indented = indented }
+            };
+        }
+
         public void AddType(ITypeDefinition typeDefinition)
         {
             _typeDefinitions ??= new List<ITypeDefinition>();
@@ -25,6 +37,7 @@ namespace CSharpAuthor
 
             _typeDefinitions.AddRange(typeDefinitions);
         }
+        
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {
             if (Indented)

@@ -76,6 +76,5 @@ namespace CSharpAuthor
                 builder.Append("[]");
             }
         }
-        
     }
 }

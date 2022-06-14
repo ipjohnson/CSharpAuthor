@@ -43,9 +43,9 @@ namespace CSharpAuthor
 
         private class CatchBlock : BaseBlockDefinition
         {
-            private ITypeDefinition _exceptionType;
-            private string _name;
-            private IOutputComponent? _when;
+            private readonly ITypeDefinition _exceptionType;
+            private readonly string _name;
+            private readonly IOutputComponent? _when;
 
             public CatchBlock(ITypeDefinition exceptionType, string name, IOutputComponent? when)
             {

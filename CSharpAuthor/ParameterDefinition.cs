@@ -1,23 +1,26 @@
 ﻿namespace CSharpAuthor
 {
-    public class ParameterDefinition : BaseOutputComponent
+    public class ParameterDefinition : InstanceDefinition
     {
         public ParameterDefinition(ITypeDefinition typeDefinition, string name)
+            : base(name)
         {
             TypeDefinition = typeDefinition;
-            Name = name;
         }
-
-        public string Name { get; }
 
         public ITypeDefinition TypeDefinition { get; }
 
-        protected override void WriteComponentOutput(IOutputContext outputContext)
+        public void WriteWithSignature(IOutputContext outputContext)
         {
             outputContext.AddImportNamespace(TypeDefinition);
 
-            outputContext.Write(TypeDefinition.Name);
+            outputContext.Write(TypeDefinition);
             outputContext.WriteSpace();
+            outputContext.Write(Name);
+        }
+
+        protected override void WriteComponentOutput(IOutputContext outputContext)
+        {
             outputContext.Write(Name);
         }
     }

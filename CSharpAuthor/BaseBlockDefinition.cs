@@ -106,10 +106,10 @@ namespace CSharpAuthor
         {
             AddStatement($"return {returnValue};", values);
         }
-
-        public ForEachDefinition ForEach(string foreachString)
+        
+        public ForEachDefinition ForEach(string variable, IOutputComponent enumerableComponent)
         {
-            return Add(new ForEachDefinition(new StatementOutputComponent(foreachString){ Indented = false}));
+            return Add(new ForEachDefinition(variable, enumerableComponent));
         }
 
         public IfElseLogicBlockDefinition If(string ifStatement)
@@ -120,6 +120,11 @@ namespace CSharpAuthor
         public ToClass Assign(string value)
         {
             return new ToClass(c => StatementList.Add(c), new StatementOutputComponent(value) { Indented = false });
+        }
+        
+        public ToClass Assign(IOutputComponent value)
+        {
+            return new ToClass(c => StatementList.Add(c), value);
         }
 
         public class ToClass
@@ -137,6 +142,18 @@ namespace CSharpAuthor
             {
                 _addStatement(new AssignmentStatement(_valueComponent,
                     new StatementOutputComponent(destination) { Indented = false }));
+            }
+
+            public InstanceDefinition ToVar(string name)
+            {
+                var newLocalVariableDefinition = new InstanceDefinition(name){ Indented = false };
+
+                var assignmentStatement = 
+                    new AssignmentStatement(_valueComponent, newLocalVariableDefinition) { Indented = false };
+
+                _addStatement(new VarStatement(assignmentStatement));
+
+                return newLocalVariableDefinition;
             }
         }
 

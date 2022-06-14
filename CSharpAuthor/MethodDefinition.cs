@@ -89,7 +89,7 @@ namespace CSharpAuthor
                     outputContext.Write(", ");
                 }
 
-                ParameterList[i].WriteOutput(outputContext);
+                ParameterList[i].WriteWithSignature(outputContext);
             }
 
             outputContext.Write(")");

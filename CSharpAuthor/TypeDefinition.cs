@@ -113,6 +113,7 @@ namespace CSharpAuthor
 
         private static readonly Dictionary<Type, ITypeDefinition> _knownTypes = new Dictionary<Type, ITypeDefinition>
         {
+            {typeof(object), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "object", false)},
             {typeof(ulong), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ulong", false)},
             {typeof(long), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "long", false)},
             {typeof(uint), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "uint", false)},
@@ -127,6 +128,7 @@ namespace CSharpAuthor
         };
         private static readonly Dictionary<Type,ITypeDefinition> _knownArrayTypes = new Dictionary<Type, ITypeDefinition>
         {
+            {typeof(object[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "object", true)},
             {typeof(string[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string", true)},
             {typeof(int[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "int", true)},
             {typeof(uint[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "uint", true)},

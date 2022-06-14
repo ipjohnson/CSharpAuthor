@@ -54,9 +54,13 @@ namespace CSharpAuthor.Tests.MethodTests
         {
             var method = new MethodDefinition("Test");
 
-            var forEachBlock = method.ForEach("var someValue in Collection");
+            var collection = method.AddParameter(typeof(IEnumerable<object>), "collection");
 
-            forEachBlock.Assign("someValue.ToString()").To("var someField");
+            var forEachBlock = method.ForEach("someValue", collection);
+
+            var someValue = forEachBlock.Instance;
+            
+            forEachBlock.Assign(someValue.Invoke("ToString")).ToVar("someField");
 
             var outputContext = new OutputContext();
 
@@ -66,9 +70,9 @@ namespace CSharpAuthor.Tests.MethodTests
         }
 
         private const string ForEachExpected = 
-@"public void Test()
+@"public void Test(IEnumerable<object> collection)
 {
-    foreach(var someValue in Collection)
+    foreach(var someValue in collection)
     {
         var someField = someValue.ToString();
     }
@@ -112,5 +116,11 @@ namespace CSharpAuthor.Tests.MethodTests
     }
 }
 ";
+
+        [Fact]
+        public void AssignToTest()
+        {
+
+        }
     }
 }

@@ -6,8 +6,8 @@ namespace CSharpAuthor
 {
     public class AssignmentStatement : BaseOutputComponent
     {
-        private IOutputComponent _valueComponent;
-        private IOutputComponent _destinationComponent;
+        private readonly IOutputComponent _valueComponent;
+        private readonly IOutputComponent _destinationComponent;
 
         public AssignmentStatement(IOutputComponent valueComponent, IOutputComponent destinationComponent)
         {
@@ -17,7 +17,11 @@ namespace CSharpAuthor
 
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {
-            outputContext.WriteIndent();
+            if (Indented)
+            {
+                outputContext.WriteIndent();
+            }
+            
             _destinationComponent.WriteOutput(outputContext);
             outputContext.Write(" = ");
             _valueComponent.WriteOutput(outputContext);
