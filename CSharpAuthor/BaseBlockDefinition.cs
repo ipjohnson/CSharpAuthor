@@ -138,10 +138,15 @@ namespace CSharpAuthor
                 _valueComponent = valueComponent;
             }
 
+            public void To(IOutputComponent outputComponent)
+            {
+
+                _addStatement(new AssignmentStatement(_valueComponent, outputComponent));
+            }
+
             public void To(string destination)
             {
-                _addStatement(new AssignmentStatement(_valueComponent,
-                    new StatementOutputComponent(destination) { Indented = false }));
+                To(new StatementOutputComponent(destination) { Indented = false });
             }
 
             public InstanceDefinition ToVar(string name)
