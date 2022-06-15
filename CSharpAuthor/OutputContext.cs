@@ -15,8 +15,8 @@ namespace CSharpAuthor
 
         public OutputContext(char indentChar = ' ', int indentCharCount = 4)
         {
-            this._indentChar = indentChar;
-            this._indentCharCount = indentCharCount;
+            _indentChar = indentChar;
+            _indentCharCount = indentCharCount;
 
             _output = new StringBuilder();
             IndentString = "";

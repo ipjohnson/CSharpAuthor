@@ -17,7 +17,7 @@ namespace CSharpAuthor.Tests.ClassDefinitionTests
             var property = classDefinition.AddProperty(typeof(int), "IntValue");
 
             property.Get.LambdaSyntax = true;
-            property.Get.AddStatement("_intValue");
+            property.Get.AddCode("_intValue");
 
             var outputContext = new OutputContext();
 

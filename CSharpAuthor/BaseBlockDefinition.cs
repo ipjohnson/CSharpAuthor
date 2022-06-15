@@ -17,7 +17,14 @@ namespace CSharpAuthor
             return component;
         }
 
-        public virtual StatementOutputComponent AddStatement(string statement, params object[] types)
+        public virtual IOutputComponent AddIndentedStatement(IOutputComponent component)
+        {
+            StatementList.Add(new IndentedStatementComponent(component));
+
+            return component;
+        }
+
+        public virtual CodeOutputComponent AddCode(string statement, params object[] types)
         {
             var typeDefinitions = new List<ITypeDefinition>();
 
@@ -55,7 +62,7 @@ namespace CSharpAuthor
                 }
             }
 
-            var statementOutput = new StatementOutputComponent(statement);
+            var statementOutput = new CodeOutputComponent(statement);
 
             statementOutput.AddTypes(typeDefinitions);
 
@@ -84,7 +91,7 @@ namespace CSharpAuthor
         
         public virtual void NewLine()
         {
-            AddStatement("");
+            AddCode("");
         }
 
         public TryCatchBlock Try()
@@ -104,7 +111,7 @@ namespace CSharpAuthor
 
         public void Return(string returnValue, params object[] values)
         {
-            AddStatement($"return {returnValue};", values);
+            AddCode($"return {returnValue};", values);
         }
         
         public ForEachDefinition ForEach(string variable, IOutputComponent enumerableComponent)
@@ -114,12 +121,12 @@ namespace CSharpAuthor
 
         public IfElseLogicBlockDefinition If(string ifStatement)
         {
-            return Add(new IfElseLogicBlockDefinition(new StatementOutputComponent(ifStatement) { Indented = false }));
+            return Add(new IfElseLogicBlockDefinition(new CodeOutputComponent(ifStatement) { Indented = false }));
         }
 
         public ToClass Assign(string value)
         {
-            return new ToClass(c => StatementList.Add(c), new StatementOutputComponent(value) { Indented = false });
+            return new ToClass(c => StatementList.Add(c), new CodeOutputComponent(value) { Indented = false });
         }
         
         public ToClass Assign(IOutputComponent value)
@@ -146,7 +153,7 @@ namespace CSharpAuthor
 
             public void To(string destination)
             {
-                To(new StatementOutputComponent(destination) { Indented = false });
+                To(new CodeOutputComponent(destination) { Indented = false });
             }
 
             public InstanceDefinition ToVar(string name)

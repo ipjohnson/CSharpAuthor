@@ -4,16 +4,18 @@ using System.Text;
 
 namespace CSharpAuthor
 {
-    public class InvokeDefinition : BaseOutputComponent
+    public class InvokeGenericDefinition : BaseOutputComponent
     {
         private readonly string _instance;
         private readonly string _methodName;
-        private readonly List<IOutputComponent> _arguments = new ();
+        private readonly IReadOnlyList<ITypeDefinition> _genericArguments;
+        private readonly List<IOutputComponent> _arguments = new();
 
-        public InvokeDefinition(string instance, string methodName)
+        public InvokeGenericDefinition(string instance, string methodName, IReadOnlyList<ITypeDefinition> genericArguments) 
         {
             _instance = instance;
             _methodName = methodName;
+            _genericArguments = genericArguments;
         }
 
         public void AddArgument(object argument)
@@ -32,10 +34,13 @@ namespace CSharpAuthor
             {
                 outputContext.WriteIndent();
             }
-            
+
             outputContext.Write(_instance);
             outputContext.Write(".");
             outputContext.Write(_methodName);
+            outputContext.Write("<");
+            _genericArguments.OutputCommaSeparatedList(outputContext);
+            outputContext.Write(">");
             outputContext.Write("(");
 
             _arguments.OutputCommaSeparatedList(outputContext);

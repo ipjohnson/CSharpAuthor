@@ -26,7 +26,7 @@ namespace CSharpAuthor
                 outputContext.Write(" => ");
                 var statement = StatementList.First();
 
-                if (statement is StatementOutputComponent statementOutput)
+                if (statement is CodeOutputComponent statementOutput)
                 {
                     statementOutput.Indented = false;
                 }

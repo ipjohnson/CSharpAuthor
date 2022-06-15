@@ -33,7 +33,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
             propertyDefinition.Get.LambdaSyntax = true;
             propertyDefinition.Set = null;
 
-            propertyDefinition.Get.AddStatement("10;");
+            propertyDefinition.Get.AddCode("10;");
             var context = new OutputContext();
 
             propertyDefinition.WriteOutput(context);
@@ -51,10 +51,10 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
             var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
             propertyDefinition.Get.LambdaSyntax = true;
-            propertyDefinition.Get.AddStatement("_value;");
+            propertyDefinition.Get.AddCode("_value;");
 
             propertyDefinition.Set.LambdaSyntax = true;
-            propertyDefinition.Set.AddStatement("_value = value;");
+            propertyDefinition.Set.AddCode("_value = value;");
 
             var context = new OutputContext();
 
@@ -76,9 +76,9 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
         {
             var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
             
-            propertyDefinition.Get.AddStatement("return _value;");
+            propertyDefinition.Get.AddCode("return _value;");
             
-            propertyDefinition.Set.AddStatement("_value = value;");
+            propertyDefinition.Set.AddCode("_value = value;");
 
             var context = new OutputContext();
 
@@ -108,9 +108,9 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.Modifiers |= ComponentModifier.Static | ComponentModifier.Private;
 
-            propertyDefinition.Get.AddStatement("return _value;");
+            propertyDefinition.Get.AddCode("return _value;");
 
-            propertyDefinition.Set.AddStatement("_value = value;");
+            propertyDefinition.Set.AddCode("_value = value;");
 
             var context = new OutputContext();
 
@@ -140,9 +140,9 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.Modifiers |= ComponentModifier.Virtual | ComponentModifier.Protected;
 
-            propertyDefinition.Get.AddStatement("return _value;");
+            propertyDefinition.Get.AddCode("return _value;");
 
-            propertyDefinition.Set.AddStatement("_value = value;");
+            propertyDefinition.Set.AddCode("_value = value;");
 
             var context = new OutputContext();
 
@@ -172,9 +172,9 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.Modifiers |= ComponentModifier.Override | ComponentModifier.Public;
 
-            propertyDefinition.Get.AddStatement("return _value;");
+            propertyDefinition.Get.AddCode("return _value;");
 
-            propertyDefinition.Set.AddStatement("_value = value;");
+            propertyDefinition.Set.AddCode("_value = value;");
 
             var context = new OutputContext();
 
@@ -204,9 +204,9 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.IndexType = TypeDefinition.Get(typeof(string));
 
-            propertyDefinition.Get.AddStatement("return _value;");
+            propertyDefinition.Get.AddCode("return _value;");
 
-            propertyDefinition.Set.AddStatement("_value = value;");
+            propertyDefinition.Set.AddCode("_value = value;");
 
             var context = new OutputContext();
 

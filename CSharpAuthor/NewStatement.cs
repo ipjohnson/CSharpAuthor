@@ -12,16 +12,12 @@ namespace CSharpAuthor
         public NewStatement(ITypeDefinition typeDefinition, params object[] arguments) : base("")
         {
             _typeDefinition = typeDefinition;
-
-            foreach (var argument in arguments)
-            {
-                _arguments.Add(StatementOutputComponent.Get(argument));
-            }
+            _arguments.AddRange(CodeOutputComponent.GetAll(arguments));
         }
         
         public void AddArgument(object argument)
         {
-            AddArgument(StatementOutputComponent.Get(argument));
+            AddArgument(CodeOutputComponent.Get(argument));
         }
 
         public void AddArgument(IOutputComponent argument)
@@ -35,14 +31,7 @@ namespace CSharpAuthor
             outputContext.Write(_typeDefinition);
             outputContext.Write("(");
             
-            for (var i = 0; i < _arguments.Count; i++)
-            {
-                if (i > 0)
-                {
-                    outputContext.Write(", ");
-                }
-                _arguments[i].WriteOutput(outputContext);
-            }
+            _arguments.OutputCommaSeparatedList(outputContext);
 
             outputContext.Write(")");
         }

@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CSharpAuthor
 {
-    public static class Statements
+    public static class SyntaxHelpers
     {
         public static IOutputComponent New(Type type, params object[] parameters)
         {
@@ -29,6 +30,19 @@ namespace CSharpAuthor
         public static AwaitStatement Await(IOutputComponent outputComponent)
         {
             return new AwaitStatement(outputComponent);
+        }
+
+        public static StaticInvokeStatement Invoke(Type type, string methodName, params object[] parameters)
+        {
+            return new StaticInvokeStatement(TypeDefinition.Get(type), methodName,
+                CodeOutputComponent.GetAll(parameters, false).ToList());
+        }
+
+        public static BaseStatement Base(params object[] parameters)
+        {
+            var statements = CodeOutputComponent.GetAll(parameters);
+
+            return new BaseStatement(statements.ToList());
         }
     }
 }

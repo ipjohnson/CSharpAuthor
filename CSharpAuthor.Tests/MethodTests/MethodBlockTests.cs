@@ -19,9 +19,9 @@ namespace CSharpAuthor.Tests.MethodTests
             tryBlock.Assign("10").To("var test");
             tryBlock.Throw(typeof(Exception), "\"message\"");
 
-            tryBlock.Catch(typeof(Exception), "e").AddStatement("e.ToString();");
+            tryBlock.Catch(typeof(Exception), "e").AddCode("e.ToString();");
 
-            tryBlock.Finally().AddStatement("// got here");
+            tryBlock.Finally().AddCode("// got here");
 
             var outputContext = new OutputContext();
 
@@ -86,11 +86,11 @@ namespace CSharpAuthor.Tests.MethodTests
 
             var ifBlock = method.If("x > 100");
 
-            ifBlock.AddStatement("Console.WriteLine(\"Over 100\");");
+            ifBlock.AddCode("Console.WriteLine(\"Over 100\");");
 
-            ifBlock.ElseIf("x > 50").AddStatement("Console.WriteLine(\"Over 50\");");
+            ifBlock.ElseIf("x > 50").AddCode("Console.WriteLine(\"Over 50\");");
 
-            ifBlock.Else().AddStatement("Console.WriteLine(\"50 and under\");");
+            ifBlock.Else().AddCode("Console.WriteLine(\"50 and under\");");
 
             var outputContext = new OutputContext();
 

@@ -2,10 +2,11 @@
 {
     public class ConstructorDefinition : MethodDefinition
     {
-        public string BaseStatement { get; set; }
+        public IOutputComponent? Base { get; }
 
-        public ConstructorDefinition(string name) : base(name)
+        public ConstructorDefinition(string name, IOutputComponent? @base = null) : base(name)
         {
+            Base = @base;
         }
 
         protected override void WriteReturnType(IOutputContext outputContext)
@@ -24,12 +25,12 @@
         {
             base.WriteEndOfMethodSignature(outputContext);
 
-            if (!string.IsNullOrEmpty(BaseStatement))
+            if (Base != null)
             {
                 outputContext.WriteIndent();
                 outputContext.Write(outputContext.SingleIndent);
                 outputContext.Write(" : ");
-                outputContext.Write(BaseStatement);
+                Base.WriteOutput(outputContext);
                 outputContext.WriteLine();
             }
         }

@@ -118,9 +118,9 @@ namespace CSharpAuthor
             return this;
         }
 
-        public ConstructorDefinition AddConstructor()
+        public ConstructorDefinition AddConstructor(IOutputComponent? baseComponent = null)
         {
-            var definition = new ConstructorDefinition(Name);
+            var definition = new ConstructorDefinition(Name, baseComponent);
 
             _constructors.Add(definition);
 
@@ -222,17 +222,7 @@ namespace CSharpAuthor
             {
                 outputContext.Write(" : ");
 
-                for (var i = 0; i < _baseTypes.Count; i++)
-                {
-                    if (i > 0)
-                    {
-                        outputContext.Write(", ");
-                    }
-
-                    var type = _baseTypes[i];
-
-                    outputContext.Write(type);
-                }
+                _baseTypes.OutputCommaSeparatedList(outputContext);
             }
 
             outputContext.WriteLine();

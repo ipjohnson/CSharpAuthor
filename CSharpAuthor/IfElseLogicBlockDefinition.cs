@@ -18,7 +18,7 @@ namespace CSharpAuthor
 
         public BaseBlockDefinition ElseIf(string ifStatement)
         {
-            return ElseIf(new StatementOutputComponent(ifStatement) { Indented = false });
+            return ElseIf(new CodeOutputComponent(ifStatement) { Indented = false });
         }
 
         public BaseBlockDefinition ElseIf(IOutputComponent ifStatement)

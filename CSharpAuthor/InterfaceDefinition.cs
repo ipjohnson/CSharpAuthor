@@ -101,17 +101,7 @@ namespace CSharpAuthor
             {
                 outputContext.Write(" : ");
 
-                for (var i = 0; i < BaseTypes.Count; i++)
-                {
-                    if (i > 0)
-                    {
-                        outputContext.Write(", ");
-                    }
-
-                    var type = BaseTypes[i];
-
-                    outputContext.Write(type.Name);
-                }
+                BaseTypes.OutputCommaSeparatedList(outputContext);
             }
 
             outputContext.WriteLine();

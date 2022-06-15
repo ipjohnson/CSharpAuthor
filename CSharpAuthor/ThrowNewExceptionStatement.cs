@@ -1,42 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CSharpAuthor
 {
     internal class ThrowNewExceptionStatement : BaseOutputComponent
     {
-        private readonly ITypeDefinition exceptionType;
-        private readonly object[] parameters;
+        private readonly ITypeDefinition _exceptionType;
+        private readonly IReadOnlyList<IOutputComponent> _parameters;
 
         public ThrowNewExceptionStatement(ITypeDefinition exceptionType, object[] parameters)
         {
-            this.exceptionType = exceptionType;
-            this.parameters = parameters;
+            _exceptionType = exceptionType;
+            _parameters = CodeOutputComponent.GetAll(parameters).ToList();
         }
 
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {
             outputContext.WriteIndent("throw new ");
-            outputContext.Write(exceptionType);
+            outputContext.Write(_exceptionType);
             outputContext.Write("(");
-
-            var comma = false;
-
-            foreach (var parameter in parameters)
-            {
-                if (comma)
-                {
-                    outputContext.Write(", ");
-                }
-                else
-                {
-                    comma = true;
-                }
-
-                outputContext.Write(parameter.ToString());
-            }
-
+            _parameters.OutputCommaSeparatedList(outputContext);
             outputContext.WriteLine(");");
         }
     }

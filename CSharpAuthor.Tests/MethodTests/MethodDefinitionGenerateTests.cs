@@ -13,7 +13,7 @@ namespace CSharpAuthor.Tests.MethodTests
             var methodDefinition = new MethodDefinition("HelloWorld")
                 .SetReturnType(typeof(string));
 
-            methodDefinition.AddStatement("return \"Hello World\";");
+            methodDefinition.AddCode("return \"Hello World\";");
             
             var context = new OutputContext();
 
@@ -55,7 +55,7 @@ namespace CSharpAuthor.Tests.MethodTests
 ";
         #endregion
 
-        #region AddStatement ITypeDefinition
+        #region AddCode ITypeDefinition
 
         [Fact]
         public void AddTypeDefinitionTest()
@@ -63,7 +63,7 @@ namespace CSharpAuthor.Tests.MethodTests
             var methodDefinition = new MethodDefinition("HelloWorld")
                 .SetReturnType(typeof(string));
 
-            methodDefinition.AddStatement("return {arg1} + typeof({arg2}) + {arg3};", "Hello World", typeof(string), 15);
+            methodDefinition.AddCode("return {arg1} + typeof({arg2}) + {arg3};", "Hello World", typeof(string), 15);
 
             var context = new OutputContext();
 

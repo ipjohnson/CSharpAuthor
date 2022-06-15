@@ -2,25 +2,38 @@
 
 namespace CSharpAuthor
 {
-    public class StatementOutputComponent : BaseOutputComponent
+    public class CodeOutputComponent : BaseOutputComponent
     {
         private readonly string _statement;
         private List<ITypeDefinition>? _typeDefinitions;
 
-        public StatementOutputComponent(string statement)
+        public CodeOutputComponent(string statement)
         {
             _statement = statement;
+        }
+
+        public static IEnumerable<IOutputComponent> GetAll(IEnumerable<object> values, bool indented = false)
+        {
+            foreach (var objectValue in values)
+            {
+                if (objectValue is IOutputComponent outputComponent)
+                {
+                    yield return outputComponent;
+                }
+
+                yield return Get(objectValue, indented);
+            }
         }
 
         public static IOutputComponent Get(object? value, bool indented = false)
         {
             return value switch
             {
-                null => new StatementOutputComponent("") { Indented = indented },
+                null => new CodeOutputComponent("") { Indented = indented },
 
                 IOutputComponent outputComponent => outputComponent,
 
-                _ => new StatementOutputComponent(value.ToString()) { Indented = indented }
+                _ => new CodeOutputComponent(value.ToString()) { Indented = indented }
             };
         }
 
@@ -55,6 +68,6 @@ namespace CSharpAuthor
             }
             
         }
-        public static implicit operator StatementOutputComponent(string statement) => new (statement);
+        public static implicit operator CodeOutputComponent(string statement) => new (statement);
     }
 }

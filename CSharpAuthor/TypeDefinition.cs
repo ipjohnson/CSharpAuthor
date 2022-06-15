@@ -80,7 +80,7 @@ namespace CSharpAuthor
                 return knownDefinition;
             }
 
-            var typeDefinition = CSharpAuthor.TypeDefinitionEnum.ClassDefinition;
+            var typeDefinition = TypeDefinitionEnum.ClassDefinition;
 
             if (type.IsEnum)
             {
@@ -111,7 +111,7 @@ namespace CSharpAuthor
             return new TypeDefinition(typeDefinition, type.Namespace, type.Name, type.IsArray);
         }
 
-        private static readonly Dictionary<Type, ITypeDefinition> _knownTypes = new Dictionary<Type, ITypeDefinition>
+        private static readonly Dictionary<Type, ITypeDefinition> _knownTypes = new ()
         {
             {typeof(object), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "object", false)},
             {typeof(ulong), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ulong", false)},
@@ -126,7 +126,7 @@ namespace CSharpAuthor
             {typeof(decimal), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "decimal", false)},
             {typeof(bool), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "bool", false)},
         };
-        private static readonly Dictionary<Type,ITypeDefinition> _knownArrayTypes = new Dictionary<Type, ITypeDefinition>
+        private static readonly Dictionary<Type,ITypeDefinition> _knownArrayTypes = new ()
         {
             {typeof(object[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "object", true)},
             {typeof(string[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string", true)},

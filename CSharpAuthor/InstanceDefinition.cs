@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CSharpAuthor
@@ -16,6 +17,19 @@ namespace CSharpAuthor
         public InvokeDefinition Invoke(string methodName, params object[] parameters)
         {
             var invokeDefinition = new InvokeDefinition(Name, methodName) { Indented = false };
+
+            foreach (var parameter in parameters)
+            {
+                invokeDefinition.AddArgument(parameter);
+            }
+
+            return invokeDefinition;
+        }
+        
+        public InvokeGenericDefinition InvokeGeneric(string methodName, IEnumerable<ITypeDefinition> genericArgs, params object[] parameters)
+        {
+            var invokeDefinition = 
+                new InvokeGenericDefinition(Name, methodName, genericArgs.ToList()) { Indented = false };
 
             foreach (var parameter in parameters)
             {
