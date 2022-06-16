@@ -31,6 +31,7 @@ namespace CSharpAuthor
             }
 
             outputContext.Write(_typeDefinition);
+            outputContext.Write(".");
             outputContext.Write(_methodName);
             outputContext.Write("<");
             _genericArguments.OutputCommaSeparatedList(outputContext);
