@@ -88,7 +88,16 @@ namespace CSharpAuthor
 
             return value.ToString();
         }
-        
+
+        public SwitchBlockDefinition Switch(object switchValue)
+        {
+            var switchStatement = new SwitchBlockDefinition(CodeOutputComponent.Get(switchValue));
+
+            StatementList.Add(switchStatement);
+
+            return switchStatement;
+        }
+
         public virtual void NewLine()
         {
             AddCode("");

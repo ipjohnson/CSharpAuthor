@@ -53,8 +53,7 @@ namespace CSharpAuthor
                     genericArgs,
                     CodeOutputComponent.GetAll(parameters, false).ToList()) { Indented = false };
         }
-
-
+        
         public static StaticInvokeStatement Invoke(Type type, string methodName, params object[] parameters)
         {
             return new StaticInvokeStatement(TypeDefinition.Get(type), methodName,
@@ -66,6 +65,11 @@ namespace CSharpAuthor
             var statements = CodeOutputComponent.GetAll(parameters);
 
             return new BaseStatement(statements.ToList());
+        }
+
+        public static string QuoteString(string stringValue)
+        {
+            return "\"" + stringValue + "\"";
         }
     }
 }
