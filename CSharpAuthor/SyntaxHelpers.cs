@@ -39,12 +39,28 @@ namespace CSharpAuthor
         }
 
 
-        public static StaticInvokeStatement Invoke(Type type, string methodName, params object[] parameters)
+        public static StaticInvokeGenericStatement InvokeGeneric(Type type, string methodName, IReadOnlyList<ITypeDefinition> genericArgs, params object[] parameters)
         {
-            return new StaticInvokeStatement(TypeDefinition.Get(type), methodName,
+            return new StaticInvokeGenericStatement(TypeDefinition.Get(type), methodName, genericArgs,
                 CodeOutputComponent.GetAll(parameters, false).ToList()) { Indented = false };
         }
 
+        public static StaticInvokeGenericStatement InvokeGeneric(ITypeDefinition typeDefinition, string methodName, IReadOnlyList<ITypeDefinition> genericArgs, params object[] parameters)
+        {
+            return new StaticInvokeGenericStatement(
+                    typeDefinition, 
+                    methodName, 
+                    genericArgs,
+                    CodeOutputComponent.GetAll(parameters, false).ToList()) { Indented = false };
+        }
+
+
+        public static StaticInvokeStatement Invoke(Type type, string methodName, params object[] parameters)
+        {
+            return new StaticInvokeStatement(TypeDefinition.Get(type), methodName,
+                    CodeOutputComponent.GetAll(parameters, false).ToList())
+                { Indented = false };
+        }
         public static BaseStatement Base(params object[] parameters)
         {
             var statements = CodeOutputComponent.GetAll(parameters);

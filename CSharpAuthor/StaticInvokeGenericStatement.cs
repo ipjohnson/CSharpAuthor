@@ -13,8 +13,8 @@ namespace CSharpAuthor
 
         public StaticInvokeGenericStatement(
             ITypeDefinition typeDefinition, 
-            IReadOnlyList<ITypeDefinition> genericArguments, 
-            string methodName, 
+            string methodName,
+            IReadOnlyList<ITypeDefinition> genericArguments,
             IReadOnlyList<IOutputComponent> parameters)
         {
             _typeDefinition = typeDefinition;
