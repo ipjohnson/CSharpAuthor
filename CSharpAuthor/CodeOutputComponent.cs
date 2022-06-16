@@ -16,11 +16,6 @@ namespace CSharpAuthor
         {
             foreach (var objectValue in values)
             {
-                if (objectValue is IOutputComponent outputComponent)
-                {
-                    yield return outputComponent;
-                }
-
                 yield return Get(objectValue, indented);
             }
         }
@@ -50,7 +45,7 @@ namespace CSharpAuthor
 
             _typeDefinitions.AddRange(typeDefinitions);
         }
-        
+
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {
             if (Indented)
@@ -66,8 +61,8 @@ namespace CSharpAuthor
             {
                 outputContext.AddImportNamespaces(_typeDefinitions);
             }
-            
+
         }
-        public static implicit operator CodeOutputComponent(string statement) => new (statement);
+        public static implicit operator CodeOutputComponent(string statement) => new(statement);
     }
 }

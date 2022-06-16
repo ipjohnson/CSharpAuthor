@@ -35,14 +35,14 @@ namespace CSharpAuthor
         public static StaticInvokeStatement Invoke(ITypeDefinition typeDefinition, string methodName, params object[] parameters)
         {
             return new StaticInvokeStatement(typeDefinition, methodName,
-                CodeOutputComponent.GetAll(parameters, false).ToList());
+                CodeOutputComponent.GetAll(parameters, false).ToList()) { Indented = false };
         }
 
 
         public static StaticInvokeStatement Invoke(Type type, string methodName, params object[] parameters)
         {
             return new StaticInvokeStatement(TypeDefinition.Get(type), methodName,
-                CodeOutputComponent.GetAll(parameters, false).ToList());
+                CodeOutputComponent.GetAll(parameters, false).ToList()) { Indented = false };
         }
 
         public static BaseStatement Base(params object[] parameters)
