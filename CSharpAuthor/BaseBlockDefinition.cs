@@ -17,9 +17,9 @@ namespace CSharpAuthor
             return component;
         }
 
-        public virtual IOutputComponent AddIndentedStatement(IOutputComponent component)
+        public virtual object AddIndentedStatement(object component)
         {
-            StatementList.Add(new IndentedStatementComponent(component));
+            StatementList.Add(new IndentedStatementComponent(CodeOutputComponent.Get( component)));
 
             return component;
         }
@@ -109,11 +109,24 @@ namespace CSharpAuthor
             Add(new ThrowNewExceptionStatement(exceptionType, parameters));
         }
 
-        public void Return(string returnValue, params object[] values)
+        public void Return(object? returnValue = null)
         {
-            AddCode($"return {returnValue};", values);
+            if (returnValue == null)
+            {
+                AddIndentedStatement("return");
+            }
+            else
+            {
+                AddIndentedStatement(
+                    new AppendStatement("return ", CodeOutputComponent.Get(returnValue)));
+            }
         }
-        
+
+        public void Break()
+        {
+            AddIndentedStatement("break");
+        }
+
         public ForEachDefinition ForEach(string variable, IOutputComponent enumerableComponent)
         {
             return Add(new ForEachDefinition(variable, enumerableComponent));
