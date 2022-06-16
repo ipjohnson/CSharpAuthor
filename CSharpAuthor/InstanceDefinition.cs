@@ -39,7 +39,7 @@ namespace CSharpAuthor
             return invokeDefinition;
         }
 
-        public IOutputComponent Property(string propertyName)
+        public InstanceDefinition Property(string propertyName)
         {
             return new InstanceDefinition(Name + "." + propertyName);
         }
