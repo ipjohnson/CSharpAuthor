@@ -32,6 +32,13 @@ namespace CSharpAuthor
             return new AwaitStatement(outputComponent);
         }
 
+        public static StaticInvokeStatement Invoke(ITypeDefinition typeDefinition, string methodName, params object[] parameters)
+        {
+            return new StaticInvokeStatement(typeDefinition, methodName,
+                CodeOutputComponent.GetAll(parameters, false).ToList());
+        }
+
+
         public static StaticInvokeStatement Invoke(Type type, string methodName, params object[] parameters)
         {
             return new StaticInvokeStatement(TypeDefinition.Get(type), methodName,
