@@ -9,6 +9,8 @@ namespace CSharpAuthor
     {
         TypeDefinitionEnum TypeDefinitionEnum { get; }
 
+        bool IsNullable { get; }
+
         bool IsArray { get; }
 
         string Name { get; }
@@ -18,6 +20,8 @@ namespace CSharpAuthor
         IEnumerable<string> KnownNamespaces { get; }
 
         void WriteShortName(StringBuilder builder);
+
+        ITypeDefinition MakeNullable();
     }
 
     public static class ITypeDefinitionExtensions

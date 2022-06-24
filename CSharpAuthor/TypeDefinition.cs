@@ -8,17 +8,20 @@ namespace CSharpAuthor
     {
         private readonly int _hashCode;
 
-        public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray)
+        public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray, bool isNullable = false)
         {
             TypeDefinitionEnum = typeDefinitionEnum;
             Namespace = ns;
             Name = name;
             IsArray = isArray;
+            IsNullable = isNullable;
 
             _hashCode = $"{TypeDefinitionEnum}:{Namespace}:{Name}".GetHashCode();
         }
 
         public TypeDefinitionEnum TypeDefinitionEnum { get; }
+
+        public bool IsNullable { get; }
 
         public string Namespace { get; }
 
@@ -39,6 +42,16 @@ namespace CSharpAuthor
             {
                 builder.Append("[]");
             }
+
+            if (IsNullable)
+            {
+                builder.Append("?");
+            }
+        }
+
+        public ITypeDefinition MakeNullable()
+        {
+            return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, IsArray, true);
         }
 
         public override bool Equals(object obj)
@@ -63,9 +76,9 @@ namespace CSharpAuthor
             return $"{TypeDefinitionEnum}:{Namespace}:{Name}";
         }
 
-        public static TypeDefinition Get(string ns, string name, bool isArray = false)
+        public static TypeDefinition Get(string ns, string name, bool isArray = false, bool isNullable = false)
         {
-            return new TypeDefinition(TypeDefinitionEnum.ClassDefinition, ns, name, isArray);
+            return new TypeDefinition(TypeDefinitionEnum.ClassDefinition, ns, name, isArray, isNullable);
         }
 
         public static ITypeDefinition Get(Type type)
@@ -79,7 +92,7 @@ namespace CSharpAuthor
             {
                 return knownDefinition;
             }
-
+            
             var typeDefinition = TypeDefinitionEnum.ClassDefinition;
 
             if (type.IsEnum)

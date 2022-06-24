@@ -10,22 +10,25 @@ namespace CSharpAuthor
         private readonly int _hashCode;
         private readonly IReadOnlyList<ITypeDefinition> _closingTypes;
 
-        public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray = false) : 
-            this(TypeDefinitionEnum.ClassDefinition, type.GetGenericName(), type.Namespace, closeTypes, isArray)
+        public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray = false, bool isNullable = false) : 
+            this(TypeDefinitionEnum.ClassDefinition, type.GetGenericName(), type.Namespace, closeTypes, isArray, isNullable)
         {
 
         }
 
-        public GenericTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string name, string ns, IReadOnlyList<ITypeDefinition> closingTypes, bool isArray = false)
+        public GenericTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string name, string ns, IReadOnlyList<ITypeDefinition> closingTypes, bool isArray = false, bool isNullable = false)
         {
             TypeDefinitionEnum = typeDefinitionEnum;
             Name = name;
             Namespace = ns;
             _closingTypes = closingTypes;
             IsArray = isArray;
+            IsNullable = isNullable;
         }
         
         public TypeDefinitionEnum TypeDefinitionEnum { get; }
+
+        public bool IsNullable { get; }
 
         public string Name { get; }
 
@@ -75,6 +78,16 @@ namespace CSharpAuthor
             {
                 builder.Append("[]");
             }
+
+            if (IsNullable)
+            {
+                builder.Append("?");
+            }
+        }
+
+        public ITypeDefinition MakeNullable()
+        {
+            return new GenericTypeDefinition(TypeDefinitionEnum, Name, Namespace, _closingTypes, IsArray, true);
         }
     }
 }
