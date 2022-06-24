@@ -76,6 +76,44 @@ namespace CSharpAuthor
             return $"{TypeDefinitionEnum}:{Namespace}:{Name}";
         }
 
+        public static ITypeDefinition Action(params object[] typeArguments)
+        {
+            var types = new List<ITypeDefinition>();
+
+            foreach (var typeObject in typeArguments)
+            {
+                if (typeObject is Type type)
+                {
+                    types.Add(TypeDefinition.Get(type));
+                }
+                else if (typeObject is ITypeDefinition typeDefinition)
+                {
+                    types.Add(typeDefinition);
+                }
+            }
+
+            return new GenericTypeDefinition(typeof(Action<>), types);
+        }
+
+        public static ITypeDefinition Func(params object[] typeArguments)
+        {
+            var types = new List<ITypeDefinition>();
+
+            foreach (var typeObject in typeArguments)
+            {
+                if (typeObject is Type type)
+                {
+                    types.Add(TypeDefinition.Get(type));
+                }
+                else if (typeObject is ITypeDefinition typeDefinition)
+                {
+                    types.Add(typeDefinition);
+                }
+            }
+
+            return new GenericTypeDefinition(typeof(Func<>), types);
+        }
+
         public static TypeDefinition Get(string ns, string name, bool isArray = false, bool isNullable = false)
         {
             return new TypeDefinition(TypeDefinitionEnum.ClassDefinition, ns, name, isArray, isNullable);

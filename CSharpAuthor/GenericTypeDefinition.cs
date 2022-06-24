@@ -89,5 +89,6 @@ namespace CSharpAuthor
         {
             return new GenericTypeDefinition(TypeDefinitionEnum, Name, Namespace, _closingTypes, IsArray, true);
         }
+        
     }
 }
