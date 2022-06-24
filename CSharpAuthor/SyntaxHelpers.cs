@@ -63,15 +63,13 @@ namespace CSharpAuthor
 
         public static InvokeGenericDefinition InvokeGeneric(string methodName, IReadOnlyList<ITypeDefinition> genericArgs, params object[] parameters)
         {
-            return new InvokeGenericDefinition("", methodName, genericArgs,
-                    CodeOutputComponent.GetAll(parameters).ToList())
+            return new InvokeGenericDefinition("", methodName, genericArgs, parameters)
                 { Indented = false };
         }
         
         public static InvokeDefinition Invoke(string methodName, params object[] parameters)
         {
-            return new InvokeDefinition("", methodName,
-                    CodeOutputComponent.GetAll(parameters).ToList())
+            return new InvokeDefinition("", methodName, parameters)
                 { Indented = false };
         }
 
