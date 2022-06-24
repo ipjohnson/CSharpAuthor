@@ -67,9 +67,21 @@ namespace CSharpAuthor
             return new BaseStatement(statements.ToList());
         }
 
+        public static IOutputComponent This(params object[] parameters)
+        {
+            var statements = CodeOutputComponent.GetAll(parameters);
+
+            return new WrapStatement(new ListOutputComponent(statements.ToList()), "this(", ")");
+        }
+
         public static string QuoteString(string stringValue)
         {
             return "\"" + stringValue + "\"";
+        }
+
+        public static IOutputComponent Null()
+        {
+            return CodeOutputComponent.Get("null");
         }
     }
 }
