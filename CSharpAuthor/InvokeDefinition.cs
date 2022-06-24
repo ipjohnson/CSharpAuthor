@@ -10,10 +10,15 @@ namespace CSharpAuthor
         private readonly string _methodName;
         private readonly List<IOutputComponent> _arguments = new ();
 
-        public InvokeDefinition(string instance, string methodName)
+        public InvokeDefinition(string instance, string methodName, params object[] arguments)
         {
             _instance = instance;
             _methodName = methodName;
+
+            foreach (var argument in arguments)
+            {
+                AddArgument(argument);
+            }
         }
 
         public void AddArgument(object argument)
@@ -32,9 +37,13 @@ namespace CSharpAuthor
             {
                 outputContext.WriteIndent();
             }
-            
-            outputContext.Write(_instance);
-            outputContext.Write(".");
+
+            if (!string.IsNullOrEmpty(_instance))
+            {
+                outputContext.Write(_instance);
+                outputContext.Write(".");
+            }
+
             outputContext.Write(_methodName);
             outputContext.Write("(");
 

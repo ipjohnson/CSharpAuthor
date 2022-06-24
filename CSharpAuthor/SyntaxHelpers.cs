@@ -60,6 +60,21 @@ namespace CSharpAuthor
                     CodeOutputComponent.GetAll(parameters, false).ToList())
                 { Indented = false };
         }
+
+        public static InvokeGenericDefinition InvokeGeneric(string methodName, IReadOnlyList<ITypeDefinition> genericArgs, params object[] parameters)
+        {
+            return new InvokeGenericDefinition("", methodName, genericArgs,
+                    CodeOutputComponent.GetAll(parameters).ToList())
+                { Indented = false };
+        }
+        
+        public static InvokeDefinition Invoke(string methodName, params object[] parameters)
+        {
+            return new InvokeDefinition("", methodName,
+                    CodeOutputComponent.GetAll(parameters).ToList())
+                { Indented = false };
+        }
+
         public static BaseStatement Base(params object[] parameters)
         {
             var statements = CodeOutputComponent.GetAll(parameters);

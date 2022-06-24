@@ -11,11 +11,16 @@ namespace CSharpAuthor
         private readonly IReadOnlyList<ITypeDefinition> _genericArguments;
         private readonly List<IOutputComponent> _arguments = new();
 
-        public InvokeGenericDefinition(string instance, string methodName, IReadOnlyList<ITypeDefinition> genericArguments) 
+        public InvokeGenericDefinition(string instance, string methodName, IReadOnlyList<ITypeDefinition> genericArguments, params object[] arguments) 
         {
             _instance = instance;
             _methodName = methodName;
             _genericArguments = genericArguments;
+
+            foreach (var argument in arguments)
+            {
+                AddArgument(argument);
+            }
         }
 
         public void AddArgument(object argument)
@@ -35,8 +40,12 @@ namespace CSharpAuthor
                 outputContext.WriteIndent();
             }
 
-            outputContext.Write(_instance);
-            outputContext.Write(".");
+            if (!string.IsNullOrEmpty(_instance))
+            {
+                outputContext.Write(_instance);
+                outputContext.Write(".");
+            }
+
             outputContext.Write(_methodName);
             outputContext.Write("<");
             _genericArguments.OutputCommaSeparatedList(outputContext);
