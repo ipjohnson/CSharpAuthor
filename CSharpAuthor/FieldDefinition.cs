@@ -13,7 +13,9 @@
         public string Name { get; }
 
         public string? InitializeValue { get; set; }
-        
+
+        public InstanceDefinition Instance => new (Name);
+
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {
             outputContext.AddImportNamespace(_typeDefinition);

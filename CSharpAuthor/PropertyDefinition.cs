@@ -23,6 +23,8 @@
 
         public string IndexName { get; set; } = "index";
 
+        public InstanceDefinition Instance => new(Name);
+
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {
             WriteAccessModifiers(outputContext);
