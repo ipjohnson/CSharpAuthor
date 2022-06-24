@@ -83,5 +83,10 @@ namespace CSharpAuthor
         {
             return CodeOutputComponent.Get("null");
         }
+
+        public static IOutputComponent TypeOf(ITypeDefinition typeDefinition)
+        {
+            return new WrapStatement(new TypeStatement(typeDefinition), "typeof(", ")");
+        }
     }
 }
