@@ -64,7 +64,6 @@
                 }
                 else if ((Set.Modifiers & ComponentModifier.Protected) == ComponentModifier.Protected)
                 {
-
                     outputContext.WriteLine(" { get; protected set; }");
                 }
                 else
@@ -83,6 +82,7 @@
 
             if (Set != null)
             {
+                outputContext.WriteIndent();
                 if ((Set.Modifiers & ComponentModifier.Private) == ComponentModifier.Private)
                 {
                     outputContext.Write("private ");
@@ -91,7 +91,7 @@
                 {
                     outputContext.Write("protected ");
                 }
-                outputContext.WriteIndent("set");
+                outputContext.Write("set");
                 Set.WriteOutput(outputContext);
             }
 
