@@ -79,6 +79,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
             propertyDefinition.Get.AddCode("return _value;");
             
             propertyDefinition.Set.AddCode("_value = value;");
+            propertyDefinition.Set.Modifiers |= ComponentModifier.Private;
 
             var context = new OutputContext();
 
@@ -94,7 +95,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
     {
         return _value;
     }
-    set
+    private set
     {
         _value = value;
     }

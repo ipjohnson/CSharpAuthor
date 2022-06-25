@@ -146,6 +146,11 @@ namespace CSharpAuthor
             return Add(new IfElseLogicBlockDefinition(new CodeOutputComponent(ifStatement) { Indented = false }));
         }
 
+        public IfElseLogicBlockDefinition If(IOutputComponent outputComponent)
+        {
+            return Add(new IfElseLogicBlockDefinition(outputComponent));
+        }
+
         public ToClass Assign(string value)
         {
             return new ToClass(c => StatementList.Add(c), new CodeOutputComponent(value) { Indented = false });

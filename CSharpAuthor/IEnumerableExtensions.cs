@@ -18,17 +18,22 @@ namespace CSharpAuthor
 
         public static void OutputCommaSeparatedList<T>(this IEnumerable<T> components, IOutputContext context, Action<IOutputContext, T> writeAction)
         {
-            var writeComma = false;
+            OutputSeparatedList(components, context, writeAction, ", ");
+        }
+
+        public static void OutputSeparatedList<T>(this IEnumerable<T> components, IOutputContext context, Action<IOutputContext, T> writeAction, string separator)
+        {
+            var writeSeparator = false;
 
             foreach (var tValue in components)
             {
-                if (writeComma)
+                if (writeSeparator)
                 {
-                    context.Write(", ");
+                    context.Write(separator);
                 }
                 else
                 {
-                    writeComma = true;
+                    writeSeparator = true;
                 }
 
                 writeAction(context, tValue);

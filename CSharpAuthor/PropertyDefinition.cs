@@ -58,7 +58,20 @@
             else if (Get.StatementCount == 0 && 
                      Set is { StatementCount: 0 })
             {
-                outputContext.WriteLine(" { get; set; }");
+                if ((Set.Modifiers & ComponentModifier.Private) == ComponentModifier.Private)
+                {
+                    outputContext.WriteLine(" { get; private set; }");
+                }
+                else if ((Set.Modifiers & ComponentModifier.Protected) == ComponentModifier.Protected)
+                {
+
+                    outputContext.WriteLine(" { get; protected set; }");
+                }
+                else
+                {
+                    outputContext.WriteLine(" { get; set; }");
+                }
+
                 return;
             }
 
@@ -70,6 +83,14 @@
 
             if (Set != null)
             {
+                if ((Set.Modifiers & ComponentModifier.Private) == ComponentModifier.Private)
+                {
+                    outputContext.Write("private ");
+                }
+                else if ((Set.Modifiers & ComponentModifier.Protected) == ComponentModifier.Protected)
+                {
+                    outputContext.Write("protected ");
+                }
                 outputContext.WriteIndent("set");
                 Set.WriteOutput(outputContext);
             }
