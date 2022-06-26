@@ -14,6 +14,11 @@ namespace CSharpAuthor
         public IfElseLogicBlockDefinition(IOutputComponent ifStatement)
         {
             _ifStatement = ifStatement;
+
+            if (ifStatement is LogicStatement logicStatement)
+            {
+                logicStatement.PrintParentheses = false;
+            }
         }
 
         public BaseBlockDefinition ElseIf(string ifStatement)
@@ -63,6 +68,11 @@ namespace CSharpAuthor
             public ElseIfBlockDefinition(IOutputComponent ifStatement)
             {
                 _ifStatement = ifStatement;
+
+                if (_ifStatement is LogicStatement logicStatement)
+                {
+                    logicStatement.PrintParentheses = false;
+                }
             }
 
             protected override void WriteComponentOutput(IOutputContext outputContext)

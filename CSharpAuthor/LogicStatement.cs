@@ -16,11 +16,21 @@ namespace CSharpAuthor
             _outputComponents = CodeOutputComponent.GetAll(outputComponents).ToList();
         }
 
+        public bool PrintParentheses { get; set; } = true;
+
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {
-            outputContext.Write("(");
+            if (PrintParentheses)
+            {
+                outputContext.Write("(");
+            }
+
             _outputComponents.OutputSeparatedList(outputContext, (context, component) => component.WriteOutput(context), _logicStatement);
-            outputContext.Write(")");
+            
+            if (PrintParentheses)
+            {
+                outputContext.Write(")");
+            }
         }
     }
 }
