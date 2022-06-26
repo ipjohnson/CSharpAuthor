@@ -11,9 +11,15 @@ namespace CSharpAuthor
         private readonly IReadOnlyList<IOutputComponent> _outputComponents;
 
         public LogicStatement(string logicStatement, params object[] outputComponents)
+            : this(logicStatement, CodeOutputComponent.GetAll(outputComponents).ToList())
+
+        {
+        }
+
+        public LogicStatement(string logicStatement, IReadOnlyList<IOutputComponent> outputComponents)
         {
             _logicStatement = logicStatement;
-            _outputComponents = CodeOutputComponent.GetAll(outputComponents).ToList();
+            _outputComponents = outputComponents;
         }
 
         public bool PrintParentheses { get; set; } = true;

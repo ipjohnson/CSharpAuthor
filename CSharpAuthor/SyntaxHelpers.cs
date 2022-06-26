@@ -107,7 +107,18 @@ namespace CSharpAuthor
             return new LogicStatement(" && ", andStatements);
         }
 
+
+        public static LogicStatement And(IReadOnlyList<IOutputComponent> andStatements)
+        {
+            return new LogicStatement(" && ", andStatements);
+        }
+
         public static LogicStatement Or(params object[] orStatements)
+        {
+            return new LogicStatement(" || ", orStatements);
+        }
+
+        public static LogicStatement Or(IReadOnlyList<IOutputComponent> orStatements)
         {
             return new LogicStatement(" || ", orStatements);
         }
