@@ -150,5 +150,15 @@ namespace CSharpAuthor
         {
             return new LogicStatement(" <= ", leftHandSide, rightHandSide);
         }
+
+        public static LogicStatement NullCoalesce(object leftHandSide, object rightHandSide)
+        {
+            return new LogicStatement(" ?? ", leftHandSide, rightHandSide);
+        }
+        
+        public static LogicStatement NullCoalesceEqual(object leftHandSide, object rightHandSide)
+        {
+            return new LogicStatement(" ??= ", leftHandSide, rightHandSide);
+        }
     }
 }
