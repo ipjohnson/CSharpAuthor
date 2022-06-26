@@ -194,6 +194,18 @@ namespace CSharpAuthor
 
                 return newLocalVariableDefinition;
             }
+
+            public InstanceDefinition ToLocal(ITypeDefinition typeDefinition, string name)
+            {
+                var newLocalVariableDefinition = new InstanceDefinition(name) { Indented = false };
+
+                var assignmentStatement =
+                    new AssignmentStatement(_valueComponent, newLocalVariableDefinition) { Indented = false };
+
+                _addStatement(new DeclarationStatement(typeDefinition, assignmentStatement));
+
+                return newLocalVariableDefinition;
+            }
         }
 
         protected void WriteBlock(IOutputContext context)
