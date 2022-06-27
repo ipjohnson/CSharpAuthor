@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace CSharpAuthor
 {
-    public class TypeDefinition : ITypeDefinition 
+    public class TypeDefinition : ITypeDefinition
     {
         private readonly int _hashCode;
 
@@ -59,11 +60,11 @@ namespace CSharpAuthor
             if (obj is TypeDefinition typeDefinition)
             {
                 return typeDefinition.TypeDefinitionEnum == TypeDefinitionEnum &&
-                    typeDefinition.Name == Name && 
+                    typeDefinition.Name == Name &&
                     typeDefinition.Namespace == Namespace;
             }
 
-            return false; 
+            return false;
         }
 
         public override int GetHashCode()
@@ -75,6 +76,24 @@ namespace CSharpAuthor
         {
             return $"{TypeDefinitionEnum}:{Namespace}:{Name}";
         }
+
+
+        public static ITypeDefinition Task(object typeObject)
+        {
+            var types = new List<ITypeDefinition>();
+
+            if (typeObject is Type type)
+            {
+                types.Add(TypeDefinition.Get(type));
+            }
+            else if (typeObject is ITypeDefinition typeDefinition)
+            {
+                types.Add(typeDefinition);
+            }
+
+            return new GenericTypeDefinition(typeof(Task<>), types);
+        }
+
 
         public static ITypeDefinition Action(params object[] typeArguments)
         {
@@ -130,7 +149,7 @@ namespace CSharpAuthor
             {
                 return knownDefinition;
             }
-            
+
             var typeDefinition = TypeDefinitionEnum.ClassDefinition;
 
             if (type.IsEnum)
@@ -141,11 +160,11 @@ namespace CSharpAuthor
             {
                 typeDefinition = TypeDefinitionEnum.InterfaceDefinition;
             }
-            
+
             if (type.IsConstructedGenericType)
             {
                 var genericTypeDefinition = type.GetGenericTypeDefinition();
-                
+
                 var className = genericTypeDefinition.GetGenericName();
 
                 var closingTypes = new List<ITypeDefinition>();
@@ -162,35 +181,35 @@ namespace CSharpAuthor
             return new TypeDefinition(typeDefinition, type.Namespace, type.Name, type.IsArray);
         }
 
-        private static readonly Dictionary<Type, ITypeDefinition> _knownTypes = new ()
+        private static readonly Dictionary<Type, ITypeDefinition> _knownTypes = new()
         {
-            {typeof(object), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "object", false)},
-            {typeof(ulong), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ulong", false)},
-            {typeof(long), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "long", false)},
-            {typeof(uint), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "uint", false)},
-            {typeof(string), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string", false)},
-            {typeof(int), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "int", false)},
-            {typeof(short), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "short", false)},
-            {typeof(ushort), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ushort", false)},
-            {typeof(byte), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "byte", false)},
-            {typeof(double), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "double", false)},
-            {typeof(decimal), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "decimal", false)},
-            {typeof(bool), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "bool", false)},
+            { typeof(object), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "object", false) },
+            { typeof(ulong), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ulong", false) },
+            { typeof(long), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "long", false) },
+            { typeof(uint), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "uint", false) },
+            { typeof(string), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string", false) },
+            { typeof(int), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "int", false) },
+            { typeof(short), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "short", false) },
+            { typeof(ushort), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ushort", false) },
+            { typeof(byte), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "byte", false) },
+            { typeof(double), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "double", false) },
+            { typeof(decimal), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "decimal", false) },
+            { typeof(bool), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "bool", false) },
         };
-        private static readonly Dictionary<Type,ITypeDefinition> _knownArrayTypes = new ()
+        private static readonly Dictionary<Type, ITypeDefinition> _knownArrayTypes = new()
         {
-            {typeof(object[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "object", true)},
-            {typeof(string[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string", true)},
-            {typeof(int[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "int", true)},
-            {typeof(uint[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "uint", true)},
-            {typeof(long[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "long", true)},
-            {typeof(ulong[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ulong", true)},
-            {typeof(short[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "short", true)},
-            {typeof(ushort[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ushort", true)},
-            {typeof(byte[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "byte", true)},
-            {typeof(bool[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "bool", true)},
-            {typeof(double[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "double", true)},
-            {typeof(decimal[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "decimal", true)},
+            { typeof(object[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "object", true) },
+            { typeof(string[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string", true) },
+            { typeof(int[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "int", true) },
+            { typeof(uint[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "uint", true) },
+            { typeof(long[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "long", true) },
+            { typeof(ulong[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ulong", true) },
+            { typeof(short[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "short", true) },
+            { typeof(ushort[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ushort", true) },
+            { typeof(byte[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "byte", true) },
+            { typeof(bool[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "bool", true) },
+            { typeof(double[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "double", true) },
+            { typeof(decimal[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "decimal", true) },
         };
 
         private static bool IsKnownType(Type type, out ITypeDefinition? typeDefinition)
