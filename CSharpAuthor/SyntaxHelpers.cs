@@ -27,9 +27,9 @@ namespace CSharpAuthor
             return new NewArrayStatement(typeDefinition, length);
         }
 
-        public static AwaitStatement Await(IOutputComponent outputComponent)
+        public static AwaitStatement Await(object outputComponent)
         {
-            return new AwaitStatement(outputComponent);
+            return new AwaitStatement(CodeOutputComponent.Get(outputComponent));
         }
 
         public static StaticInvokeStatement Invoke(ITypeDefinition typeDefinition, string methodName, params object[] parameters)
@@ -37,8 +37,7 @@ namespace CSharpAuthor
             return new StaticInvokeStatement(typeDefinition, methodName,
                 CodeOutputComponent.GetAll(parameters, false).ToList()) { Indented = false };
         }
-
-
+        
         public static StaticInvokeGenericStatement InvokeGeneric(Type type, string methodName, IReadOnlyList<ITypeDefinition> genericArgs, params object[] parameters)
         {
             return new StaticInvokeGenericStatement(TypeDefinition.Get(type), methodName, genericArgs,
