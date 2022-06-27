@@ -7,6 +7,7 @@ namespace CSharpAuthor
     public class MethodDefinition : BaseBlockDefinition
     {
         protected readonly List<ParameterDefinition> ParameterList = new ();
+        protected int VariableCount = 1;
         
         private ITypeDefinition? _returnType;
         
@@ -21,7 +22,11 @@ namespace CSharpAuthor
 
         public IReadOnlyList<ParameterDefinition> Parameters => ParameterList;
 
-        
+        public string GetUniqueVariable(string prefix)
+        {
+            return prefix + VariableCount++;
+        }
+
         public MethodDefinition SetReturnType(Type type)
         {
             return SetReturnType(TypeDefinition.Get(type));
