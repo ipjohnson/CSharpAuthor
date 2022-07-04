@@ -17,7 +17,16 @@
         protected override void WriteAccessModifier(IOutputContext outputContext)
         {
             outputContext.WriteIndent();
-            outputContext.Write(GetAccessModifier(KeyWords.Public));
+
+            if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
+            {
+                outputContext.Write(KeyWords.Static);
+            }
+            else
+            {
+                outputContext.Write(GetAccessModifier(KeyWords.Public));
+            }
+            
             outputContext.WriteSpace();
         }
 
