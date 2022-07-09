@@ -26,8 +26,6 @@
             {
                 outputContext.Write(GetAccessModifier(KeyWords.Public));
             }
-            
-            outputContext.WriteSpace();
         }
 
         protected override void WriteEndOfMethodSignature(IOutputContext outputContext)

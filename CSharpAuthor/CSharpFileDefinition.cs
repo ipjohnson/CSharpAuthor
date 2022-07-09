@@ -31,7 +31,16 @@ namespace CSharpAuthor
 
             return enumDefinition;
         }
-        
+
+        public InterfaceDefinition AddInterface(string interfaceName)
+        {
+            var interfaceDefinition = new InterfaceDefinition(interfaceName);
+
+            _outputComponents.Add(interfaceDefinition);
+
+            return interfaceDefinition;
+        }
+
         public void AddComponent(IOutputComponent component)
         {
             _outputComponents.Add(component);

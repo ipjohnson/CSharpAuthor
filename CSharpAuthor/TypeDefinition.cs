@@ -76,8 +76,7 @@ namespace CSharpAuthor
         {
             return $"{TypeDefinitionEnum}:{Namespace}:{Name}";
         }
-
-
+        
         public static ITypeDefinition Task(object typeObject)
         {
             var types = new List<ITypeDefinition>();
@@ -94,6 +93,37 @@ namespace CSharpAuthor
             return new GenericTypeDefinition(typeof(Task<>), types);
         }
 
+        public static ITypeDefinition IEnumerable(object typeObject)
+        {
+            var types = new List<ITypeDefinition>();
+
+            if (typeObject is Type type)
+            {
+                types.Add(TypeDefinition.Get(type));
+            }
+            else if (typeObject is ITypeDefinition typeDefinition)
+            {
+                types.Add(typeDefinition);
+            }
+
+            return new GenericTypeDefinition(typeof(IEnumerable<>), types);
+        }
+
+        public static ITypeDefinition List(object typeObject)
+        {
+            var types = new List<ITypeDefinition>();
+
+            if (typeObject is Type type)
+            {
+                types.Add(TypeDefinition.Get(type));
+            }
+            else if (typeObject is ITypeDefinition typeDefinition)
+            {
+                types.Add(typeDefinition);
+            }
+
+            return new GenericTypeDefinition(typeof(List<>), types);
+        }
 
         public static ITypeDefinition Action(params object[] typeArguments)
         {
