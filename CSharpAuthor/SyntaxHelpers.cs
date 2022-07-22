@@ -7,22 +7,22 @@ namespace CSharpAuthor
 {
     public static class SyntaxHelpers
     {
-        public static IOutputComponent New(Type type, params object[] parameters)
+        public static NewStatement New(Type type, params object[] parameters)
         {
             return New(TypeDefinition.Get(type), parameters);
         }
 
-        public static IOutputComponent New(ITypeDefinition typeDefinition, params object[] parameters)
+        public static NewStatement New(ITypeDefinition typeDefinition, params object[] parameters)
         {
             return new NewStatement(typeDefinition, parameters);
         }
 
-        public static IOutputComponent NewArray(Type type, int length)
+        public static NewArrayStatement NewArray(Type type, int length)
         {
             return NewArray(TypeDefinition.Get(type), length);
         }
 
-        public static IOutputComponent NewArray(ITypeDefinition typeDefinition, int length)
+        public static NewArrayStatement NewArray(ITypeDefinition typeDefinition, int length)
         {
             return new NewArrayStatement(typeDefinition, length);
         }
