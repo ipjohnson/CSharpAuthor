@@ -76,7 +76,23 @@ namespace CSharpAuthor
         {
             return $"{TypeDefinitionEnum}:{Namespace}:{Name}";
         }
-        
+
+        public static ITypeDefinition IOptions(object typeObject)
+        {
+            var types = new List<ITypeDefinition>();
+
+            if (typeObject is Type type)
+            {
+                types.Add(TypeDefinition.Get(type));
+            }
+            else if (typeObject is ITypeDefinition typeDefinition)
+            {
+                types.Add(typeDefinition);
+            }
+
+            return new GenericTypeDefinition(TypeDefinitionEnum.ClassDefinition, "IOptions", "Microsoft.Extensions.Options", types);
+        }
+
         public static ITypeDefinition Task(object typeObject)
         {
             var types = new List<ITypeDefinition>();

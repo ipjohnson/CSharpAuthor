@@ -8,6 +8,7 @@ namespace CSharpAuthor
     {
         private readonly ITypeDefinition _typeDefinition;
         private readonly List<IOutputComponent> _arguments = new ();
+        private readonly List<IOutputComponent> _initValues = new ();
 
         public NewStatement(ITypeDefinition typeDefinition, params object[] arguments) : base("")
         {
@@ -24,6 +25,11 @@ namespace CSharpAuthor
         {
             _arguments.Add(argument);
         }
+
+        public void AddInitValue(object initValue)
+        {
+            _initValues.Add(CodeOutputComponent.Get(initValue));
+        }
         
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {
@@ -34,6 +40,13 @@ namespace CSharpAuthor
             _arguments.OutputCommaSeparatedList(outputContext);
 
             outputContext.Write(")");
+
+            if (_initValues.Count > 0)
+            {
+                outputContext.Write("{ ");
+                _initValues.OutputCommaSeparatedList(outputContext);
+                outputContext.Write("}");
+            }
         }
     }
 }
