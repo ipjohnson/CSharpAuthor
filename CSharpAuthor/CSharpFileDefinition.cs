@@ -4,7 +4,7 @@ using System.Text;
 
 namespace CSharpAuthor
 {
-    public class CSharpFileDefinition : BaseOutputComponent
+    public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
     {
         private readonly string _namespace;
         private readonly List<IOutputComponent> _outputComponents = new ();

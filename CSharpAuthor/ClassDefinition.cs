@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 
 namespace CSharpAuthor
 {
-    public class ClassDefinition : BaseOutputComponent
+    public class ClassDefinition : BaseOutputComponent, IConstructContainer
     {
         private readonly List<ITypeDefinition> _baseTypes = new();
         private readonly List<FieldDefinition> _fields = new();
