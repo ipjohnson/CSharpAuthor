@@ -45,7 +45,7 @@ namespace CSharpAuthor
             {
                 outputContext.Write("{ ");
                 _initValues.OutputCommaSeparatedList(outputContext);
-                outputContext.Write("}");
+                outputContext.Write(" }");
             }
         }
     }
