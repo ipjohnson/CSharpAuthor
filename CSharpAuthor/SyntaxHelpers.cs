@@ -95,6 +95,16 @@ namespace CSharpAuthor
         {
             return CodeOutputComponent.Get("null");
         }
+        
+        public static IOutputComponent StaticCast(Type type, object value)
+        {
+            return StaticCast(TypeDefinition.Get(type), value);
+        }
+
+        public static IOutputComponent StaticCast(ITypeDefinition typeDefinition, object value)
+        {
+            return new StaticCastComponent(typeDefinition, value);
+        }
 
         public static IOutputComponent TypeOf(ITypeDefinition typeDefinition)
         {
