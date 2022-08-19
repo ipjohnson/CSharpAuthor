@@ -8,6 +8,8 @@
             TypeDefinition = typeDefinition;
         }
 
+        public bool IsOut { get; set; } = false;
+
         public ITypeDefinition TypeDefinition { get; }
 
         public IOutputComponent? DefaultValue { get; set; }
@@ -15,6 +17,11 @@
         public void WriteWithSignature(IOutputContext outputContext)
         {
             outputContext.AddImportNamespace(TypeDefinition);
+
+            if (IsOut)
+            {
+                outputContext.Write("out ");
+            }
 
             outputContext.Write(TypeDefinition);
             outputContext.WriteSpace();
