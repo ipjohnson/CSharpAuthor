@@ -35,6 +35,11 @@ namespace CSharpAuthor
 
         protected int BaseCompareTo(ITypeDefinition other)
         {
+            if (ReferenceEquals(null, other))
+            {
+                return -1;
+            }
+
             if (TypeDefinitionEnum != other.TypeDefinitionEnum)
             {
                 return TypeDefinitionEnum - other.TypeDefinitionEnum;
