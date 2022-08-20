@@ -37,7 +37,7 @@ namespace CSharpAuthor
         {
             if (ReferenceEquals(null, other))
             {
-                return -1;
+                return 1;
             }
 
             if (TypeDefinitionEnum != other.TypeDefinitionEnum)
