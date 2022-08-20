@@ -9,7 +9,7 @@ namespace CSharpAuthor
     {
         private readonly int _hashCode;
 
-        public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray, bool isNullable = false) : base(typeDefinitionEnum, ns, name, isNullable, isArray)
+        public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray, bool isNullable = false) : base(typeDefinitionEnum, ns, name,  isArray, isNullable)
         {
             _hashCode = $"{TypeDefinitionEnum}:{Namespace}:{Name}".GetHashCode();
         }

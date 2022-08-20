@@ -6,7 +6,7 @@ namespace CSharpAuthor
 {
     public abstract class BaseTypeDefinition : ITypeDefinition
     {
-        protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isNullable, bool isArray)
+        protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray, bool isNullable)
         {
             Name = name;
             Namespace = ns;
