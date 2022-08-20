@@ -5,7 +5,7 @@ using System.Text;
 
 namespace CSharpAuthor
 {
-    public interface ITypeDefinition
+    public interface ITypeDefinition : IComparable<ITypeDefinition>
     {
         TypeDefinitionEnum TypeDefinitionEnum { get; }
 

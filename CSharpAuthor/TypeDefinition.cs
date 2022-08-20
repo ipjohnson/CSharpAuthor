@@ -5,37 +5,22 @@ using System.Threading.Tasks;
 
 namespace CSharpAuthor
 {
-    public class TypeDefinition : ITypeDefinition
+    public class TypeDefinition : BaseTypeDefinition
     {
         private readonly int _hashCode;
 
-        public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray, bool isNullable = false)
+        public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray, bool isNullable = false) : base(typeDefinitionEnum, ns, name, isNullable, isArray)
         {
-            TypeDefinitionEnum = typeDefinitionEnum;
-            Namespace = ns;
-            Name = name;
-            IsArray = isArray;
-            IsNullable = isNullable;
-
             _hashCode = $"{TypeDefinitionEnum}:{Namespace}:{Name}".GetHashCode();
         }
+        
 
-        public TypeDefinitionEnum TypeDefinitionEnum { get; }
-
-        public bool IsNullable { get; }
-
-        public string Namespace { get; }
-
-        public string Name { get; }
-
-        public bool IsArray { get; }
-
-        public IEnumerable<string> KnownNamespaces
+        public override IEnumerable<string> KnownNamespaces
         {
             get { yield return Namespace; }
         }
 
-        public void WriteShortName(StringBuilder builder)
+        public override void WriteShortName(StringBuilder builder)
         {
             builder.Append(Name);
 
@@ -50,9 +35,14 @@ namespace CSharpAuthor
             }
         }
 
-        public ITypeDefinition MakeNullable()
+        public override ITypeDefinition MakeNullable()
         {
             return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, IsArray, true);
+        }
+
+        public override int CompareTo(ITypeDefinition other)
+        {
+            return BaseCompareTo(other);
         }
 
         public override bool Equals(object obj)
@@ -90,7 +80,7 @@ namespace CSharpAuthor
                 types.Add(typeDefinition);
             }
 
-            return new GenericTypeDefinition(TypeDefinitionEnum.ClassDefinition, "IOptions", "Microsoft.Extensions.Options", types);
+            return new GenericTypeDefinition(TypeDefinitionEnum.InterfaceDefinition, "Microsoft.Extensions.Options", "IOptions", types);
         }
 
         public static ITypeDefinition Task(object typeObject)
@@ -220,8 +210,8 @@ namespace CSharpAuthor
                     closingTypes.Add(Get(genericArgument));
                 }
 
-                return new GenericTypeDefinition(typeDefinition, className,
-                    genericTypeDefinition.Namespace, closingTypes, type.IsArray);
+                return new GenericTypeDefinition(typeDefinition, 
+                    genericTypeDefinition.Namespace, className, closingTypes, type.IsArray);
             }
 
             return new TypeDefinition(typeDefinition, type.Namespace, type.Name, type.IsArray);

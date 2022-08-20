@@ -5,38 +5,57 @@ using System.Text;
 
 namespace CSharpAuthor
 {
-    public class GenericTypeDefinition : ITypeDefinition
+    public class GenericTypeDefinition : BaseTypeDefinition
     {
         private readonly int _hashCode;
         private readonly IReadOnlyList<ITypeDefinition> _closingTypes;
 
-        public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray = false, bool isNullable = false) : 
-            this(TypeDefinitionEnum.ClassDefinition, type.GetGenericName(), type.Namespace, closeTypes, isArray, isNullable)
+        public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray = false,
+            bool isNullable = false) :
+            this(TypeDefinitionEnum.ClassDefinition, type.Namespace, type.GetGenericName(),  closeTypes, isArray, isNullable)
         {
 
         }
 
-        public GenericTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string name, string ns, IReadOnlyList<ITypeDefinition> closingTypes, bool isArray = false, bool isNullable = false)
+        public GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
+            bool isArray = false, bool isNullable = false) : base(classType, ns, name, isArray, isNullable)
         {
-            TypeDefinitionEnum = typeDefinitionEnum;
-            Name = name;
-            Namespace = ns;
             _closingTypes = closingTypes;
-            IsArray = isArray;
-            IsNullable = isNullable;
         }
         
-        public TypeDefinitionEnum TypeDefinitionEnum { get; }
+        public override int CompareTo(ITypeDefinition other)
+        {
+            var baseCompare = BaseCompareTo(other);
 
-        public bool IsNullable { get; }
+            if (baseCompare != 0)
+            {
+                return baseCompare;
+            }
 
-        public string Name { get; }
+            if (other is not GenericTypeDefinition genericTypeDefinition)
+            {
+                return -1;
+            }
 
-        public string Namespace { get; }
+            if (genericTypeDefinition._closingTypes.Count != _closingTypes.Count)
+            {
+                return genericTypeDefinition._closingTypes.Count - _closingTypes.Count;
+            }
 
-        public bool IsArray { get; }
+            for (var i = 0; i < _closingTypes.Count; i++)
+            {
+                var compareValue = _closingTypes[i].CompareTo(genericTypeDefinition._closingTypes[i]);
 
-        public IEnumerable<string> KnownNamespaces
+                if (compareValue != 0)
+                {
+                    return compareValue;
+                }
+            }
+
+            return 0;
+        }
+
+        public override IEnumerable<string> KnownNamespaces
         {
             get
             {
@@ -52,7 +71,7 @@ namespace CSharpAuthor
             }
         }
 
-        public void WriteShortName(StringBuilder builder)
+        public override void WriteShortName(StringBuilder builder)
         {
             builder.Append(Name);
             builder.Append('<');
@@ -69,6 +88,7 @@ namespace CSharpAuthor
                 {
                     writeComma = true;
                 }
+
                 typeDefinition.WriteShortName(builder);
             }
 
@@ -85,10 +105,9 @@ namespace CSharpAuthor
             }
         }
 
-        public ITypeDefinition MakeNullable()
+        public override ITypeDefinition MakeNullable()
         {
-            return new GenericTypeDefinition(TypeDefinitionEnum, Name, Namespace, _closingTypes, IsArray, true);
+            return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, IsArray, true);
         }
-        
     }
 }
