@@ -7,12 +7,12 @@ namespace CSharpAuthor
 {
     public class GenericTypeDefinition : BaseTypeDefinition
     {
-        private readonly int _hashCode;
+        private int? _hashCode;
         private readonly IReadOnlyList<ITypeDefinition> _closingTypes;
 
         public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray = false,
             bool isNullable = false) :
-            this(TypeDefinitionEnum.ClassDefinition, type.Namespace, type.GetGenericName(),  closeTypes, isArray, isNullable)
+            this(TypeDefinitionEnum.ClassDefinition, type.Namespace!, type.GetGenericName(),  closeTypes, isArray, isNullable)
         {
 
         }
@@ -22,7 +22,60 @@ namespace CSharpAuthor
         {
             _closingTypes = closingTypes;
         }
-        
+
+        public override bool Equals(object obj)
+        {
+            if (obj is GenericTypeDefinition genericTypeDefinition)
+            {
+                return CompareTo(genericTypeDefinition) == 0;
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return _hashCode ?? ToString().GetHashCode(); 
+        }
+
+        public override string ToString()
+        {
+            var stringBuilder = new StringBuilder();
+
+            stringBuilder.Append(Namespace);
+            stringBuilder.Append('.');
+            stringBuilder.Append(Name);
+            stringBuilder.Append('<');
+            var comma = false;
+
+            foreach (var closingType in _closingTypes)
+            {
+                if (comma)
+                {
+                    stringBuilder.Append(',');
+                }
+                else
+                {
+                    comma = true;
+                }
+                stringBuilder.Append(closingType);
+            }
+
+            stringBuilder.Append('>');
+
+            if (IsArray)
+            {
+                stringBuilder.Append("[]");
+            }
+
+            if (IsNullable)
+            {
+                stringBuilder.Append('?');
+            }
+
+            return stringBuilder.ToString();
+        }
+
         public override int CompareTo(ITypeDefinition other)
         {
             var baseCompare = BaseCompareTo(other);

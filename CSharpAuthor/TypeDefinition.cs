@@ -7,11 +7,11 @@ namespace CSharpAuthor
 {
     public class TypeDefinition : BaseTypeDefinition
     {
-        private readonly int _hashCode;
+        private int? _hashCode;
 
         public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray, bool isNullable = false) : base(typeDefinitionEnum, ns, name,  isArray, isNullable)
         {
-            _hashCode = $"{TypeDefinitionEnum}:{Namespace}:{Name}".GetHashCode();
+            
         }
         
 
@@ -49,9 +49,7 @@ namespace CSharpAuthor
         {
             if (obj is TypeDefinition typeDefinition)
             {
-                return typeDefinition.TypeDefinitionEnum == TypeDefinitionEnum &&
-                    typeDefinition.Name == Name &&
-                    typeDefinition.Namespace == Namespace;
+                return CompareTo(typeDefinition) == 0;
             }
 
             return false;
@@ -59,12 +57,12 @@ namespace CSharpAuthor
 
         public override int GetHashCode()
         {
-            return _hashCode;
+            return _hashCode ?? ToString().GetHashCode();
         }
 
         public override string ToString()
         {
-            return $"{TypeDefinitionEnum}:{Namespace}:{Name}";
+            return $"{Namespace}.{Name}";
         }
 
         public static ITypeDefinition IOptions(object typeObject)
