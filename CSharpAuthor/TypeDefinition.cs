@@ -171,6 +171,10 @@ namespace CSharpAuthor
         {
             return new TypeDefinition(TypeDefinitionEnum.ClassDefinition, ns, name, isArray, isNullable);
         }
+        public static TypeDefinition Get(TypeDefinitionEnum definitionEnum,string ns, string name, bool isArray = false, bool isNullable = false)
+        {
+            return new TypeDefinition(definitionEnum, ns, name, isArray, isNullable);
+        }
 
         public static ITypeDefinition Get(Type type)
         {
