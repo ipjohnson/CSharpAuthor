@@ -158,9 +158,9 @@ namespace CSharpAuthor
             }
         }
 
-        public override ITypeDefinition MakeNullable()
+        public override ITypeDefinition MakeNullable(bool nullable = true)
         {
-            return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, IsArray, true);
+            return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, IsArray, nullable);
         }
 
         public override ITypeDefinition MakeArray()

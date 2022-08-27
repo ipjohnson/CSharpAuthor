@@ -35,9 +35,9 @@ namespace CSharpAuthor
             }
         }
 
-        public override ITypeDefinition MakeNullable()
+        public override ITypeDefinition MakeNullable(bool nullable = true)
         {
-            return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, IsArray, true);
+            return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, IsArray, nullable);
         }
 
         public override ITypeDefinition MakeArray()

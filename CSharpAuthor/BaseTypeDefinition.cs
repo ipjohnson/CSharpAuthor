@@ -23,7 +23,7 @@ namespace CSharpAuthor
 
         public abstract void WriteShortName(StringBuilder builder);
 
-        public abstract ITypeDefinition MakeNullable();
+        public abstract ITypeDefinition MakeNullable(bool nullable = true);
 
         public abstract ITypeDefinition MakeArray();
 

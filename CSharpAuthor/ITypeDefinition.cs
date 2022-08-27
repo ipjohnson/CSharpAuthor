@@ -21,7 +21,7 @@ namespace CSharpAuthor
 
         void WriteShortName(StringBuilder builder);
 
-        ITypeDefinition MakeNullable();
+        ITypeDefinition MakeNullable(bool nullable = true);
 
         ITypeDefinition MakeArray();
     }
