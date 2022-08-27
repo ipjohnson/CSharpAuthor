@@ -162,5 +162,10 @@ namespace CSharpAuthor
         {
             return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, IsArray, true);
         }
+
+        public override ITypeDefinition MakeArray()
+        {
+            return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, true, IsNullable);
+        }
     }
 }

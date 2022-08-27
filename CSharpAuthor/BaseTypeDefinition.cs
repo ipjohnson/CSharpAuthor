@@ -25,6 +25,8 @@ namespace CSharpAuthor
 
         public abstract ITypeDefinition MakeNullable();
 
+        public abstract ITypeDefinition MakeArray();
+
         public TypeDefinitionEnum TypeDefinitionEnum { get; }
 
         public bool IsNullable { get; }

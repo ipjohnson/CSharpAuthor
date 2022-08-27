@@ -40,6 +40,11 @@ namespace CSharpAuthor
             return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, IsArray, true);
         }
 
+        public override ITypeDefinition MakeArray()
+        {
+            return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, true, IsNullable);
+        }
+
         public override int CompareTo(ITypeDefinition other)
         {
             return BaseCompareTo(other);
