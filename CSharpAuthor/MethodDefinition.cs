@@ -18,6 +18,8 @@ namespace CSharpAuthor
 
         public string Name { get; }
 
+        public ITypeDefinition? InterfaceImplementation { get; set; }
+
         public ITypeDefinition? ReturnType => _returnType;
 
         public IReadOnlyList<ParameterDefinition> Parameters => ParameterList;
@@ -68,6 +70,11 @@ namespace CSharpAuthor
             {
                 outputContext.AddImportNamespace(_returnType);
             }
+
+            if (InterfaceImplementation != null)
+            {
+                outputContext.AddImportNamespace(InterfaceImplementation);
+            }
         }
 
         protected virtual void WriteMethodBody(IOutputContext outputContext)
@@ -82,6 +89,12 @@ namespace CSharpAuthor
             WriteReturnType(outputContext);
 
             outputContext.WriteSpace();
+
+            if (InterfaceImplementation != null)
+            {
+                outputContext.Write(InterfaceImplementation);
+                outputContext.Write(".");
+            }
 
             outputContext.Write(Name);
             
@@ -110,30 +123,34 @@ namespace CSharpAuthor
         protected virtual void WriteAccessModifier(IOutputContext outputContext)
         {
             outputContext.WriteIndent();
-            outputContext.Write(GetAccessModifier(KeyWords.Public));
-            outputContext.WriteSpace();
 
-            if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
+            if (InterfaceImplementation == null)
             {
-                outputContext.Write(KeyWords.Static);
+                outputContext.Write(GetAccessModifier(KeyWords.Public));
                 outputContext.WriteSpace();
-            } 
-            else if ((Modifiers & ComponentModifier.Abstract) == ComponentModifier.Abstract)
-            {
-                outputContext.Write(KeyWords.Abstract);
-                outputContext.WriteSpace();
-            }
-            else if ((Modifiers & ComponentModifier.Virtual) == ComponentModifier.Virtual)
-            {
-                outputContext.Write(KeyWords.Virtual);
-                outputContext.WriteSpace();
-            }
-            else if ((Modifiers & ComponentModifier.Override) == ComponentModifier.Override)
-            {
-                outputContext.Write(KeyWords.Override);
-                outputContext.WriteSpace();
-            }
 
+                if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
+                {
+                    outputContext.Write(KeyWords.Static);
+                    outputContext.WriteSpace();
+                }
+                else if ((Modifiers & ComponentModifier.Abstract) == ComponentModifier.Abstract)
+                {
+                    outputContext.Write(KeyWords.Abstract);
+                    outputContext.WriteSpace();
+                }
+                else if ((Modifiers & ComponentModifier.Virtual) == ComponentModifier.Virtual)
+                {
+                    outputContext.Write(KeyWords.Virtual);
+                    outputContext.WriteSpace();
+                }
+                else if ((Modifiers & ComponentModifier.Override) == ComponentModifier.Override)
+                {
+                    outputContext.Write(KeyWords.Override);
+                    outputContext.WriteSpace();
+                }
+            }
+            
             if ((Modifiers & ComponentModifier.Async) == ComponentModifier.Async)
             {
                 outputContext.Write(KeyWords.Async);
