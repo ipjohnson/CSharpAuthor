@@ -1,11 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
+		<Description>Source generation library, intended to be used in C# source generators</Description>
 		<TargetFramework>netstandard2.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<LangVersion>10</LangVersion>
 		<PackageId>CSharpAuthor</PackageId>
-		<Authors>ipjohnson</Authors>
+		<Authors>Ian Johnson</Authors>
+		<PackageTags>source code generation</PackageTags>
+		<PackageProjectUrl>https://github.com/ipjohnson/CSharpAuthor</PackageProjectUrl>
+		<PackageLicenseUrl>https://github.com/ipjohnson/CSharpAuthor/blob/main/LICENSE</PackageLicenseUrl>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/ipjohnson/CSharpAuthor</RepositoryUrl>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -21,6 +27,5 @@
 			<PackageCopyToOutput>true</PackageCopyToOutput>
 		</Content>
 	</ItemGroup>
-
 
 </Project>
