@@ -116,6 +116,30 @@ namespace CSharpAuthor
             return new LogicStatement(" && ", andStatements);
         }
 
+        public static LogicStatement Add(params object[] andStatements)
+        {
+            return new LogicStatement(" + ", andStatements);
+        }
+        
+        public static LogicStatement Subtract(params object[] andStatements)
+        {
+            return new LogicStatement(" - ", andStatements);
+        }
+        
+        public static LogicStatement Multiply(params object[] andStatements)
+        {
+            return new LogicStatement(" * ", andStatements);
+        }
+
+        public static LogicStatement Divide(params object[] andStatements)
+        {
+            return new LogicStatement(" / ", andStatements);
+        }
+        
+        public static LogicStatement ConcatSymbol(string symbol, params object[] andStatements)
+        {
+            return new LogicStatement(symbol, andStatements);
+        }
 
         public static LogicStatement And(IReadOnlyList<IOutputComponent> andStatements)
         {
