@@ -26,7 +26,7 @@ namespace CSharpAuthor
         public abstract ITypeDefinition MakeNullable(bool nullable = true);
 
         public abstract ITypeDefinition MakeArray();
-        public abstract IEnumerable<ITypeDefinition> TypeArguments { get; }
+        public abstract IReadOnlyList<ITypeDefinition> TypeArguments { get; }
 
         public TypeDefinitionEnum TypeDefinitionEnum { get; }
 

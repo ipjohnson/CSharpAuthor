@@ -168,6 +168,6 @@ namespace CSharpAuthor
             return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, true, IsNullable);
         }
 
-        public override IEnumerable<ITypeDefinition> TypeArguments => _closingTypes;
+        public override IReadOnlyList<ITypeDefinition> TypeArguments => _closingTypes;
     }
 }

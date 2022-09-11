@@ -25,7 +25,7 @@ namespace CSharpAuthor
 
         ITypeDefinition MakeArray();
 
-        IEnumerable<ITypeDefinition> TypeArguments { get; }
+        IReadOnlyList<ITypeDefinition> TypeArguments { get; }
     }
 
     public static class ITypeDefinitionExtensions
