@@ -14,7 +14,6 @@ namespace CSharpAuthor
             
         }
         
-
         public override IEnumerable<string> KnownNamespaces
         {
             get { yield return Namespace; }
@@ -44,6 +43,8 @@ namespace CSharpAuthor
         {
             return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, true, IsNullable);
         }
+
+        public override IEnumerable<ITypeDefinition> TypeArguments => Array.Empty<ITypeDefinition>();
 
         public override int CompareTo(ITypeDefinition other)
         {

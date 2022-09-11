@@ -24,6 +24,8 @@ namespace CSharpAuthor
         ITypeDefinition MakeNullable(bool nullable = true);
 
         ITypeDefinition MakeArray();
+
+        IEnumerable<ITypeDefinition> TypeArguments { get; }
     }
 
     public static class ITypeDefinitionExtensions
