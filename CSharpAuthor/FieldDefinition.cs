@@ -24,14 +24,14 @@
             var readonlyString = "";
             var staticString = "";
 
-            if ((Modifiers & ComponentModifier.Readonly) == ComponentModifier.Readonly)
-            {
-                readonlyString = KeyWords.ReadOnly + " ";
-            }
-
             if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
             {
                 staticString = KeyWords.Static + " ";
+            }
+
+            if ((Modifiers & ComponentModifier.Readonly) == ComponentModifier.Readonly)
+            {
+                readonlyString = KeyWords.ReadOnly + " ";
             }
 
             var initValue = "";
