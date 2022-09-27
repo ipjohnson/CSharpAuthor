@@ -168,6 +168,13 @@ namespace CSharpAuthor
             return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, true, IsNullable);
         }
 
+        public ITypeDefinition MakeOpenType()
+        {
+            var emptyTypes = _closingTypes.Select(_ => TypeDefinition.Get("", "")).ToArray();
+
+            return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, IsArray, IsNullable);
+        }
+        
         public override IReadOnlyList<ITypeDefinition> TypeArguments => _closingTypes;
     }
 }
