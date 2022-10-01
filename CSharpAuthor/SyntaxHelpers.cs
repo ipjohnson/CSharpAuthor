@@ -42,6 +42,11 @@ namespace CSharpAuthor
             return new PostfixOutputComponent("?", CodeOutputComponent.Get(outputComponent));
         }
 
+        public static IOutputComponent Parenthesis(object value)
+        {
+            return new WrapStatement(CodeOutputComponent.Get(value), "(", ")");
+        }
+
         public static StaticInvokeStatement Invoke(ITypeDefinition typeDefinition, string methodName, params object[] parameters)
         {
             return new StaticInvokeStatement(typeDefinition, methodName,
