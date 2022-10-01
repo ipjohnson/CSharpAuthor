@@ -13,7 +13,7 @@ namespace CSharpAuthor
             _enumValueName = enumValueName;
         }
 
-        public object Value { get; set; }
+        public object? Value { get; set; }
 
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {

@@ -4,18 +4,20 @@ using System.Text;
 
 namespace CSharpAuthor
 {
-    public class AwaitStatement : BaseOutputComponent
+    public class PrefixOutputComponent : BaseOutputComponent
     {
+        private readonly string _prefix;
         private readonly IOutputComponent _awaitableOutputComponent;
 
-        public AwaitStatement(IOutputComponent awaitableOutputComponent)
+        public PrefixOutputComponent(string prefix, IOutputComponent awaitableOutputComponent)
         {
+            _prefix = prefix;
             _awaitableOutputComponent = awaitableOutputComponent;
         }
 
         protected override void WriteComponentOutput(IOutputContext outputContext)
         {
-            outputContext.Write("await ");
+            outputContext.Write(_prefix);
             _awaitableOutputComponent.WriteOutput(outputContext);
         }
     }

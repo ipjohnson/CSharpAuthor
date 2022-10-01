@@ -14,7 +14,7 @@ namespace CSharpAuthor
             _enumName = enumName;
         }
 
-        public ITypeDefinition BaseType { get; set; }
+        public ITypeDefinition? BaseType { get; set; }
 
         public EnumDefinition AddFlags()
         {

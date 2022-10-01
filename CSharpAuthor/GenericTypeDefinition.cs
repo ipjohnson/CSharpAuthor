@@ -35,7 +35,8 @@ namespace CSharpAuthor
 
         public override int GetHashCode()
         {
-            return _hashCode ?? ToString().GetHashCode(); 
+            // ReSharper disable once NonReadonlyMemberInGetHashCode
+            return _hashCode ??= ToString().GetHashCode(); 
         }
 
         public override string ToString()

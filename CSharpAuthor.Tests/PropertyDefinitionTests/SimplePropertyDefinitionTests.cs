@@ -53,7 +53,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
             propertyDefinition.Get.LambdaSyntax = true;
             propertyDefinition.Get.AddCode("_value;");
 
-            propertyDefinition.Set.LambdaSyntax = true;
+            propertyDefinition.Set!.LambdaSyntax = true;
             propertyDefinition.Set.AddCode("_value = value;");
 
             var context = new OutputContext();
@@ -78,7 +78,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
             
             propertyDefinition.Get.AddCode("return _value;");
             
-            propertyDefinition.Set.AddCode("_value = value;");
+            propertyDefinition.Set!.AddCode("_value = value;");
             propertyDefinition.Set.Modifiers |= ComponentModifier.Private;
 
             var context = new OutputContext();
@@ -111,7 +111,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.Get.AddCode("return _value;");
 
-            propertyDefinition.Set.AddCode("_value = value;");
+            propertyDefinition.Set!.AddCode("_value = value;");
 
             var context = new OutputContext();
 
@@ -143,7 +143,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.Get.AddCode("return _value;");
 
-            propertyDefinition.Set.AddCode("_value = value;");
+            propertyDefinition.Set!.AddCode("_value = value;");
 
             var context = new OutputContext();
 
@@ -175,7 +175,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.Get.AddCode("return _value;");
 
-            propertyDefinition.Set.AddCode("_value = value;");
+            propertyDefinition.Set!.AddCode("_value = value;");
 
             var context = new OutputContext();
 
@@ -207,7 +207,7 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 
             propertyDefinition.Get.AddCode("return _value;");
 
-            propertyDefinition.Set.AddCode("_value = value;");
+            propertyDefinition.Set!.AddCode("_value = value;");
 
             var context = new OutputContext();
 

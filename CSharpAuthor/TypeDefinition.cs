@@ -63,7 +63,8 @@ namespace CSharpAuthor
 
         public override int GetHashCode()
         {
-            return _hashCode ?? ToString().GetHashCode();
+            // ReSharper disable once NonReadonlyMemberInGetHashCode
+            return _hashCode ??= ToString().GetHashCode();
         }
 
         public override string ToString()
@@ -191,7 +192,7 @@ namespace CSharpAuthor
 
             if (IsKnownType(type, out var knownDefinition))
             {
-                return knownDefinition;
+                return knownDefinition!;
             }
 
             var typeDefinition = TypeDefinitionEnum.ClassDefinition;
@@ -219,10 +220,10 @@ namespace CSharpAuthor
                 }
 
                 return new GenericTypeDefinition(typeDefinition, 
-                    genericTypeDefinition.Namespace, className, closingTypes, type.IsArray);
+                    genericTypeDefinition.Namespace!, className, closingTypes, type.IsArray);
             }
 
-            return new TypeDefinition(typeDefinition, type.Namespace, type.Name, type.IsArray);
+            return new TypeDefinition(typeDefinition, type.Namespace!, type.Name, type.IsArray);
         }
 
         private static readonly Dictionary<Type, ITypeDefinition> _knownTypes = new()
