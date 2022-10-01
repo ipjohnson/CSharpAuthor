@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public interface IAttributeAware
 {
-    public interface IAttributeAware
-    {
-        AttributeDefinition AddAttribute(Type type, string argumentStatement = "");
+    AttributeDefinition AddAttribute(Type type, string argumentStatement = "");
         
-        AttributeDefinition AddAttribute(ITypeDefinition typeDefinition, string argumentStatement = "");
-    }
+    AttributeDefinition AddAttribute(ITypeDefinition typeDefinition, string argumentStatement = "");
 }

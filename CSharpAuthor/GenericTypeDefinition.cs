@@ -3,179 +3,178 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class GenericTypeDefinition : BaseTypeDefinition
 {
-    public class GenericTypeDefinition : BaseTypeDefinition
+    private int? _hashCode;
+    private readonly IReadOnlyList<ITypeDefinition> _closingTypes;
+
+    public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray = false,
+        bool isNullable = false) :
+        this(type.IsInterface ? TypeDefinitionEnum.InterfaceDefinition : TypeDefinitionEnum.ClassDefinition, type.Namespace!, type.GetGenericName(),  closeTypes, isArray, isNullable)
     {
-        private int? _hashCode;
-        private readonly IReadOnlyList<ITypeDefinition> _closingTypes;
 
-        public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray = false,
-            bool isNullable = false) :
-            this(type.IsInterface ? TypeDefinitionEnum.InterfaceDefinition : TypeDefinitionEnum.ClassDefinition, type.Namespace!, type.GetGenericName(),  closeTypes, isArray, isNullable)
+    }
+
+    public GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
+        bool isArray = false, bool isNullable = false) : base(classType, ns, name, isArray, isNullable)
+    {
+        _closingTypes = closingTypes;
+    }
+
+    public override bool Equals(object obj)
+    {
+        if (obj is GenericTypeDefinition genericTypeDefinition)
         {
-
+            return CompareTo(genericTypeDefinition) == 0;
         }
 
-        public GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
-            bool isArray = false, bool isNullable = false) : base(classType, ns, name, isArray, isNullable)
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        // ReSharper disable once NonReadonlyMemberInGetHashCode
+        return _hashCode ??= ToString().GetHashCode(); 
+    }
+
+    public override string ToString()
+    {
+        var stringBuilder = new StringBuilder();
+
+        stringBuilder.Append(Namespace);
+        stringBuilder.Append('.');
+        stringBuilder.Append(Name);
+        stringBuilder.Append('<');
+        var comma = false;
+
+        foreach (var closingType in _closingTypes)
         {
-            _closingTypes = closingTypes;
+            if (comma)
+            {
+                stringBuilder.Append(',');
+            }
+            else
+            {
+                comma = true;
+            }
+            stringBuilder.Append(closingType);
         }
 
-        public override bool Equals(object obj)
-        {
-            if (obj is GenericTypeDefinition genericTypeDefinition)
-            {
-                return CompareTo(genericTypeDefinition) == 0;
-            }
+        stringBuilder.Append('>');
 
-            return false;
+        if (IsArray)
+        {
+            stringBuilder.Append("[]");
         }
 
-        public override int GetHashCode()
+        if (IsNullable)
         {
-            // ReSharper disable once NonReadonlyMemberInGetHashCode
-            return _hashCode ??= ToString().GetHashCode(); 
+            stringBuilder.Append('?');
         }
 
-        public override string ToString()
+        return stringBuilder.ToString();
+    }
+
+    public override int CompareTo(ITypeDefinition other)
+    {
+        var baseCompare = BaseCompareTo(other);
+
+        if (baseCompare != 0)
         {
-            var stringBuilder = new StringBuilder();
-
-            stringBuilder.Append(Namespace);
-            stringBuilder.Append('.');
-            stringBuilder.Append(Name);
-            stringBuilder.Append('<');
-            var comma = false;
-
-            foreach (var closingType in _closingTypes)
-            {
-                if (comma)
-                {
-                    stringBuilder.Append(',');
-                }
-                else
-                {
-                    comma = true;
-                }
-                stringBuilder.Append(closingType);
-            }
-
-            stringBuilder.Append('>');
-
-            if (IsArray)
-            {
-                stringBuilder.Append("[]");
-            }
-
-            if (IsNullable)
-            {
-                stringBuilder.Append('?');
-            }
-
-            return stringBuilder.ToString();
+            return baseCompare;
         }
 
-        public override int CompareTo(ITypeDefinition other)
+        if (other is not GenericTypeDefinition genericTypeDefinition)
         {
-            var baseCompare = BaseCompareTo(other);
-
-            if (baseCompare != 0)
-            {
-                return baseCompare;
-            }
-
-            if (other is not GenericTypeDefinition genericTypeDefinition)
-            {
-                return -1;
-            }
-
-            if (genericTypeDefinition._closingTypes.Count != _closingTypes.Count)
-            {
-                return genericTypeDefinition._closingTypes.Count - _closingTypes.Count;
-            }
-
-            for (var i = 0; i < _closingTypes.Count; i++)
-            {
-                var compareValue = _closingTypes[i].CompareTo(genericTypeDefinition._closingTypes[i]);
-
-                if (compareValue != 0)
-                {
-                    return compareValue;
-                }
-            }
-
-            return 0;
+            return -1;
         }
 
-        public override IEnumerable<string> KnownNamespaces
+        if (genericTypeDefinition._closingTypes.Count != _closingTypes.Count)
         {
-            get
-            {
-                foreach (var typeDefinition in _closingTypes)
-                {
-                    foreach (var knownNamespace in typeDefinition.KnownNamespaces)
-                    {
-                        yield return knownNamespace;
-                    }
-                }
+            return genericTypeDefinition._closingTypes.Count - _closingTypes.Count;
+        }
 
-                yield return Namespace;
+        for (var i = 0; i < _closingTypes.Count; i++)
+        {
+            var compareValue = _closingTypes[i].CompareTo(genericTypeDefinition._closingTypes[i]);
+
+            if (compareValue != 0)
+            {
+                return compareValue;
             }
         }
 
-        public override void WriteShortName(StringBuilder builder)
+        return 0;
+    }
+
+    public override IEnumerable<string> KnownNamespaces
+    {
+        get
         {
-            builder.Append(Name);
-            builder.Append('<');
-
-            var writeComma = false;
-
             foreach (var typeDefinition in _closingTypes)
             {
-                if (writeComma)
+                foreach (var knownNamespace in typeDefinition.KnownNamespaces)
                 {
-                    builder.Append(',');
+                    yield return knownNamespace;
                 }
-                else
-                {
-                    writeComma = true;
-                }
-
-                typeDefinition.WriteShortName(builder);
             }
 
-            builder.Append('>');
-
-            if (IsArray)
-            {
-                builder.Append("[]");
-            }
-
-            if (IsNullable)
-            {
-                builder.Append("?");
-            }
+            yield return Namespace;
         }
-
-        public override ITypeDefinition MakeNullable(bool nullable = true)
-        {
-            return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, IsArray, nullable);
-        }
-
-        public override ITypeDefinition MakeArray()
-        {
-            return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, true, IsNullable);
-        }
-
-        public ITypeDefinition MakeOpenType()
-        {
-            var emptyTypes = _closingTypes.Select(_ => TypeDefinition.Get("", "")).ToArray();
-
-            return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, IsArray, IsNullable);
-        }
-        
-        public override IReadOnlyList<ITypeDefinition> TypeArguments => _closingTypes;
     }
+
+    public override void WriteShortName(StringBuilder builder)
+    {
+        builder.Append(Name);
+        builder.Append('<');
+
+        var writeComma = false;
+
+        foreach (var typeDefinition in _closingTypes)
+        {
+            if (writeComma)
+            {
+                builder.Append(',');
+            }
+            else
+            {
+                writeComma = true;
+            }
+
+            typeDefinition.WriteShortName(builder);
+        }
+
+        builder.Append('>');
+
+        if (IsArray)
+        {
+            builder.Append("[]");
+        }
+
+        if (IsNullable)
+        {
+            builder.Append("?");
+        }
+    }
+
+    public override ITypeDefinition MakeNullable(bool nullable = true)
+    {
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, IsArray, nullable);
+    }
+
+    public override ITypeDefinition MakeArray()
+    {
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, true, IsNullable);
+    }
+
+    public ITypeDefinition MakeOpenType()
+    {
+        var emptyTypes = _closingTypes.Select(_ => TypeDefinition.Get("", "")).ToArray();
+
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, IsArray, IsNullable);
+    }
+        
+    public override IReadOnlyList<ITypeDefinition> TypeArguments => _closingTypes;
 }

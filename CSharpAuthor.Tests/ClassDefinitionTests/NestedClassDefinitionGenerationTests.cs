@@ -6,36 +6,36 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace CSharpAuthor.Tests.ClassDefinitionTests
+namespace CSharpAuthor.Tests.ClassDefinitionTests;
+
+public class NestedClassDefinitionGenerationTests
 {
-    public class NestedClassDefinitionGenerationTests
+    [Fact]
+    public void BasicNestedClassTest()
     {
-        [Fact]
-        public void BasicNestedClassTest()
-        {
-            var classDefinition = new ClassDefinition("TestClass");
+        var classDefinition = new ClassDefinition("TestClass");
 
-            classDefinition.AddField(typeof(string), "testField");
+        classDefinition.AddField(typeof(string), "testField");
 
-            classDefinition.AddMethod("TestMethod");
+        classDefinition.AddMethod("TestMethod");
 
-            var nestedClass = classDefinition.AddClass("NestedClass");
+        var nestedClass = classDefinition.AddClass("NestedClass");
 
-            nestedClass.AddField(typeof(string), "_field1");
+        nestedClass.AddField(typeof(string), "_field1");
 
-            nestedClass.AddMethod("NestedTestMethod");
+        nestedClass.AddMethod("NestedTestMethod");
                 
-            var outputContext = new OutputContext();
+        var outputContext = new OutputContext();
 
-            classDefinition.WriteOutput(outputContext);
+        classDefinition.WriteOutput(outputContext);
 
-            var outputString = outputContext.Output();
+        var outputString = outputContext.Output();
 
-            AssertEqual.WithoutNewLine(expectedSimpleClass, outputString);
-        }
+        AssertEqual.WithoutNewLine(expectedSimpleClass, outputString);
+    }
 
-        private static readonly string expectedSimpleClass =
-@"public class TestClass
+    private static readonly string expectedSimpleClass =
+        @"public class TestClass
 {
     private string testField;
 
@@ -53,5 +53,4 @@ namespace CSharpAuthor.Tests.ClassDefinitionTests
     }
 }
 ";
-    }
 }

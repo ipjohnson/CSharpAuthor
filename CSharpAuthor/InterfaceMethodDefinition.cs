@@ -2,37 +2,36 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class InterfaceMethodDefinition : MethodDefinition
 {
-    public class InterfaceMethodDefinition : MethodDefinition
+    public InterfaceMethodDefinition(string name) : base(name)
     {
-        public InterfaceMethodDefinition(string name) : base(name)
-        {
             
-        }
+    }
 
-        protected override void WriteMethodBody(IOutputContext outputContext)
+    protected override void WriteMethodBody(IOutputContext outputContext)
+    {
+        if (StatementCount > 0)
         {
-            if (StatementCount > 0)
-            {
-                base.WriteMethodBody(outputContext);
-            }
+            base.WriteMethodBody(outputContext);
         }
+    }
 
-        protected override void WriteEndOfMethodSignature(IOutputContext outputContext)
+    protected override void WriteEndOfMethodSignature(IOutputContext outputContext)
+    {
+        if (StatementCount == 0)
         {
-            if (StatementCount == 0)
-            {
-                outputContext.Write(";");
-            }
-
-            outputContext.WriteLine();
+            outputContext.Write(";");
         }
+
+        outputContext.WriteLine();
+    }
         
 
-        protected override void WriteAccessModifier(IOutputContext outputContext)
-        {
-            outputContext.WriteIndent();
-        }
+    protected override void WriteAccessModifier(IOutputContext outputContext)
+    {
+        outputContext.WriteIndent();
     }
 }

@@ -1,46 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public interface IOutputContext
 {
-    public interface IOutputContext
-    {
-        string SingleIndent { get; }
+    string SingleIndent { get; }
 
-        string IndentString { get; }
+    string IndentString { get; }
 
-        void IncrementIndent();
+    void IncrementIndent();
 
-        void DecrementIndent();
+    void DecrementIndent();
 
-        void Write(string text);
+    void Write(string text);
 
-        void Write(ITypeDefinition typeDefinition);
+    void Write(ITypeDefinition typeDefinition);
 
-        void WriteLine();
+    void WriteLine();
 
-        void WriteLine(string text);
+    void WriteLine(string text);
 
-        void WriteSpace();
+    void WriteSpace();
 
-        void WriteIndent(string text = "");
+    void WriteIndent(string text = "");
 
-        void WriteIndentedLine(string text);
+    void WriteIndentedLine(string text);
 
-        string Output();
+    string Output();
 
-        void OpenScope();
+    void OpenScope();
 
-        void CloseScope();
+    void CloseScope();
 
-        void AddImportNamespace(string ns);
+    void AddImportNamespace(string ns);
 
-        void AddImportNamespace(ITypeDefinition typeDefinition);
+    void AddImportNamespace(ITypeDefinition typeDefinition);
 
-        void AddImportNamespaces(IEnumerable<string> namespaces);
+    void AddImportNamespaces(IEnumerable<string> namespaces);
 
-        void AddImportNamespaces(IEnumerable<ITypeDefinition> typeDefinition);
+    void AddImportNamespaces(IEnumerable<ITypeDefinition> typeDefinition);
 
-        void GenerateUsingStatements();
-    }
+    void GenerateUsingStatements();
 }

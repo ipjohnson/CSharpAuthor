@@ -2,30 +2,29 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class AssignmentStatement : BaseOutputComponent
 {
-    public class AssignmentStatement : BaseOutputComponent
+    private readonly IOutputComponent _valueComponent;
+    private readonly IOutputComponent _destinationComponent;
+
+    public AssignmentStatement(IOutputComponent valueComponent, IOutputComponent destinationComponent)
     {
-        private readonly IOutputComponent _valueComponent;
-        private readonly IOutputComponent _destinationComponent;
+        _valueComponent = valueComponent;
+        _destinationComponent = destinationComponent;
+    }
 
-        public AssignmentStatement(IOutputComponent valueComponent, IOutputComponent destinationComponent)
+    protected override void WriteComponentOutput(IOutputContext outputContext)
+    {
+        if (Indented)
         {
-            _valueComponent = valueComponent;
-            _destinationComponent = destinationComponent;
+            outputContext.WriteIndent();
         }
-
-        protected override void WriteComponentOutput(IOutputContext outputContext)
-        {
-            if (Indented)
-            {
-                outputContext.WriteIndent();
-            }
             
-            _destinationComponent.WriteOutput(outputContext);
-            outputContext.Write(" = ");
-            _valueComponent.WriteOutput(outputContext);
-            outputContext.WriteLine(";");
-        }
+        _destinationComponent.WriteOutput(outputContext);
+        outputContext.Write(" = ");
+        _valueComponent.WriteOutput(outputContext);
+        outputContext.WriteLine(";");
     }
 }

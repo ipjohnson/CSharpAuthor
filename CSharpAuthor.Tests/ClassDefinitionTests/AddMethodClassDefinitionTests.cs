@@ -5,29 +5,28 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace CSharpAuthor.Tests.ClassDefinitionTests
+namespace CSharpAuthor.Tests.ClassDefinitionTests;
+
+public class AddMethodClassDefinitionTests
 {
-    public class AddMethodClassDefinitionTests
+    [Fact]
+    public void ClassWithPropertyTest()
     {
-        [Fact]
-        public void ClassWithPropertyTest()
-        {
-            var classDefinition = new ClassDefinition("Test");
+        var classDefinition = new ClassDefinition("Test");
 
-            var property = classDefinition.AddProperty(typeof(int), "IntValue");
+        var property = classDefinition.AddProperty(typeof(int), "IntValue");
 
-            property.Get.LambdaSyntax = true;
-            property.Get.AddCode("_intValue");
+        property.Get.LambdaSyntax = true;
+        property.Get.AddCode("_intValue");
 
-            var outputContext = new OutputContext();
+        var outputContext = new OutputContext();
 
-            classDefinition.WriteOutput(outputContext);
-        }
+        classDefinition.WriteOutput(outputContext);
+    }
 
-        private const string ClassWithPropertyExpected =
-@"public class Test
+    private const string ClassWithPropertyExpected =
+        @"public class Test
 {
     public int IntValue => _intValue;
 }";
-    }
 }

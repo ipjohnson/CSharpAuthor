@@ -5,20 +5,19 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace CSharpAuthor.Tests.TypeDefinitionTests
+namespace CSharpAuthor.Tests.TypeDefinitionTests;
+
+public class WriteShortNameTests
 {
-    public class WriteShortNameTests
+    [Fact]
+    public void WriteGenericShortName()
     {
-        [Fact]
-        public void WriteGenericShortName()
-        {
-            var typeDefinition = TypeDefinition.Get(typeof(Task<string>));
+        var typeDefinition = TypeDefinition.Get(typeof(Task<string>));
 
-            var stringBuilder = new StringBuilder();
+        var stringBuilder = new StringBuilder();
 
-            typeDefinition.WriteShortName(stringBuilder);
+        typeDefinition.WriteShortName(stringBuilder);
 
-            Assert.Equal("Task<string>", stringBuilder.ToString());
-        }
+        Assert.Equal("Task<string>", stringBuilder.ToString());
     }
 }

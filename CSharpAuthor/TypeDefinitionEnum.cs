@@ -1,11 +1,10 @@
-﻿namespace CSharpAuthor
+﻿namespace CSharpAuthor;
+
+public enum TypeDefinitionEnum
 {
-    public enum TypeDefinitionEnum
-    {
-        ClassDefinition,
+    ClassDefinition,
 
-        EnumDefinition,
+    EnumDefinition,
 
-        InterfaceDefinition
-    }
+    InterfaceDefinition
 }

@@ -3,42 +3,41 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class PropertyMethodDefinition : MethodDefinition
 {
-    public class PropertyMethodDefinition : MethodDefinition
+    public PropertyMethodDefinition() : base("")
     {
-        public PropertyMethodDefinition() : base("")
+
+    }
+
+    public bool LambdaSyntax { get; set; }
+
+    protected override void WriteMethodSignature(IOutputContext outputContext)
+    {
+        // don't write anything as it will be covered 
+    }
+
+    protected override void WriteMethodBody(IOutputContext outputContext)
+    {
+        if (LambdaSyntax)
         {
+            outputContext.Write(" => ");
+            var statement = StatementList.First();
 
-        }
-
-        public bool LambdaSyntax { get; set; }
-
-        protected override void WriteMethodSignature(IOutputContext outputContext)
-        {
-            // don't write anything as it will be covered 
-        }
-
-        protected override void WriteMethodBody(IOutputContext outputContext)
-        {
-            if (LambdaSyntax)
+            if (statement is CodeOutputComponent statementOutput)
             {
-                outputContext.Write(" => ");
-                var statement = StatementList.First();
-
-                if (statement is CodeOutputComponent statementOutput)
-                {
-                    statementOutput.Indented = false;
-                }
-
-                statement.WriteOutput(outputContext);
-                outputContext.WriteLine();
+                statementOutput.Indented = false;
             }
-            else
-            {
-                outputContext.WriteLine();
-                base.WriteMethodBody(outputContext);
-            }
+
+            statement.WriteOutput(outputContext);
+            outputContext.WriteLine();
+        }
+        else
+        {
+            outputContext.WriteLine();
+            base.WriteMethodBody(outputContext);
         }
     }
 }

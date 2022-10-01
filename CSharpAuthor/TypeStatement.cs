@@ -2,20 +2,19 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class TypeStatement : BaseOutputComponent
 {
-    public class TypeStatement : BaseOutputComponent
+    private readonly ITypeDefinition _typeDefinition;
+
+    public TypeStatement(ITypeDefinition typeDefinition)
     {
-        private readonly ITypeDefinition _typeDefinition;
+        _typeDefinition = typeDefinition;
+    }
 
-        public TypeStatement(ITypeDefinition typeDefinition)
-        {
-            _typeDefinition = typeDefinition;
-        }
-
-        protected override void WriteComponentOutput(IOutputContext outputContext)
-        {
-            outputContext.Write(_typeDefinition);
-        }
+    protected override void WriteComponentOutput(IOutputContext outputContext)
+    {
+        outputContext.Write(_typeDefinition);
     }
 }

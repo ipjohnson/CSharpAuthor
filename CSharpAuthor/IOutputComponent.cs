@@ -1,9 +1,8 @@
-﻿namespace CSharpAuthor
-{
-    public interface IOutputComponent
-    {
-        void AddUsingNamespace(string ns);
+﻿namespace CSharpAuthor;
 
-        void WriteOutput(IOutputContext outputContext);
-    }
+public interface IOutputComponent
+{
+    void AddUsingNamespace(string ns);
+
+    void WriteOutput(IOutputContext outputContext);
 }

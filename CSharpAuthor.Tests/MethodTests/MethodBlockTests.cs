@@ -5,33 +5,33 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace CSharpAuthor.Tests.MethodTests
+namespace CSharpAuthor.Tests.MethodTests;
+
+public class MethodBlockTests
 {
-    public class MethodBlockTests
+    [Fact]
+    public void TryCatchTest()
     {
-        [Fact]
-        public void TryCatchTest()
-        {
-            var method = new MethodDefinition("Test");
+        var method = new MethodDefinition("Test");
 
-            var tryBlock = method.Try();
+        var tryBlock = method.Try();
 
-            tryBlock.Assign("10").To("var test");
-            tryBlock.Throw(typeof(Exception), "\"message\"");
+        tryBlock.Assign("10").To("var test");
+        tryBlock.Throw(typeof(Exception), "\"message\"");
 
-            tryBlock.Catch(typeof(Exception), "e").AddCode("e.ToString();");
+        tryBlock.Catch(typeof(Exception), "e").AddCode("e.ToString();");
 
-            tryBlock.Finally().AddCode("// got here");
+        tryBlock.Finally().AddCode("// got here");
 
-            var outputContext = new OutputContext();
+        var outputContext = new OutputContext();
 
-            method.WriteOutput(outputContext);
+        method.WriteOutput(outputContext);
 
-            AssertEqual.WithoutNewLine(TryCatchExpected, outputContext.Output());
-        }
+        AssertEqual.WithoutNewLine(TryCatchExpected, outputContext.Output());
+    }
 
-        private const string TryCatchExpected = 
-@"public void Test()
+    private const string TryCatchExpected = 
+        @"public void Test()
 {
     try
     {
@@ -49,28 +49,28 @@ namespace CSharpAuthor.Tests.MethodTests
 }
 ";
 
-        [Fact]
-        public void ForEachTest()
-        {
-            var method = new MethodDefinition("Test");
+    [Fact]
+    public void ForEachTest()
+    {
+        var method = new MethodDefinition("Test");
 
-            var collection = method.AddParameter(typeof(IEnumerable<object>), "collection");
+        var collection = method.AddParameter(typeof(IEnumerable<object>), "collection");
 
-            var forEachBlock = method.ForEach("someValue", collection);
+        var forEachBlock = method.ForEach("someValue", collection);
 
-            var someValue = forEachBlock.Instance;
+        var someValue = forEachBlock.Instance;
             
-            forEachBlock.Assign(someValue.Invoke("ToString")).ToVar("someField");
+        forEachBlock.Assign(someValue.Invoke("ToString")).ToVar("someField");
 
-            var outputContext = new OutputContext();
+        var outputContext = new OutputContext();
 
-            method.WriteOutput(outputContext);
+        method.WriteOutput(outputContext);
 
-            AssertEqual.WithoutNewLine(ForEachExpected, outputContext.Output());
-        }
+        AssertEqual.WithoutNewLine(ForEachExpected, outputContext.Output());
+    }
 
-        private const string ForEachExpected = 
-@"public void Test(IEnumerable<object> collection)
+    private const string ForEachExpected = 
+        @"public void Test(IEnumerable<object> collection)
 {
     foreach(var someValue in collection)
     {
@@ -79,28 +79,28 @@ namespace CSharpAuthor.Tests.MethodTests
 }
 ";
 
-        [Fact]
-        public void IfElseIfBlockTest()
-        {
-            var method = new MethodDefinition("Test");
+    [Fact]
+    public void IfElseIfBlockTest()
+    {
+        var method = new MethodDefinition("Test");
 
-            var ifBlock = method.If("x > 100");
+        var ifBlock = method.If("x > 100");
 
-            ifBlock.AddCode("Console.WriteLine(\"Over 100\");");
+        ifBlock.AddCode("Console.WriteLine(\"Over 100\");");
 
-            ifBlock.ElseIf("x > 50").AddCode("Console.WriteLine(\"Over 50\");");
+        ifBlock.ElseIf("x > 50").AddCode("Console.WriteLine(\"Over 50\");");
 
-            ifBlock.Else().AddCode("Console.WriteLine(\"50 and under\");");
+        ifBlock.Else().AddCode("Console.WriteLine(\"50 and under\");");
 
-            var outputContext = new OutputContext();
+        var outputContext = new OutputContext();
 
-            method.WriteOutput(outputContext);
+        method.WriteOutput(outputContext);
 
-            AssertEqual.WithoutNewLine(IfElseExpected, outputContext.Output());
-        }
+        AssertEqual.WithoutNewLine(IfElseExpected, outputContext.Output());
+    }
 
-        private const string IfElseExpected =
-@"public void Test()
+    private const string IfElseExpected =
+        @"public void Test()
 {
     if (x > 100)
     {
@@ -117,10 +117,9 @@ namespace CSharpAuthor.Tests.MethodTests
 }
 ";
 
-        [Fact]
-        public void AssignToTest()
-        {
+    [Fact]
+    public void AssignToTest()
+    {
 
-        }
     }
 }

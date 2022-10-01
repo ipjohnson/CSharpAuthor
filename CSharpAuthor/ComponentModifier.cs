@@ -1,30 +1,29 @@
 ﻿using System;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+[Flags]
+public enum ComponentModifier
 {
-    [Flags]
-    public enum ComponentModifier
-    {
-        None = 0,
+    None = 0,
 
-        Public = 1,
+    Public = 1,
 
-        Protected = 2,
+    Protected = 2,
 
-        Private = 4,
+    Private = 4,
 
-        Readonly = 8,
+    Readonly = 8,
 
-        Static = 16,
+    Static = 16,
 
-        Virtual = 32,
+    Virtual = 32,
 
-        Override = 64,
+    Override = 64,
 
-        Abstract = 128,
+    Abstract = 128,
 
-        Async = 256,
+    Async = 256,
 
-        Partial = 512,
-    }
+    Partial = 512,
 }

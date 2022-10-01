@@ -4,10 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CSharpAuthor.Tests.Models
+namespace CSharpAuthor.Tests.Models;
+
+public class GetAttribute : Attribute
 {
-    public class GetAttribute : Attribute
-    {
-        public string? Path { get; set; }
-    }
+    public string? Path { get; set; }
 }

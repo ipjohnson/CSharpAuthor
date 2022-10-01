@@ -3,40 +3,39 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public interface ITypeDefinition : IComparable<ITypeDefinition>
 {
-    public interface ITypeDefinition : IComparable<ITypeDefinition>
+    TypeDefinitionEnum TypeDefinitionEnum { get; }
+
+    bool IsNullable { get; }
+
+    bool IsArray { get; }
+
+    string Name { get; }
+
+    string Namespace { get; }
+
+    IEnumerable<string> KnownNamespaces { get; }
+
+    void WriteShortName(StringBuilder builder);
+
+    ITypeDefinition MakeNullable(bool nullable = true);
+
+    ITypeDefinition MakeArray();
+
+    IReadOnlyList<ITypeDefinition> TypeArguments { get; }
+}
+
+public static class ITypeDefinitionExtensions
+{
+    public static string GetShortName(this ITypeDefinition typeDefinition)
     {
-        TypeDefinitionEnum TypeDefinitionEnum { get; }
+        var stringBuilder = new StringBuilder();
 
-        bool IsNullable { get; }
+        typeDefinition.WriteShortName(stringBuilder);
 
-        bool IsArray { get; }
-
-        string Name { get; }
-
-        string Namespace { get; }
-
-        IEnumerable<string> KnownNamespaces { get; }
-
-        void WriteShortName(StringBuilder builder);
-
-        ITypeDefinition MakeNullable(bool nullable = true);
-
-        ITypeDefinition MakeArray();
-
-        IReadOnlyList<ITypeDefinition> TypeArguments { get; }
-    }
-
-    public static class ITypeDefinitionExtensions
-    {
-        public static string GetShortName(this ITypeDefinition typeDefinition)
-        {
-            var stringBuilder = new StringBuilder();
-
-            typeDefinition.WriteShortName(stringBuilder);
-
-            return stringBuilder.ToString();
-        }
+        return stringBuilder.ToString();
     }
 }

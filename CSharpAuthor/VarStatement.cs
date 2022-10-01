@@ -2,27 +2,26 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class VarStatement : BaseOutputComponent
 {
-    public class VarStatement : BaseOutputComponent
+    private readonly IOutputComponent _variable;
+
+    public VarStatement(IOutputComponent variable)
     {
-        private readonly IOutputComponent _variable;
+        _variable = variable;
+    }
 
-        public VarStatement(IOutputComponent variable)
+    protected override void WriteComponentOutput(IOutputContext outputContext)
+    {
+        if (Indented)
         {
-            _variable = variable;
+            outputContext.WriteIndent();
         }
 
-        protected override void WriteComponentOutput(IOutputContext outputContext)
-        {
-            if (Indented)
-            {
-                outputContext.WriteIndent();
-            }
-
-            outputContext.Write("var ");
+        outputContext.Write("var ");
             
-            _variable.WriteOutput(outputContext);
-        }
+        _variable.WriteOutput(outputContext);
     }
 }

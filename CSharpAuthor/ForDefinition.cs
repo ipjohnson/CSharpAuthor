@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class ForDefinition : BaseBlockDefinition
 {
-    public class ForDefinition : BaseBlockDefinition
+    protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        protected override void WriteComponentOutput(IOutputContext outputContext)
-        {
             
-        }
     }
 }

@@ -2,22 +2,21 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class IndentedStatementComponent : BaseOutputComponent
 {
-    public class IndentedStatementComponent : BaseOutputComponent
+    private readonly IOutputComponent _component;
+
+    public IndentedStatementComponent(IOutputComponent component)
     {
-        private readonly IOutputComponent _component;
+        _component = component;
+    }
 
-        public IndentedStatementComponent(IOutputComponent component)
-        {
-            _component = component;
-        }
-
-        protected override void WriteComponentOutput(IOutputContext outputContext)
-        {
-            outputContext.WriteIndent();
-            _component.WriteOutput(outputContext);
-            outputContext.WriteLine(";");
-        }
+    protected override void WriteComponentOutput(IOutputContext outputContext)
+    {
+        outputContext.WriteIndent();
+        _component.WriteOutput(outputContext);
+        outputContext.WriteLine(";");
     }
 }

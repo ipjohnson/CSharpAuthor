@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class CloseScopeComponent : BaseOutputComponent
 {
-    public class CloseScopeComponent : BaseOutputComponent
+    protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        protected override void WriteComponentOutput(IOutputContext outputContext)
-        {
-            outputContext.DecrementIndent();
-            outputContext.WriteIndentedLine("}");
-        }
+        outputContext.DecrementIndent();
+        outputContext.WriteIndentedLine("}");
     }
 }

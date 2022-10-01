@@ -2,31 +2,30 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class CaseBlockDefinition : BaseBlockDefinition
 {
-    public class CaseBlockDefinition : BaseBlockDefinition
+    private readonly IOutputComponent _caseStatement;
+
+    public CaseBlockDefinition(IOutputComponent caseStatement)
     {
-        private readonly IOutputComponent _caseStatement;
-
-        public CaseBlockDefinition(IOutputComponent caseStatement)
-        {
-            _caseStatement = caseStatement;
-        }
+        _caseStatement = caseStatement;
+    }
         
-        protected override void WriteComponentOutput(IOutputContext outputContext)
+    protected override void WriteComponentOutput(IOutputContext outputContext)
+    {
+        outputContext.WriteIndent();
+        _caseStatement.WriteOutput(outputContext);
+        outputContext.WriteLine();
+
+        outputContext.IncrementIndent();
+
+        foreach (var caseBlockDefinition in StatementList)
         {
-            outputContext.WriteIndent();
-            _caseStatement.WriteOutput(outputContext);
-            outputContext.WriteLine();
-
-            outputContext.IncrementIndent();
-
-            foreach (var caseBlockDefinition in StatementList)
-            {
-                caseBlockDefinition.WriteOutput(outputContext);
-            }
-
-            outputContext.DecrementIndent();
+            caseBlockDefinition.WriteOutput(outputContext);
         }
+
+        outputContext.DecrementIndent();
     }
 }

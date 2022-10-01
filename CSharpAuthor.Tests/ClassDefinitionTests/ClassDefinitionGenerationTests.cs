@@ -8,32 +8,32 @@ using System.Threading.Tasks;
 using CSharpAuthor.Tests.Models;
 using Xunit;
 
-namespace CSharpAuthor.Tests.ClassDefinitionTests
+namespace CSharpAuthor.Tests.ClassDefinitionTests;
+
+public class ClassDefinitionGenerationTests
 {
-    public class ClassDefinitionGenerationTests
+    [Fact]
+    public void SimpleClassGeneration()
     {
-        [Fact]
-        public void SimpleClassGeneration()
-        {
-            var classDefinition = new ClassDefinition("TestClass");
+        var classDefinition = new ClassDefinition("TestClass");
 
-            classDefinition.AddAttribute(typeof(GeneratedCodeAttribute));
+        classDefinition.AddAttribute(typeof(GeneratedCodeAttribute));
 
-            classDefinition.AddField(typeof(string), "testField");
+        classDefinition.AddField(typeof(string), "testField");
 
-            classDefinition.AddMethod("TestMethod").AddAttribute(typeof(GetAttribute), "Path = \"/Test\"");
+        classDefinition.AddMethod("TestMethod").AddAttribute(typeof(GetAttribute), "Path = \"/Test\"");
 
-            var outputContext = new OutputContext();
+        var outputContext = new OutputContext();
 
-            classDefinition.WriteOutput(outputContext);
+        classDefinition.WriteOutput(outputContext);
 
-            var outputString = outputContext.Output();
+        var outputString = outputContext.Output();
 
-            AssertEqual.WithoutNewLine(expectedSimpleClass, outputString);
-        }
+        AssertEqual.WithoutNewLine(expectedSimpleClass, outputString);
+    }
 
-        private static readonly string expectedSimpleClass =
-@"[GeneratedCode]
+    private static readonly string expectedSimpleClass =
+        @"[GeneratedCode]
 public class TestClass
 {
     private string testField;
@@ -44,5 +44,4 @@ public class TestClass
     }
 }
 ";
-    }
 }

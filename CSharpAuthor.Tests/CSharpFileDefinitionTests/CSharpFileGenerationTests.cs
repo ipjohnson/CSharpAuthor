@@ -6,32 +6,32 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace CSharpAuthor.Tests.CSharpFileDefinitionTests
+namespace CSharpAuthor.Tests.CSharpFileDefinitionTests;
+
+public class CSharpFileGenerationTests
 {
-    public class CSharpFileGenerationTests
+    [Fact]
+    public void SimpleCSharpFile()
     {
-        [Fact]
-        public void SimpleCSharpFile()
-        {
-            var file = new CSharpFileDefinition("TestNamespace");
+        var file = new CSharpFileDefinition("TestNamespace");
 
-            var classDefinition = file.AddClass("TestClass");
+        var classDefinition = file.AddClass("TestClass");
 
-            var method = classDefinition.AddMethod("SomeMethod");
+        var method = classDefinition.AddMethod("SomeMethod");
 
-            classDefinition.AddUsingNamespace("TestingNamespace");
+        classDefinition.AddUsingNamespace("TestingNamespace");
             
-            var outputContext = new OutputContext();
+        var outputContext = new OutputContext();
 
-            file.WriteOutput(outputContext);
+        file.WriteOutput(outputContext);
 
-            var outputString = outputContext.Output();
+        var outputString = outputContext.Output();
             
-            AssertEqual.WithoutNewLine(_expectedCSharpFile, outputString);
-        }
+        AssertEqual.WithoutNewLine(_expectedCSharpFile, outputString);
+    }
 
-        private const string _expectedCSharpFile =
-@"using TestingNamespace;
+    private const string _expectedCSharpFile =
+        @"using TestingNamespace;
 
 namespace TestNamespace
 {
@@ -44,5 +44,4 @@ namespace TestNamespace
     }
 }
 ";
-    }
 }

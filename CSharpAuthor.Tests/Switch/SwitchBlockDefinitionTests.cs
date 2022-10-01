@@ -6,35 +6,35 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace CSharpAuthor.Tests.Switch
+namespace CSharpAuthor.Tests.Switch;
+
+public class SwitchBlockDefinitionTests
 {
-    public class SwitchBlockDefinitionTests
+    [Fact]
+    public void SimpleSwitchStatement()
     {
-        [Fact]
-        public void SimpleSwitchStatement()
-        {
-            var switchStatement = new SwitchBlockDefinition(CodeOutputComponent.Get("switchValue"));
+        var switchStatement = new SwitchBlockDefinition(CodeOutputComponent.Get("switchValue"));
 
-            switchStatement.AddCase(QuoteString("a"));
-            switchStatement.AddCase(QuoteString("b"));
-            var cBlock = switchStatement.AddCase(QuoteString("c"));
+        switchStatement.AddCase(QuoteString("a"));
+        switchStatement.AddCase(QuoteString("b"));
+        var cBlock = switchStatement.AddCase(QuoteString("c"));
 
-            cBlock.Return(QuoteString("abc"));
+        cBlock.Return(QuoteString("abc"));
             
-            var dBlock = switchStatement.AddCase(QuoteString("d"));
-            dBlock.Break();
+        var dBlock = switchStatement.AddCase(QuoteString("d"));
+        dBlock.Break();
 
-            switchStatement.AddDefault().Return(QuoteString("Other"));
+        switchStatement.AddDefault().Return(QuoteString("Other"));
 
-            var outputContext = new OutputContext();
+        var outputContext = new OutputContext();
 
-            switchStatement.WriteOutput(outputContext);
+        switchStatement.WriteOutput(outputContext);
 
-            AssertEqual.WithoutNewLine(SimpleSwitchStatementExpected, outputContext.Output());
-        }
+        AssertEqual.WithoutNewLine(SimpleSwitchStatementExpected, outputContext.Output());
+    }
 
-        private const string SimpleSwitchStatementExpected = 
-@"switch (switchValue)
+    private const string SimpleSwitchStatementExpected = 
+        @"switch (switchValue)
 {
     case ""a"":
     case ""b"":
@@ -46,5 +46,4 @@ namespace CSharpAuthor.Tests.Switch
         return ""Other"";
 }
 ";
-    }
 }

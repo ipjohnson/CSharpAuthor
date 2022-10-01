@@ -2,22 +2,21 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class BaseStatement : BaseOutputComponent
 {
-    public class BaseStatement : BaseOutputComponent
+    private readonly IReadOnlyList<IOutputComponent> _components;
+
+    public BaseStatement(IReadOnlyList<IOutputComponent> components)
     {
-        private readonly IReadOnlyList<IOutputComponent> _components;
+        _components = components;
+    }
 
-        public BaseStatement(IReadOnlyList<IOutputComponent> components)
-        {
-            _components = components;
-        }
-
-        protected override void WriteComponentOutput(IOutputContext outputContext)
-        {
-            outputContext.Write("base(");
-            _components.OutputCommaSeparatedList(outputContext);
-            outputContext.Write(")");
-        }
+    protected override void WriteComponentOutput(IOutputContext outputContext)
+    {
+        outputContext.Write("base(");
+        _components.OutputCommaSeparatedList(outputContext);
+        outputContext.Write(")");
     }
 }

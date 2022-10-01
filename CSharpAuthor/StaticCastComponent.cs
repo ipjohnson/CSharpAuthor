@@ -2,25 +2,24 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class StaticCastComponent : BaseOutputComponent
 {
-    public class StaticCastComponent : BaseOutputComponent
+    private readonly ITypeDefinition _typeDefinition;
+    private readonly IOutputComponent _value;
+
+    public StaticCastComponent(ITypeDefinition typeDefinition, object value)
     {
-        private readonly ITypeDefinition _typeDefinition;
-        private readonly IOutputComponent _value;
+        _typeDefinition = typeDefinition;
+        _value = CodeOutputComponent.Get(value);
+    }
 
-        public StaticCastComponent(ITypeDefinition typeDefinition, object value)
-        {
-            _typeDefinition = typeDefinition;
-            _value = CodeOutputComponent.Get(value);
-        }
-
-        protected override void WriteComponentOutput(IOutputContext outputContext)
-        {
-            outputContext.Write("(");
-            outputContext.Write(_typeDefinition);
-            outputContext.Write(")");
-            _value.WriteOutput(outputContext);
-        }
+    protected override void WriteComponentOutput(IOutputContext outputContext)
+    {
+        outputContext.Write("(");
+        outputContext.Write(_typeDefinition);
+        outputContext.Write(")");
+        _value.WriteOutput(outputContext);
     }
 }

@@ -2,43 +2,42 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class AttributeDefinition : BaseOutputComponent
 {
-    public class AttributeDefinition : BaseOutputComponent
+    private const string AttributePostfix = "Attribute";
+    private readonly ITypeDefinition _attributeType;
+
+    public AttributeDefinition(ITypeDefinition attributeType)
     {
-        private const string AttributePostfix = "Attribute";
-        private readonly ITypeDefinition _attributeType;
+        _attributeType = attributeType;
+    }
 
-        public AttributeDefinition(ITypeDefinition attributeType)
+    public string? ArgumentStatement { get; set; }
+
+    protected override void WriteComponentOutput(IOutputContext outputContext)
+    {
+        var argumentListString = GetArgumentListString();
+        var attributeName = _attributeType.Name;
+
+        if (attributeName.EndsWith(AttributePostfix))
         {
-            _attributeType = attributeType;
+            attributeName = attributeName.Substring(0, attributeName.Length - AttributePostfix.Length);
         }
 
-        public string? ArgumentStatement { get; set; }
+        outputContext.AddImportNamespace(_attributeType);
 
-        protected override void WriteComponentOutput(IOutputContext outputContext)
+        outputContext.WriteIndentedLine($"[{attributeName}{argumentListString}]");
+    }
+
+    private string GetArgumentListString()
+    {
+        if (string.IsNullOrEmpty(ArgumentStatement))
         {
-            var argumentListString = GetArgumentListString();
-            var attributeName = _attributeType.Name;
-
-            if (attributeName.EndsWith(AttributePostfix))
-            {
-                attributeName = attributeName.Substring(0, attributeName.Length - AttributePostfix.Length);
-            }
-
-            outputContext.AddImportNamespace(_attributeType);
-
-            outputContext.WriteIndentedLine($"[{attributeName}{argumentListString}]");
+            return "";
         }
 
-        private string GetArgumentListString()
-        {
-            if (string.IsNullOrEmpty(ArgumentStatement))
-            {
-                return "";
-            }
-
-            return $"({ArgumentStatement})";
-        }
+        return $"({ArgumentStatement})";
     }
 }

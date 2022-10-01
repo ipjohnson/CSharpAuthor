@@ -5,19 +5,18 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace CSharpAuthor.Tests.TypeDefinitionTests
+namespace CSharpAuthor.Tests.TypeDefinitionTests;
+
+public class GetTests
 {
-    public class GetTests
+    [Fact]
+    public void GenericClassGet()
     {
-        [Fact]
-        public void GenericClassGet()
-        {
-            var definition = TypeDefinition.Get(typeof(Task<string>));
+        var definition = TypeDefinition.Get(typeof(Task<string>));
 
-            Assert.NotNull(definition);
+        Assert.NotNull(definition);
 
-            Assert.Equal("Task", definition.Name);
-            Assert.Equal("System.Threading.Tasks", definition.Namespace);
-        }
+        Assert.Equal("Task", definition.Name);
+        Assert.Equal("System.Threading.Tasks", definition.Namespace);
     }
 }

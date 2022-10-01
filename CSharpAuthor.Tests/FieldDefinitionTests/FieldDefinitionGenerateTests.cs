@@ -1,48 +1,47 @@
 ﻿using Xunit;
 
-namespace CSharpAuthor.Tests.FieldDefinitionTests
+namespace CSharpAuthor.Tests.FieldDefinitionTests;
+
+public class FieldDefinitionGenerateTests
 {
-    public class FieldDefinitionGenerateTests
+    [Fact]
+    public void WriteFieldTest()
     {
-        [Fact]
-        public void WriteFieldTest()
-        {
-            var fieldDefinition = new FieldDefinition(TypeDefinition.Get(typeof(string[])), "field");
+        var fieldDefinition = new FieldDefinition(TypeDefinition.Get(typeof(string[])), "field");
 
-            var context = new OutputContext();
+        var context = new OutputContext();
 
-            context.IncrementIndent();
+        context.IncrementIndent();
 
-            fieldDefinition.WriteOutput(context);
+        fieldDefinition.WriteOutput(context);
 
-            var outputString = context.Output();
+        var outputString = context.Output();
 
-            AssertEqual.WithoutNewLine(expectedWriteFieldString, outputString);
-        }
-
-        private static readonly string expectedWriteFieldString = 
-@"    private string[] field;
-";
-        [Fact]
-        public void WriteFieldWithInitValue()
-        {
-            var fieldDefinition = new FieldDefinition(TypeDefinition.Get(typeof(string)), "field");
-
-            fieldDefinition.InitializeValue = "@\"testValue\"";
-
-            var context = new OutputContext();
-
-            context.IncrementIndent();
-
-            fieldDefinition.WriteOutput(context);
-
-            var outputString = context.Output();
-
-            AssertEqual.WithoutNewLine(expectedInitFieldString, outputString);
-        }
-
-        private static readonly string expectedInitFieldString =
-@"    private string field = @""testValue"";
-";
+        AssertEqual.WithoutNewLine(expectedWriteFieldString, outputString);
     }
+
+    private static readonly string expectedWriteFieldString = 
+        @"    private string[] field;
+";
+    [Fact]
+    public void WriteFieldWithInitValue()
+    {
+        var fieldDefinition = new FieldDefinition(TypeDefinition.Get(typeof(string)), "field");
+
+        fieldDefinition.InitializeValue = "@\"testValue\"";
+
+        var context = new OutputContext();
+
+        context.IncrementIndent();
+
+        fieldDefinition.WriteOutput(context);
+
+        var outputString = context.Output();
+
+        AssertEqual.WithoutNewLine(expectedInitFieldString, outputString);
+    }
+
+    private static readonly string expectedInitFieldString =
+        @"    private string field = @""testValue"";
+";
 }

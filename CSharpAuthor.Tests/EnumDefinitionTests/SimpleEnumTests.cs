@@ -5,30 +5,30 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace CSharpAuthor.Tests.EnumDefinitionTests
+namespace CSharpAuthor.Tests.EnumDefinitionTests;
+
+public class SimpleEnumTests
 {
-    public class SimpleEnumTests
+    [Fact]
+    public void CreateSimpleIntEnum()
     {
-        [Fact]
-        public void CreateSimpleIntEnum()
-        {
-            var enumDefinition = new EnumDefinition("Test");
+        var enumDefinition = new EnumDefinition("Test");
 
-            enumDefinition.AddValue("Value1");
-            enumDefinition.AddValue("Value2");
-            enumDefinition.AddValue("Value3");
+        enumDefinition.AddValue("Value1");
+        enumDefinition.AddValue("Value2");
+        enumDefinition.AddValue("Value3");
 
-            var outputContext = new OutputContext();
+        var outputContext = new OutputContext();
 
-            enumDefinition.WriteOutput(outputContext);
+        enumDefinition.WriteOutput(outputContext);
 
-            var enumDefString = outputContext.Output();
+        var enumDefString = outputContext.Output();
 
-            AssertEqual.WithoutNewLine(SimpleIntEnum, enumDefString);
-        }
+        AssertEqual.WithoutNewLine(SimpleIntEnum, enumDefString);
+    }
 
-        private const string SimpleIntEnum =
-@"public enum Test
+    private const string SimpleIntEnum =
+        @"public enum Test
 {
     Value1,
     Value2,
@@ -36,5 +36,4 @@ namespace CSharpAuthor.Tests.EnumDefinitionTests
 }
 ";
         
-    }
 }

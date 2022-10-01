@@ -2,31 +2,30 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public class EnumValueDefinition : BaseOutputComponent
 {
-    public class EnumValueDefinition : BaseOutputComponent
+    private readonly string _enumValueName;
+
+    public EnumValueDefinition(string enumValueName)
     {
-        private readonly string _enumValueName;
+        _enumValueName = enumValueName;
+    }
 
-        public EnumValueDefinition(string enumValueName)
+    public object? Value { get; set; }
+
+    protected override void WriteComponentOutput(IOutputContext outputContext)
+    {
+        outputContext.WriteIndent();
+        outputContext.Write(_enumValueName);
+
+        if (Value != null)
         {
-            _enumValueName = enumValueName;
+            outputContext.Write(" = ");
+            outputContext.Write(Value.ToString());
         }
 
-        public object? Value { get; set; }
-
-        protected override void WriteComponentOutput(IOutputContext outputContext)
-        {
-            outputContext.WriteIndent();
-            outputContext.Write(_enumValueName);
-
-            if (Value != null)
-            {
-                outputContext.Write(" = ");
-                outputContext.Write(Value.ToString());
-            }
-
-            outputContext.WriteLine(",");
-        }
+        outputContext.WriteLine(",");
     }
 }

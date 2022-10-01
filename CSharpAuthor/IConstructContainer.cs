@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace CSharpAuthor
+namespace CSharpAuthor;
+
+public interface IConstructContainer
 {
-    public interface IConstructContainer
-    {
-        ClassDefinition AddClass(string name);
-    }
+    ClassDefinition AddClass(string name);
 }

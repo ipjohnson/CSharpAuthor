@@ -5,91 +5,91 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace CSharpAuthor.Tests.PropertyDefinitionTests
+namespace CSharpAuthor.Tests.PropertyDefinitionTests;
+
+public class SimplePropertyDefinitionTests
 {
-    public class SimplePropertyDefinitionTests
+    [Fact]
+    public void PropertyDefinition()
     {
-        [Fact]
-        public void PropertyDefinition()
-        {
-            var propertyDefinition = new PropertyDefinition( TypeDefinition.Get(typeof(int)), "Test");
+        var propertyDefinition = new PropertyDefinition( TypeDefinition.Get(typeof(int)), "Test");
 
-            var context = new OutputContext();
+        var context = new OutputContext();
 
-            propertyDefinition.WriteOutput(context);
+        propertyDefinition.WriteOutput(context);
 
-            AssertEqual.WithoutNewLine(PropertyDefinitionOutput, context.Output());
-        }
+        AssertEqual.WithoutNewLine(PropertyDefinitionOutput, context.Output());
+    }
 
-        private const string PropertyDefinitionOutput =
- @"public int Test { get; set; }
+    private const string PropertyDefinitionOutput =
+        @"public int Test { get; set; }
 ";
 
-        [Fact]
-        public void LambdaGetDefinition()
-        {
-            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
+    [Fact]
+    public void LambdaGetDefinition()
+    {
+        var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
-            propertyDefinition.Get.LambdaSyntax = true;
-            propertyDefinition.Set = null;
+        propertyDefinition.Get.LambdaSyntax = true;
+        propertyDefinition.Set = null;
 
-            propertyDefinition.Get.AddCode("10;");
-            var context = new OutputContext();
+        propertyDefinition.Get.AddCode("10;");
+        var context = new OutputContext();
 
-            propertyDefinition.WriteOutput(context);
+        propertyDefinition.WriteOutput(context);
 
-            AssertEqual.WithoutNewLine(LambdaGetDefinitionOutput, context.Output());
-        }
+        AssertEqual.WithoutNewLine(LambdaGetDefinitionOutput, context.Output());
+    }
 
-        private const string LambdaGetDefinitionOutput =
-@"public int Test => 10;
+    private const string LambdaGetDefinitionOutput =
+        @"public int Test => 10;
 ";
 
-        [Fact]
-        public void LambdaGetWithSetDefinition()
-        {
-            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
+    [Fact]
+    public void LambdaGetWithSetDefinition()
+    {
+        var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
-            propertyDefinition.Get.LambdaSyntax = true;
-            propertyDefinition.Get.AddCode("_value;");
+        propertyDefinition.Get.LambdaSyntax = true;
+        propertyDefinition.Get.AddCode("_value;");
 
-            propertyDefinition.Set!.LambdaSyntax = true;
-            propertyDefinition.Set.AddCode("_value = value;");
+        propertyDefinition.Set!.LambdaSyntax = true;
+        propertyDefinition.Set.AddCode("_value = value;");
 
-            var context = new OutputContext();
+        var context = new OutputContext();
 
-            propertyDefinition.WriteOutput(context);
+        propertyDefinition.WriteOutput(context);
 
-            AssertEqual.WithoutNewLine(LambdaGetWithSetDefinitionOutput, context.Output());
-        }
+        AssertEqual.WithoutNewLine(LambdaGetWithSetDefinitionOutput, context.Output());
+    }
 
-        private const string LambdaGetWithSetDefinitionOutput =
-            @"public int Test
+    private const string LambdaGetWithSetDefinitionOutput =
+        @"public int Test
 {
     get => _value;
     set => _value = value;
 }
 ";
 
-        [Fact]
-        public void GetSetDefinition()
-        {
-            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
+    [Fact]
+    public void GetSetDefinition()
+    {
+        var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
             
-            propertyDefinition.Get.AddCode("return _value;");
+        propertyDefinition.Get.AddCode("return _value;");
             
-            propertyDefinition.Set!.AddCode("_value = value;");
-            propertyDefinition.Set.Modifiers |= ComponentModifier.Private;
+        propertyDefinition.Set!.AddCode("_value = value;");
+        propertyDefinition.Set.Modifiers |= ComponentModifier.Private;
 
-            var context = new OutputContext();
+        var context = new OutputContext();
 
-            propertyDefinition.WriteOutput(context);
+        propertyDefinition.WriteOutput(context);
 
-            AssertEqual.WithoutNewLine(GetSetDefinitionOutput, context.Output());
-        }
+        AssertEqual.WithoutNewLine(GetSetDefinitionOutput, context.Output());
+    }
 
-        private const string GetSetDefinitionOutput =
-            @"public int Test
+    private const string GetSetDefinitionOutput =
+        @"public int Test
 {
     get
     {
@@ -102,26 +102,26 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 }
 ";
 
-        [Fact]
-        public void PrivateStaticGetSetDefinition()
-        {
-            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
+    [Fact]
+    public void PrivateStaticGetSetDefinition()
+    {
+        var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
-            propertyDefinition.Modifiers |= ComponentModifier.Static | ComponentModifier.Private;
+        propertyDefinition.Modifiers |= ComponentModifier.Static | ComponentModifier.Private;
 
-            propertyDefinition.Get.AddCode("return _value;");
+        propertyDefinition.Get.AddCode("return _value;");
 
-            propertyDefinition.Set!.AddCode("_value = value;");
+        propertyDefinition.Set!.AddCode("_value = value;");
 
-            var context = new OutputContext();
+        var context = new OutputContext();
 
-            propertyDefinition.WriteOutput(context);
+        propertyDefinition.WriteOutput(context);
 
-            AssertEqual.WithoutNewLine(PrivateStaticGetSetDefinitionOutput, context.Output());
-        }
+        AssertEqual.WithoutNewLine(PrivateStaticGetSetDefinitionOutput, context.Output());
+    }
 
-        private const string PrivateStaticGetSetDefinitionOutput =
-            @"private static int Test
+    private const string PrivateStaticGetSetDefinitionOutput =
+        @"private static int Test
 {
     get
     {
@@ -134,26 +134,26 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 }
 ";
         
-        [Fact]
-        public void ProtectedVirtualGetSetDefinition()
-        {
-            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
+    [Fact]
+    public void ProtectedVirtualGetSetDefinition()
+    {
+        var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
-            propertyDefinition.Modifiers |= ComponentModifier.Virtual | ComponentModifier.Protected;
+        propertyDefinition.Modifiers |= ComponentModifier.Virtual | ComponentModifier.Protected;
 
-            propertyDefinition.Get.AddCode("return _value;");
+        propertyDefinition.Get.AddCode("return _value;");
 
-            propertyDefinition.Set!.AddCode("_value = value;");
+        propertyDefinition.Set!.AddCode("_value = value;");
 
-            var context = new OutputContext();
+        var context = new OutputContext();
 
-            propertyDefinition.WriteOutput(context);
+        propertyDefinition.WriteOutput(context);
 
-            AssertEqual.WithoutNewLine(ProtectedVirtualGetSetDefinitionOutput, context.Output());
-        }
+        AssertEqual.WithoutNewLine(ProtectedVirtualGetSetDefinitionOutput, context.Output());
+    }
 
-        private const string ProtectedVirtualGetSetDefinitionOutput =
-@"protected virtual int Test
+    private const string ProtectedVirtualGetSetDefinitionOutput =
+        @"protected virtual int Test
 {
     get
     {
@@ -166,26 +166,26 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 }
 ";
 
-        [Fact]
-        public void PublicOverrideGetSetDefinition()
-        {
-            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
+    [Fact]
+    public void PublicOverrideGetSetDefinition()
+    {
+        var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
-            propertyDefinition.Modifiers |= ComponentModifier.Override | ComponentModifier.Public;
+        propertyDefinition.Modifiers |= ComponentModifier.Override | ComponentModifier.Public;
 
-            propertyDefinition.Get.AddCode("return _value;");
+        propertyDefinition.Get.AddCode("return _value;");
 
-            propertyDefinition.Set!.AddCode("_value = value;");
+        propertyDefinition.Set!.AddCode("_value = value;");
 
-            var context = new OutputContext();
+        var context = new OutputContext();
 
-            propertyDefinition.WriteOutput(context);
+        propertyDefinition.WriteOutput(context);
 
-            AssertEqual.WithoutNewLine(PublicOverrideGetSetDefinitionOutput, context.Output());
-        }
+        AssertEqual.WithoutNewLine(PublicOverrideGetSetDefinitionOutput, context.Output());
+    }
 
-        private const string PublicOverrideGetSetDefinitionOutput =
-@"public override int Test
+    private const string PublicOverrideGetSetDefinitionOutput =
+        @"public override int Test
 {
     get
     {
@@ -198,26 +198,26 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
 }
 ";
 
-        [Fact]
-        public void IndexedGetSetDefinition()
-        {
-            var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
+    [Fact]
+    public void IndexedGetSetDefinition()
+    {
+        var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
-            propertyDefinition.IndexType = TypeDefinition.Get(typeof(string));
+        propertyDefinition.IndexType = TypeDefinition.Get(typeof(string));
 
-            propertyDefinition.Get.AddCode("return _value;");
+        propertyDefinition.Get.AddCode("return _value;");
 
-            propertyDefinition.Set!.AddCode("_value = value;");
+        propertyDefinition.Set!.AddCode("_value = value;");
 
-            var context = new OutputContext();
+        var context = new OutputContext();
 
-            propertyDefinition.WriteOutput(context);
+        propertyDefinition.WriteOutput(context);
 
-            AssertEqual.WithoutNewLine(IndexedGetSetDefinitionOutput, context.Output());
-        }
+        AssertEqual.WithoutNewLine(IndexedGetSetDefinitionOutput, context.Output());
+    }
 
-        private const string IndexedGetSetDefinitionOutput =
-@"public int Test[string index]
+    private const string IndexedGetSetDefinitionOutput =
+        @"public int Test[string index]
 {
     get
     {
@@ -229,5 +229,4 @@ namespace CSharpAuthor.Tests.PropertyDefinitionTests
     }
 }
 ";
-    }
 }
