@@ -38,7 +38,8 @@ public class InvokeDefinition : BaseOutputComponent
             outputContext.WriteIndent();
         }
 
-        if (!string.IsNullOrEmpty(_instance))
+        if (!string.IsNullOrEmpty(_instance) && 
+            _instance != ".")
         {
             outputContext.Write(_instance);
             outputContext.Write(".");

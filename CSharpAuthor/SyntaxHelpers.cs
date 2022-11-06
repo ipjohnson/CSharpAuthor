@@ -91,7 +91,7 @@ public static class SyntaxHelpers
     {
         return new CombineOutputComponent(
             outputComponent, 
-            new InvokeGenericDefinition("", methodName, genericArgs, parameters) { Indented = false }
+            new InvokeGenericDefinition(".", methodName, genericArgs, parameters) { Indented = false }
         );
     }
 
@@ -99,7 +99,7 @@ public static class SyntaxHelpers
     {
         return new CombineOutputComponent(
             outputComponent,
-            new InvokeDefinition("", methodName, parameters) { Indented = false }
+            new InvokeDefinition(".", methodName, parameters) { Indented = false }
         );
     }
 
