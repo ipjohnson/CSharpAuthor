@@ -12,7 +12,6 @@ public class LogicStatement : BaseOutputComponent
 
     public LogicStatement(string logicStatement, params object[] outputComponents)
         : this(logicStatement, CodeOutputComponent.GetAll(outputComponents).ToList())
-
     {
     }
 

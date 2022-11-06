@@ -44,8 +44,6 @@ public class InstanceDefinition : BaseOutputComponent
         return new InstanceDefinition(Name + "." + propertyName);
     }
 
-        
-
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
         outputContext.Write(Name);

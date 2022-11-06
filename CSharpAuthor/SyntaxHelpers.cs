@@ -87,17 +87,30 @@ public static class SyntaxHelpers
             { Indented = false };
     }
 
-
-    public static InvokeGenericDefinition InvokeGeneric(this IOutputComponent outputComponent, string methodName, IReadOnlyList<ITypeDefinition> genericArgs, params object[] parameters)
+    public static IOutputComponent InvokeGeneric(this IOutputComponent outputComponent, string methodName, IReadOnlyList<ITypeDefinition> genericArgs, params object[] parameters)
     {
-        return new InvokeGenericDefinition(".", methodName, genericArgs, parameters)
-            { Indented = false };
+        return new CombineOutputComponent(
+            outputComponent, 
+            new InvokeGenericDefinition(".", methodName, genericArgs, parameters) { Indented = false }
+        );
     }
 
-    public static InvokeDefinition Invoke(this IOutputComponent outputComponent, string methodName, params object[] parameters)
+    public static IOutputComponent Invoke(this IOutputComponent outputComponent, string methodName, params object[] parameters)
     {
-        return new InvokeDefinition(".", methodName, parameters)
-            { Indented = false };
+        return new CombineOutputComponent(
+            outputComponent,
+            new InvokeDefinition(".", methodName, parameters) { Indented = false }
+        );
+    }
+
+    public static StaticPropertyStatement Property(ITypeDefinition typeDefinition, string propertyName)
+    {
+        return new StaticPropertyStatement(typeDefinition, propertyName);
+    }
+
+    public static IOutputComponent Property(IOutputComponent outputComponent, string propertyName)
+    {
+        return new LogicStatement(".", outputComponent, propertyName) { PrintParentheses = false };
     }
 
     public static BaseStatement Base(params object[] parameters)
