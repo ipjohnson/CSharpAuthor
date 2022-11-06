@@ -105,12 +105,16 @@ public static class SyntaxHelpers
 
     public static StaticPropertyStatement Property(ITypeDefinition typeDefinition, string propertyName)
     {
-        return new StaticPropertyStatement(typeDefinition, propertyName);
+        return new StaticPropertyStatement(typeDefinition, propertyName) { Indented = false };
     }
 
     public static IOutputComponent Property(IOutputComponent outputComponent, string propertyName)
     {
-        return new LogicStatement(".", outputComponent, propertyName) { PrintParentheses = false };
+        return new LogicStatement(".", outputComponent, propertyName)
+        {
+            PrintParentheses = false, 
+            Indented = false
+        };
     }
 
     public static BaseStatement Base(params object[] parameters)
