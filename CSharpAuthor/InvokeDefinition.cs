@@ -38,11 +38,14 @@ public class InvokeDefinition : BaseOutputComponent
             outputContext.WriteIndent();
         }
 
-        if (!string.IsNullOrEmpty(_instance) && 
-            _instance != ".")
+        if (!string.IsNullOrEmpty(_instance))
         {
             outputContext.Write(_instance);
-            outputContext.Write(".");
+
+            if (_instance != ".")
+            {
+                outputContext.Write(".");
+            }
         }
 
         outputContext.Write(_methodName);
