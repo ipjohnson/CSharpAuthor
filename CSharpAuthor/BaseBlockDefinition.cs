@@ -136,6 +136,11 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
         AddIndentedStatement("break");
     }
 
+    public WhileDefinition While(object testStatement)
+    {
+        return Add(new WhileDefinition(testStatement));
+    }
+
     public ForEachDefinition ForEach(string variable, IOutputComponent enumerableComponent)
     {
         return Add(new ForEachDefinition(variable, enumerableComponent));
