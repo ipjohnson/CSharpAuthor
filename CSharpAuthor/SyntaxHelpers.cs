@@ -27,6 +27,16 @@ public static class SyntaxHelpers
         return new NewArrayStatement(typeDefinition, length);
     }
 
+    public static IOutputComponent Increment(object outputComponent)
+    {
+        return new PostfixOutputComponent("++", CodeOutputComponent.Get(outputComponent));
+    }
+
+    public static IOutputComponent Decrement(object outputComponent)
+    {
+        return new PostfixOutputComponent("--", CodeOutputComponent.Get(outputComponent));
+    }
+
     public static IOutputComponent Await(object outputComponent)
     {
         return new PrefixOutputComponent("await ", CodeOutputComponent.Get(outputComponent));
