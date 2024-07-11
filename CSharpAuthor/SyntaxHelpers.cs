@@ -248,4 +248,14 @@ public static class SyntaxHelpers
     {
         return new LogicStatement(" ??= ", leftHandSide, rightHandSide);
     }
+
+    public static WrapStatement YieldReturn(object value)
+    {
+        return new WrapStatement(CodeOutputComponent.Get(value, false), "yield return ", "");
+    }
+
+    public static IOutputComponent ThisInstance()
+    {
+        return CodeOutputComponent.Get("this");
+    }
 }

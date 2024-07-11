@@ -5,24 +5,31 @@ using System.Text;
 
 namespace CSharpAuthor;
 
+public class OutputContextOptions
+{
+    public char IndentChar { get; set; } = ' ';
+
+    public int IndentCharCount { get; set; } = 4;
+
+    public string NewLine { get; set; } = "\n";
+}
+
 public class OutputContext : IOutputContext
 {
     private readonly HashSet<string> _namespaces = new ();
-    private readonly char _indentChar;
-    private readonly int _indentCharCount;
     private readonly StringBuilder _output;
     private int _indentIndex;
+    private readonly OutputContextOptions _options;
 
-    public OutputContext(char indentChar = ' ', int indentCharCount = 4)
+    public OutputContext(OutputContextOptions? options = null)
     {
-        _indentChar = indentChar;
-        _indentCharCount = indentCharCount;
-
+        this._options = options ?? new OutputContextOptions();
+        
         _output = new StringBuilder();
         IndentString = "";
     }
 
-    public string SingleIndent => new (_indentChar, _indentCharCount);
+    public string SingleIndent => new (_options.IndentChar, _options.IndentCharCount);
 
     public string IndentString { get; private set; }
 
@@ -52,7 +59,7 @@ public class OutputContext : IOutputContext
 
     public void WriteLine()
     {
-        _output.Append(Environment.NewLine);
+        _output.Append(_options.NewLine);
     }
 
     public void WriteLine(string text)
@@ -132,11 +139,11 @@ public class OutputContext : IOutputContext
 
         if (namespaceList.Count > 0)
         {
-            _output.Insert(0, Environment.NewLine);
+            _output.Insert(0, _options.NewLine);
 
             foreach (string ns in namespaceList)
             {
-                _output.Insert(0, $"using {ns};" + Environment.NewLine);
+                _output.Insert(0, $"using {ns};" + _options.NewLine);
             }
         }
     }
@@ -149,6 +156,6 @@ public class OutputContext : IOutputContext
 
     private void SetIndentString()
     {
-        IndentString = new string(_indentChar, _indentCharCount * _indentIndex);
+        IndentString = new string(_options.IndentChar, _options.IndentCharCount * _indentIndex);
     }
 }
