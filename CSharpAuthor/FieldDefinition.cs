@@ -2,14 +2,15 @@
 
 public class FieldDefinition : BaseOutputComponent
 {
-    private readonly ITypeDefinition _typeDefinition;
         
     public FieldDefinition(ITypeDefinition typeDefinition, string name)
     {
-        _typeDefinition = typeDefinition;
+        TypeDefinition = typeDefinition;
         Name = name;
     }
 
+    public ITypeDefinition TypeDefinition { get; }
+    
     public string Name { get; }
 
     public string? InitializeValue { get; set; }
@@ -18,7 +19,7 @@ public class FieldDefinition : BaseOutputComponent
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.AddImportNamespace(_typeDefinition);
+        outputContext.AddImportNamespace(TypeDefinition);
 
         var accessModifier = GetAccessModifier(KeyWords.Private);
         var readonlyString = "";
@@ -42,7 +43,7 @@ public class FieldDefinition : BaseOutputComponent
         }
 
         outputContext.WriteIndent($"{accessModifier} {readonlyString}{staticString}");
-        outputContext.Write(_typeDefinition);
+        outputContext.Write(TypeDefinition);
         outputContext.WriteLine($" {Name}{initValue};");
     }
 }
