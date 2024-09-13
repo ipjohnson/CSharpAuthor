@@ -24,6 +24,8 @@ public class PropertyDefinition : BaseOutputComponent
     public string IndexName { get; set; } = "index";
 
     public InstanceDefinition Instance => new(Name);
+    
+    public BaseOutputComponent? DefaultValue { get; set; }
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
@@ -71,6 +73,13 @@ public class PropertyDefinition : BaseOutputComponent
                 outputContext.WriteLine(" { get; set; }");
             }
 
+            if (DefaultValue != null)
+            {
+                outputContext.Write(" = ");
+                DefaultValue.WriteOutput(outputContext);
+                outputContext.Write("!;");
+            }
+            
             return;
         }
 
