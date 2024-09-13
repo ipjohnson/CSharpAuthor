@@ -77,7 +77,7 @@ public class PropertyDefinition : BaseOutputComponent
             {
                 outputContext.Write(" = ");
                 DefaultValue.WriteOutput(outputContext);
-                outputContext.Write("!;");
+                outputContext.Write(";");
             }
             
             return;
