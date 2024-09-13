@@ -62,15 +62,15 @@ public class PropertyDefinition : BaseOutputComponent
         {
             if ((Set.Modifiers & ComponentModifier.Private) == ComponentModifier.Private)
             {
-                outputContext.WriteLine(" { get; private set; }");
+                outputContext.Write(" { get; private set; }");
             }
             else if ((Set.Modifiers & ComponentModifier.Protected) == ComponentModifier.Protected)
             {
-                outputContext.WriteLine(" { get; protected set; }");
+                outputContext.Write(" { get; protected set; }");
             }
             else
             {
-                outputContext.WriteLine(" { get; set; }");
+                outputContext.Write(" { get; set; }");
             }
 
             if (DefaultValue != null)
@@ -79,6 +79,8 @@ public class PropertyDefinition : BaseOutputComponent
                 DefaultValue.WriteOutput(outputContext);
                 outputContext.Write(";");
             }
+            
+            outputContext.WriteLine();
             
             return;
         }
