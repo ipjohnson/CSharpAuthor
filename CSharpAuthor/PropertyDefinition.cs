@@ -25,7 +25,7 @@ public class PropertyDefinition : BaseOutputComponent
 
     public InstanceDefinition Instance => new(Name);
     
-    public BaseOutputComponent? DefaultValue { get; set; }
+    public IOutputComponent? DefaultValue { get; set; }
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
