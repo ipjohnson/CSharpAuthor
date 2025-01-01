@@ -28,7 +28,7 @@ public class FieldDefinitionGenerateTests
     {
         var fieldDefinition = new FieldDefinition(TypeDefinition.Get(typeof(string)), "field");
 
-        fieldDefinition.InitializeValue = "@\"testValue\"";
+        fieldDefinition.InitializeValue = CodeOutputComponent.Get("@\"testValue\"");
 
         var context = new OutputContext();
 

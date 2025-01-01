@@ -13,7 +13,7 @@ public class FieldDefinition : BaseOutputComponent
     
     public string Name { get; }
 
-    public string? InitializeValue { get; set; }
+    public IOutputComponent? InitializeValue { get; set; }
 
     public InstanceDefinition Instance => new (Name);
 
@@ -35,15 +35,16 @@ public class FieldDefinition : BaseOutputComponent
             readonlyString = KeyWords.ReadOnly + " ";
         }
 
-        var initValue = "";
-
-        if (!string.IsNullOrEmpty(InitializeValue))
-        {
-            initValue = $" = {InitializeValue}";
-        }
-
         outputContext.WriteIndent($"{accessModifier} {readonlyString}{staticString}");
         outputContext.Write(TypeDefinition);
-        outputContext.WriteLine($" {Name}{initValue};");
+        outputContext.Write($" {Name}");
+
+        if (InitializeValue != null)
+        {
+            outputContext.Write(" = ");
+            InitializeValue.WriteOutput(outputContext);
+        }
+        
+        outputContext.WriteLine(";");
     }
 }
