@@ -113,6 +113,19 @@ public static class SyntaxHelpers
         );
     }
 
+    public static IOutputComponent Is(IOutputComponent testComponent, ITypeDefinition typeDefinition)
+    {
+        var statement = new WrapStatement(
+            CodeOutputComponent.Get(" is "),
+            testComponent,
+            CodeOutputComponent.Get(typeDefinition.Name)
+        );
+        
+        statement.AddUsingNamespace(typeDefinition.Namespace);
+        
+        return statement;
+    }
+    
     public static StaticPropertyStatement Property(ITypeDefinition typeDefinition, string propertyName)
     {
         return new StaticPropertyStatement(typeDefinition, propertyName) { Indented = false };

@@ -6,11 +6,17 @@ namespace CSharpAuthor;
 
 public class WrapStatement : BaseOutputComponent
 {
-    private readonly string _prefixString;
-    private readonly string _postfixString;
-    private readonly IOutputComponent _outputComponent;
+    private readonly IOutputComponent? _prefixString;
+    private readonly IOutputComponent? _postfixString;
+    private readonly IOutputComponent? _outputComponent;
 
-    public WrapStatement(IOutputComponent outputComponent, string prefixString, string postfixString)
+    public WrapStatement(IOutputComponent outputComponent, string prefixString, string postfixString) : 
+        this(outputComponent, CodeOutputComponent.Get(prefixString), CodeOutputComponent.Get(postfixString))
+    {
+        
+    }
+
+    public WrapStatement(IOutputComponent? outputComponent, IOutputComponent? prefixString, IOutputComponent? postfixString)
     {
         _outputComponent = outputComponent;
         _prefixString = prefixString;
@@ -19,8 +25,8 @@ public class WrapStatement : BaseOutputComponent
         
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.Write(_prefixString);
-        _outputComponent.WriteOutput(outputContext);
-        outputContext.Write(_postfixString);
+        _prefixString?.WriteOutput(outputContext);
+        _outputComponent?.WriteOutput(outputContext);
+        _postfixString?.WriteOutput(outputContext);
     }
 }
