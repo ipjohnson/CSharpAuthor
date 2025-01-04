@@ -14,11 +14,10 @@ public class AttributeDefinition : BaseOutputComponent
         _attributeType = attributeType;
     }
 
-    public string? ArgumentStatement { get; set; }
+    public IList<IOutputComponent>? Arguments { get; set; }
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        var argumentListString = GetArgumentListString();
         var attributeName = _attributeType.Name;
 
         if (attributeName.EndsWith(AttributePostfix))
@@ -28,16 +27,19 @@ public class AttributeDefinition : BaseOutputComponent
 
         outputContext.AddImportNamespace(_attributeType);
 
-        outputContext.WriteIndentedLine($"[{attributeName}{argumentListString}]");
+        outputContext.WriteIndent($"[{attributeName}");
+        WriteArguments(outputContext);
+        outputContext.WriteLine("]");
     }
 
-    private string GetArgumentListString()
+    private void WriteArguments(IOutputContext outputContext)
     {
-        if (string.IsNullOrEmpty(ArgumentStatement))
+        if (Arguments is { Count: > 0 })
         {
-            return "";
+            outputContext.Write("(");
+            Arguments.OutputCommaSeparatedList(outputContext);
+            outputContext.Write(")");
         }
-
-        return $"({ArgumentStatement})";
     }
+
 }

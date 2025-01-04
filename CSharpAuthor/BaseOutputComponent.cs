@@ -14,19 +14,33 @@ public abstract class BaseOutputComponent : IOutputComponent
 
     public bool Indented { get; set; } = true;
 
-    public AttributeDefinition AddAttribute(Type type, string argumentStatement = "")
+    public AttributeDefinition AddAttribute(Type type, params object[] args)
     {
-        return AddAttribute(TypeDefinition.Get(type), argumentStatement);
+        return AddAttribute(TypeDefinition.Get(type), args);
     }
 
-    public AttributeDefinition AddAttribute(ITypeDefinition typeDefinition, string argumentStatement  = "")
+    public AttributeDefinition AddAttribute(ITypeDefinition typeDefinition, params object[] args)
     {
         if (AttributeDefinitions == null)
         {
             AttributeDefinitions = new List<AttributeDefinition>();
         }
 
-        var attribute = new AttributeDefinition(typeDefinition){ ArgumentStatement = argumentStatement };
+        var arguments = new List<IOutputComponent>();
+
+        foreach (var arg in args)
+        {
+            if (arg is IOutputComponent outputComponent)
+            {
+                arguments.Add(outputComponent);
+            }
+            else
+            {
+                arguments.Add(CodeOutputComponent.Get(arg));
+            }
+        }
+        
+        var attribute = new AttributeDefinition(typeDefinition){ Arguments = arguments };
 
         AttributeDefinitions.Add(attribute);
 

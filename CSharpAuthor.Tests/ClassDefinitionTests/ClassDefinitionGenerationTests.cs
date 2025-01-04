@@ -1,11 +1,6 @@
-﻿using System;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CodeDom.Compiler;
 using CSharpAuthor.Tests.Models;
+using static CSharpAuthor.SyntaxHelpers;
 using Xunit;
 
 namespace CSharpAuthor.Tests.ClassDefinitionTests;
@@ -17,7 +12,7 @@ public class ClassDefinitionGenerationTests
     {
         var classDefinition = new ClassDefinition("TestClass");
 
-        classDefinition.AddAttribute(typeof(GeneratedCodeAttribute));
+        classDefinition.AddAttribute(typeof(GeneratedCodeAttribute), QuoteString("Test"),QuoteString("1.0.0"));
 
         classDefinition.AddField(typeof(string), "testField");
 
@@ -33,7 +28,7 @@ public class ClassDefinitionGenerationTests
     }
 
     private static readonly string expectedSimpleClass =
-        @"[GeneratedCode]
+        @"[GeneratedCode(""Test"", ""1.0.0"")]
 public class TestClass
 {
     private string testField;
