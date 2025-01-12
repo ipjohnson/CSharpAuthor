@@ -14,11 +14,16 @@ internal class ThrowNewExceptionStatement : BaseOutputComponent
     {
         _exceptionType = exceptionType;
         _parameters = CodeOutputComponent.GetAll(parameters).ToList();
+        Indented = false;
     }
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.WriteIndent("throw new ");
+        if (Indented)
+        {
+            outputContext.WriteIndent("throw new ");   
+        }
+        
         outputContext.Write(_exceptionType);
         outputContext.Write("(");
         _parameters.OutputCommaSeparatedList(outputContext);
