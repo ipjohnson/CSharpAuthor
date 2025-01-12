@@ -22,6 +22,6 @@ internal class ThrowNewExceptionStatement : BaseOutputComponent
         outputContext.Write(_exceptionType);
         outputContext.Write("(");
         _parameters.OutputCommaSeparatedList(outputContext);
-        outputContext.WriteLine(");");
+        outputContext.Write(")");
     }
 }

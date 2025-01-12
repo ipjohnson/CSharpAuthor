@@ -110,12 +110,12 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
 
     public void Throw(Type type, params object[] parameters)
     {
-        Add(new ThrowNewExceptionStatement(TypeDefinition.Get(type), parameters));
+        Add(new PostfixOutputComponent(";\n", new ThrowNewExceptionStatement(TypeDefinition.Get(type), parameters)));
     }
 
     public void Throw(ITypeDefinition exceptionType, params object[] parameters)
     {
-        Add(new ThrowNewExceptionStatement(exceptionType, parameters));
+        Add(new PostfixOutputComponent(";\n", new ThrowNewExceptionStatement(exceptionType, parameters)));
     }
 
     public void Return(object? returnValue = null)
