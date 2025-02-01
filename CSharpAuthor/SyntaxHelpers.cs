@@ -271,4 +271,11 @@ public static class SyntaxHelpers
     {
         return CodeOutputComponent.Get("this");
     }
+
+    public static void WrapInPragma(this BaseOutputComponent baseOutputComponent, params string[] pragma)
+    {
+        baseOutputComponent.AddLeadingTrait(new PragmaOutputComponent(false,pragma));
+        
+        baseOutputComponent.AddTrailingTrait(new PragmaOutputComponent(true,pragma));
+    }
 }

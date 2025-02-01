@@ -7,6 +7,8 @@ public abstract class BaseOutputComponent : IOutputComponent
 {
     protected List<AttributeDefinition>? AttributeDefinitions;
     protected List<string>? UsingNamespaces;
+    protected List<IOutputComponent>? LeadingTraits;
+    protected List<IOutputComponent>? TrailingTraits;
 
     public ComponentModifier Modifiers { get; set; } = ComponentModifier.None;
 
@@ -14,6 +16,20 @@ public abstract class BaseOutputComponent : IOutputComponent
 
     public bool Indented { get; set; } = true;
 
+    public void AddLeadingTrait(IOutputComponent outputComponent)
+    {
+        LeadingTraits ??= new List<IOutputComponent>();
+
+        LeadingTraits.Add(outputComponent);
+    }
+
+    public void AddTrailingTrait(IOutputComponent component)
+    {
+        TrailingTraits ??= new List<IOutputComponent>();
+        
+        TrailingTraits.Add(component);
+    }
+    
     public AttributeDefinition AddAttribute(Type type, params object[] args)
     {
         return AddAttribute(TypeDefinition.Get(type), args);
@@ -64,9 +80,33 @@ public abstract class BaseOutputComponent : IOutputComponent
             outputContext.AddImportNamespaces(UsingNamespaces);
         }
 
+        ProcessLeadingTraits(outputContext);
+        
         ProcessAttributes(outputContext);
 
         WriteComponentOutput(outputContext);
+
+        ProcessTrailingTraits(outputContext);
+    }
+
+    protected virtual void ProcessTrailingTraits(IOutputContext outputContext)
+    {
+        if (TrailingTraits == null) return;
+
+        foreach (var trailingTrait in TrailingTraits)
+        {
+            trailingTrait.WriteOutput(outputContext);
+        }
+    }
+
+    protected virtual void ProcessLeadingTraits(IOutputContext outputContext)
+    {
+        if (LeadingTraits == null) return;
+
+        foreach (var leadingTrait in LeadingTraits)
+        {
+            leadingTrait.WriteOutput(outputContext);
+        }
     }
 
     protected virtual void ProcessAttributes(IOutputContext outputContext)
