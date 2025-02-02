@@ -278,4 +278,10 @@ public static class SyntaxHelpers
         
         baseOutputComponent.AddTrailingTrait(new PragmaOutputComponent(true,pragma));
     }
+
+    public static void EnableNullable(this BaseOutputComponent baseOutputComponent)
+    {
+        baseOutputComponent.AddLeadingTrait(new NullableEnableComponent(true));
+        baseOutputComponent.AddTrailingTrait(new NullableEnableComponent(false));
+    }
 }

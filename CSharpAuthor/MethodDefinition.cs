@@ -7,6 +7,7 @@ namespace CSharpAuthor;
 public class MethodDefinition : BaseBlockDefinition
 {
     protected readonly List<ParameterDefinition> ParameterList = new ();
+    private readonly List<ITypeDefinition> _genericParameters = new();
     protected int VariableCount = 1;
         
     private ITypeDefinition? _returnType;
@@ -18,6 +19,10 @@ public class MethodDefinition : BaseBlockDefinition
 
     public string Name { get; }
 
+    public List<ITypeDefinition> GenericParameters => _genericParameters;
+
+    public IOutputComponent? WhereStatement { get; set; }
+    
     public ITypeDefinition? InterfaceImplementation { get; set; }
 
     public ITypeDefinition? ReturnType => _returnType;
@@ -27,6 +32,11 @@ public class MethodDefinition : BaseBlockDefinition
     public string GetUniqueVariable(string prefix)
     {
         return prefix + VariableCount++;
+    }
+
+    public void AddGenericParameter(ITypeDefinition typeDefinition)
+    {
+        _genericParameters.Add(typeDefinition);
     }
 
     public MethodDefinition SetReturnType(Type type)
@@ -97,6 +107,13 @@ public class MethodDefinition : BaseBlockDefinition
         }
 
         outputContext.Write(Name);
+
+        if (_genericParameters.Count > 0)
+        {
+            outputContext.Write("<");
+            _genericParameters.OutputCommaSeparatedList(outputContext);
+            outputContext.Write(">");
+        }
             
         outputContext.Write("(");
 
@@ -117,6 +134,8 @@ public class MethodDefinition : BaseBlockDefinition
 
     protected virtual void WriteEndOfMethodSignature(IOutputContext outputContext)
     {
+        WhereStatement?.WriteOutput(outputContext);
+        
         outputContext.WriteLine();
     }
 

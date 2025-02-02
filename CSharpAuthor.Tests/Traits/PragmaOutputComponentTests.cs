@@ -9,8 +9,7 @@ public class PragmaOutputComponentTests
     {
         var classDefinition = new ClassDefinition("Test");
 
-        classDefinition.AddLeadingTrait(new PragmaOutputComponent(false, "1998"));
-        classDefinition.AddTrailingTrait(new PragmaOutputComponent(true, "1998"));
+        classDefinition.WrapInPragma("1998");
         
         var outputContext = new OutputContext();
 
