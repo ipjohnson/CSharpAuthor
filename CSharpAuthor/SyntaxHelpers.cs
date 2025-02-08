@@ -26,7 +26,22 @@ public static class SyntaxHelpers
     {
         return new NewArrayStatement(typeDefinition, length);
     }
+    
+    public static NewArrayStatement NewArray(Type type, params object[] parameters)
+    {
+        return new NewArrayStatement(TypeDefinition.Get(type), parameters.Select(p => CodeOutputComponent.Get(p)).ToArray());
+    }
+    
+    public static NewArrayStatement NewArray(ITypeDefinition type, params object[] parameters)
+    {
+        return new NewArrayStatement(type, parameters.Select(p => CodeOutputComponent.Get(p)).ToArray());
+    }
 
+    public static IndexStatement Index(this IOutputComponent component, object index)
+    {
+        return new IndexStatement(component, CodeOutputComponent.Get(index));
+    }
+    
     public static IOutputComponent Increment(object outputComponent)
     {
         return new PostfixOutputComponent("++", CodeOutputComponent.Get(outputComponent));
