@@ -64,7 +64,14 @@ public class MethodDefinition : BaseBlockDefinition
 
         return parameter;
     }
+
+    public MethodDefinition AddParameter(ParameterDefinition parameterDefinition)
+    {
+        ParameterList.Add(parameterDefinition);
         
+        return this;
+    }
+    
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
         ProcessNamespaces(outputContext);
