@@ -149,21 +149,31 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer
 
             componentAction(constructor);
         }
-
-        foreach (var method in _methods)
-        {
-            outputContext.WriteLine();
-
-            componentAction(method);
-        }
-
-        foreach (var property in _properties)
-        {
-            outputContext.WriteLine();
-
-            componentAction(property);
-        }
-
+        
+        WriteMemberComponents(
+            componentAction,
+            outputContext,
+            _properties,
+            method => method.Modifiers.HasFlag(ComponentModifier.Public));
+        
+        WriteMemberComponents(
+            componentAction, 
+            outputContext, 
+            _methods,
+            m => m.Modifiers.HasFlag(ComponentModifier.Public));
+        
+        WriteMemberComponents(
+            componentAction,
+            outputContext,
+            _properties,
+            method => !method.Modifiers.HasFlag(ComponentModifier.Public));
+        
+        WriteMemberComponents(
+            componentAction, 
+            outputContext, 
+            _methods,
+            m => !m.Modifiers.HasFlag(ComponentModifier.Public));
+        
         foreach (var classDefinition in _classes)
         {
             outputContext.WriteLine();
@@ -176,6 +186,25 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer
             outputContext.WriteLine();
 
             componentAction(outputComponent);
+        }
+    }
+
+    private void WriteMemberComponents(
+        Action<IOutputComponent> componentAction, 
+        IOutputContext outputContext,
+        IEnumerable<BaseOutputComponent> components,
+        Func<BaseOutputComponent,bool> filter) {
+        
+        foreach (var component in components)
+        {
+            if (filter(component))
+            {
+                continue;
+            }
+            
+            outputContext.WriteLine();
+
+            componentAction(component);
         }
     }
 
