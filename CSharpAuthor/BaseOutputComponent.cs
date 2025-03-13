@@ -155,5 +155,4 @@ public abstract class BaseOutputComponent : IOutputComponent
 
         return defaultString;
     }
-        
 }

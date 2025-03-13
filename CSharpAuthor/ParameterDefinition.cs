@@ -10,6 +10,8 @@ public class ParameterDefinition : InstanceDefinition
 
     public bool IsOut { get; set; } = false;
 
+    public bool This { get; set; } = false;
+    
     public ITypeDefinition TypeDefinition { get; }
 
     public IOutputComponent? DefaultValue { get; set; }
@@ -18,7 +20,11 @@ public class ParameterDefinition : InstanceDefinition
     {
         outputContext.AddImportNamespace(TypeDefinition);
 
-        if (IsOut)
+        if (This)
+        {
+            outputContext.Write("this ");
+        }
+        else if (IsOut)
         {
             outputContext.Write("out ");
         }
