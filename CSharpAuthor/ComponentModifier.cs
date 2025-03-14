@@ -26,4 +26,6 @@ public enum ComponentModifier
     Async = 256,
 
     Partial = 512,
+    
+    NoAccessibility = 1024,
 }

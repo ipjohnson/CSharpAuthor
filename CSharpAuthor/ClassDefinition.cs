@@ -222,8 +222,14 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer
     private void WriteClassSignature(IOutputContext outputContext)
     {
         outputContext.Write(outputContext.IndentString);
-        outputContext.Write(GetAccessModifier(KeyWords.Public));
-        outputContext.WriteSpace();
+
+        var accessModifier = GetAccessModifier(KeyWords.Public);
+
+        if (!string.IsNullOrEmpty(accessModifier))
+        {
+            outputContext.Write(accessModifier);
+            outputContext.WriteSpace();
+        }
 
         if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
         {

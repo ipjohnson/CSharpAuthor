@@ -138,6 +138,11 @@ public abstract class BaseOutputComponent : IOutputComponent
 
     protected string GetAccessModifier(string defaultString)
     {
+        if ((Modifiers & ComponentModifier.NoAccessibility) == ComponentModifier.NoAccessibility)
+        {
+            return "";
+        }
+        
         if ((Modifiers & ComponentModifier.Public) == ComponentModifier.Public)
         {
             return KeyWords.Public;
