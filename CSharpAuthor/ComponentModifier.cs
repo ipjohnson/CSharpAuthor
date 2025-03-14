@@ -27,5 +27,7 @@ public enum ComponentModifier
 
     Partial = 512,
     
-    NoAccessibility = 1024,
+    Internal = 1024,
+    
+    NoAccessibility = 2048,
 }

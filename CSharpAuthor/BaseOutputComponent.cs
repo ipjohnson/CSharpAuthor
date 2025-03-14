@@ -143,6 +143,11 @@ public abstract class BaseOutputComponent : IOutputComponent
             return "";
         }
         
+        if ((Modifiers & ComponentModifier.Internal) == ComponentModifier.Internal)
+        {
+            return KeyWords.Internal;
+        }
+        
         if ((Modifiers & ComponentModifier.Public) == ComponentModifier.Public)
         {
             return KeyWords.Public;
