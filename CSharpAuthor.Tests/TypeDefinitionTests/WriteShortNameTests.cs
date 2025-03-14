@@ -20,4 +20,16 @@ public class WriteShortNameTests
 
         Assert.Equal("Task<string>", stringBuilder.ToString());
     }
+
+    [Fact]
+    public void WriteVoid()
+    {
+        var typeDefinition = TypeDefinition.Get(typeof(void));
+
+        var stringBuilder = new StringBuilder();
+
+        typeDefinition.WriteShortName(stringBuilder);
+
+        Assert.Equal("void", stringBuilder.ToString());
+    }
 }

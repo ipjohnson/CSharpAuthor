@@ -21,8 +21,14 @@ public class TypeDefinition : BaseTypeDefinition
 
     public override void WriteShortName(StringBuilder builder)
     {
+        if (Name == "Void" && Namespace == "System")
+        {
+            builder.Append("void");
+            return;
+        }
+        
         builder.Append(Name);
-
+        
         if (IsArray)
         {
             builder.Append("[]");
