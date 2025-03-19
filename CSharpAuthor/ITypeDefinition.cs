@@ -19,7 +19,7 @@ public interface ITypeDefinition : IComparable<ITypeDefinition>
 
     IEnumerable<string> KnownNamespaces { get; }
 
-    void WriteShortName(StringBuilder builder);
+    void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName);
 
     ITypeDefinition MakeNullable(bool nullable = true);
 
@@ -34,7 +34,7 @@ public static class ITypeDefinitionExtensions
     {
         var stringBuilder = new StringBuilder();
 
-        typeDefinition.WriteShortName(stringBuilder);
+        typeDefinition.WriteTypeName(stringBuilder);
 
         return stringBuilder.ToString();
     }

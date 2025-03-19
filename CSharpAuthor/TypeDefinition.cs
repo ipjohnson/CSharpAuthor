@@ -19,14 +19,32 @@ public class TypeDefinition : BaseTypeDefinition
         get { yield return Namespace; }
     }
 
-    public override void WriteShortName(StringBuilder builder)
+    public override void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
+        
         if (Name == "Void" && Namespace == "System")
         {
             builder.Append("void");
             return;
         }
-        
+
+        if (!string.IsNullOrEmpty(Namespace))
+        {
+            if (typeOutputMode == TypeOutputMode.Global)
+            {
+                builder.Append("global::");
+                builder.Append(Namespace);
+                builder.Append('.');
+
+            }
+            else if (typeOutputMode == TypeOutputMode.FullName)
+            {
+                builder.Append(Namespace);
+                builder.Append('.');
+            }
+        }
+
+
         builder.Append(Name);
         
         if (IsArray)

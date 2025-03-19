@@ -21,7 +21,7 @@ public abstract class BaseTypeDefinition : ITypeDefinition
 
     public abstract IEnumerable<string> KnownNamespaces { get; }
 
-    public abstract void WriteShortName(StringBuilder builder);
+    public abstract void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName);
 
     public abstract ITypeDefinition MakeNullable(bool nullable = true);
 

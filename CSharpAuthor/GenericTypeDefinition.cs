@@ -124,9 +124,25 @@ public class GenericTypeDefinition : BaseTypeDefinition
             yield return Namespace;
         }
     }
-
-    public override void WriteShortName(StringBuilder builder)
+    
+    public override void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
+        if (!string.IsNullOrEmpty(Namespace))
+        {
+            if (typeOutputMode == TypeOutputMode.Global)
+            {
+                builder.Append("global::");
+                builder.Append(Namespace);
+                builder.Append('.');
+
+            }
+            else if (typeOutputMode == TypeOutputMode.FullName)
+            {
+                builder.Append(Namespace);
+                builder.Append('.');
+            }
+        }
+
         builder.Append(Name);
         builder.Append('<');
 
@@ -143,7 +159,7 @@ public class GenericTypeDefinition : BaseTypeDefinition
                 writeComma = true;
             }
 
-            typeDefinition.WriteShortName(builder);
+            typeDefinition.WriteTypeName(builder, typeOutputMode);
         }
 
         builder.Append('>');
@@ -156,7 +172,7 @@ public class GenericTypeDefinition : BaseTypeDefinition
         if (IsNullable)
         {
             builder.Append("?");
-        }
+        }   
     }
 
     public override ITypeDefinition MakeNullable(bool nullable = true)

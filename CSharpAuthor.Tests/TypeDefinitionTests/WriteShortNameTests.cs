@@ -16,7 +16,7 @@ public class WriteShortNameTests
 
         var stringBuilder = new StringBuilder();
 
-        typeDefinition.WriteShortName(stringBuilder);
+        typeDefinition.WriteTypeName(stringBuilder, TypeOutputMode.ShortName);
 
         Assert.Equal("Task<string>", stringBuilder.ToString());
     }
@@ -28,7 +28,7 @@ public class WriteShortNameTests
 
         var stringBuilder = new StringBuilder();
 
-        typeDefinition.WriteShortName(stringBuilder);
+        typeDefinition.WriteTypeName(stringBuilder, TypeOutputMode.ShortName);
 
         Assert.Equal("void", stringBuilder.ToString());
     }

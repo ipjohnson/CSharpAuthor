@@ -5,6 +5,13 @@ using System.Text;
 
 namespace CSharpAuthor;
 
+public enum TypeOutputMode
+{
+    Global,
+    FullName,
+    ShortName,
+}
+
 public class OutputContextOptions
 {
     public char IndentChar { get; set; } = ' ';
@@ -12,6 +19,8 @@ public class OutputContextOptions
     public int IndentCharCount { get; set; } = 4;
 
     public string NewLine { get; set; } = "\n";
+    
+    public TypeOutputMode TypeOutputMode { get; set; } = TypeOutputMode.ShortName;
 }
 
 public class OutputContext : IOutputContext
@@ -52,9 +61,12 @@ public class OutputContext : IOutputContext
 
     public void Write(ITypeDefinition typeDefinition)
     {
-        AddImportNamespace(typeDefinition);
-
-        typeDefinition?.WriteShortName(_output);
+        if (_options.TypeOutputMode == TypeOutputMode.ShortName)
+        {
+            AddImportNamespace(typeDefinition);
+        }
+        
+        typeDefinition?.WriteTypeName(_output, _options.TypeOutputMode);
     }
 
     public void WriteLine()
