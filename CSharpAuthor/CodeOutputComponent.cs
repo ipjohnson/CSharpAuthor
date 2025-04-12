@@ -44,6 +44,11 @@ public class CodeOutputComponent : BaseOutputComponent
         {
             return GetNewArray(values, indented);
         }
+
+        if (value is bool booleanValue)
+        {
+            return new CodeOutputComponent(booleanValue ? "true" : "false") { Indented = indented };
+        }
         
         return new CodeOutputComponent(value.ToString()) { Indented = indented };
     }
