@@ -33,7 +33,7 @@ public class SimplePropertyDefinitionTests
         propertyDefinition.Get.LambdaSyntax = true;
         propertyDefinition.Set = null;
 
-        propertyDefinition.Get.AddCode("10;");
+        propertyDefinition.Get.AddCode("10");
         var context = new OutputContext();
 
         propertyDefinition.WriteOutput(context);
@@ -51,7 +51,7 @@ public class SimplePropertyDefinitionTests
         var propertyDefinition = new PropertyDefinition(TypeDefinition.Get(typeof(int)), "Test");
 
         propertyDefinition.Get.LambdaSyntax = true;
-        propertyDefinition.Get.AddCode("_value;");
+        propertyDefinition.Get.AddCode("_value");
 
         propertyDefinition.Set!.LambdaSyntax = true;
         propertyDefinition.Set.AddCode("_value = value;");

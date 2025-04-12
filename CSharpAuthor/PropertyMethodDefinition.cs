@@ -32,6 +32,12 @@ public class PropertyMethodDefinition : MethodDefinition
             }
 
             statement.WriteOutput(outputContext);
+
+            if (outputContext.LastCharacter != ';')
+            {
+                outputContext.Write(";");
+            }
+            
             outputContext.WriteLine();
         }
         else

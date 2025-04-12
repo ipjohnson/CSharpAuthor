@@ -160,6 +160,19 @@ public class OutputContext : IOutputContext
         }
     }
 
+    public char? LastCharacter
+    {
+        get
+        {
+            if (_output.Length == 0)
+            {
+                return null;
+            }
+            
+            return _output[_output.Length - 1];
+        }
+    }
+
     public void WriteIndentedLine(string text)
     {
         _output.Append(IndentString);

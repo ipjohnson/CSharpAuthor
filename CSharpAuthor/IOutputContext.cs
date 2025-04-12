@@ -42,4 +42,6 @@ public interface IOutputContext
     void AddImportNamespaces(IEnumerable<ITypeDefinition> typeDefinition);
 
     void GenerateUsingStatements();
+    
+    char? LastCharacter { get; }
 }
