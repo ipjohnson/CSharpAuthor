@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace CSharpAuthor;
 
@@ -27,9 +29,60 @@ public class CodeOutputComponent : BaseOutputComponent
             null => new CodeOutputComponent("") { Indented = indented },
 
             IOutputComponent outputComponent => outputComponent,
-
-            _ => new CodeOutputComponent(value.ToString()) { Indented = indented }
+            
+            _ => DefaultComponent(value, indented)
         };
+    }
+
+    private static IOutputComponent DefaultComponent(object value, bool indented) {
+        if (value is IEnumerable<string> stringValues)
+        {
+            return GetNewStringArray(stringValues, indented);
+        }
+        
+        if (value is Array values)
+        {
+            return GetNewArray(values, indented);
+        }
+        
+        return new CodeOutputComponent(value.ToString()) { Indented = indented };
+    }
+
+    private static IOutputComponent GetNewStringArray(IEnumerable<string> stringValues, bool indented)
+    {
+        var values = new List<IOutputComponent>();
+
+        foreach (var stringValue in stringValues)
+        {
+            values.Add(Get(SyntaxHelpers.QuoteString(stringValue)));
+        }
+        
+        return new NewArrayStatement(TypeDefinition.Get(typeof(string)), values.ToArray());
+    }
+
+    private static IOutputComponent GetNewArray(IEnumerable values, bool indented)
+    {
+        var outputComponents = new List<IOutputComponent>();
+        
+        Type? type = null;
+
+        if (values is Array array)
+        {
+            type = array.GetType().GetElementType();
+        }
+        
+        foreach (var value in values)
+        {
+            if (type == null)
+            {
+                type = value.GetType();
+            }
+            
+            outputComponents.Add(Get(value));
+        }
+        
+        return new NewArrayStatement(
+            TypeDefinition.Get(type ?? typeof(object)), outputComponents.ToArray());
     }
 
     public void AddType(ITypeDefinition typeDefinition)
