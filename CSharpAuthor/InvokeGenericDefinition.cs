@@ -52,7 +52,7 @@ public class InvokeGenericDefinition : BaseOutputComponent
         outputContext.Write(">");
         outputContext.Write("(");
 
-        _arguments.OutputCommaSeparatedList(outputContext);
+        _arguments.OutputCommaSeparatedList(outputContext, outputContext.Options.BreakInvokeLines);
 
         outputContext.Write(")");
     }

@@ -20,6 +20,8 @@ public class OutputContextOptions
 
     public string NewLine { get; set; } = "\n";
     
+    public bool BreakInvokeLines { get; set; } = true;
+    
     public TypeOutputMode TypeOutputMode { get; set; } = TypeOutputMode.ShortName;
 }
 
@@ -28,17 +30,17 @@ public class OutputContext : IOutputContext
     private readonly HashSet<string> _namespaces = new ();
     private readonly StringBuilder _output;
     private int _indentIndex;
-    private readonly OutputContextOptions _options;
+    public OutputContextOptions Options { get; }
 
     public OutputContext(OutputContextOptions? options = null)
     {
-        this._options = options ?? new OutputContextOptions();
+        Options = options ?? new OutputContextOptions();
         
         _output = new StringBuilder();
         IndentString = "";
     }
 
-    public string SingleIndent => new (_options.IndentChar, _options.IndentCharCount);
+    public string SingleIndent => new (Options.IndentChar, Options.IndentCharCount);
 
     public string IndentString { get; private set; }
 
@@ -61,17 +63,17 @@ public class OutputContext : IOutputContext
 
     public void Write(ITypeDefinition typeDefinition)
     {
-        if (_options.TypeOutputMode == TypeOutputMode.ShortName)
+        if (Options.TypeOutputMode == TypeOutputMode.ShortName)
         {
             AddImportNamespace(typeDefinition);
         }
         
-        typeDefinition?.WriteTypeName(_output, _options.TypeOutputMode);
+        typeDefinition?.WriteTypeName(_output, Options.TypeOutputMode);
     }
 
     public void WriteLine()
     {
-        _output.Append(_options.NewLine);
+        _output.Append(Options.NewLine);
     }
 
     public void WriteLine(string text)
@@ -151,11 +153,11 @@ public class OutputContext : IOutputContext
 
         if (namespaceList.Count > 0)
         {
-            _output.Insert(0, _options.NewLine);
+            _output.Insert(0, Options.NewLine);
 
             foreach (string ns in namespaceList)
             {
-                _output.Insert(0, $"using {ns};" + _options.NewLine);
+                _output.Insert(0, $"using {ns};" + Options.NewLine);
             }
         }
     }
@@ -181,6 +183,6 @@ public class OutputContext : IOutputContext
 
     private void SetIndentString()
     {
-        IndentString = new string(_options.IndentChar, _options.IndentCharCount * _indentIndex);
+        IndentString = new string(Options.IndentChar, Options.IndentCharCount * _indentIndex);
     }
 }

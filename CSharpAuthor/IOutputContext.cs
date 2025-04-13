@@ -44,4 +44,6 @@ public interface IOutputContext
     void GenerateUsingStatements();
     
     char? LastCharacter { get; }
+    
+    OutputContextOptions Options { get; }
 }

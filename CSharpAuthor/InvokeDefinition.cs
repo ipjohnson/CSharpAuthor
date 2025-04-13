@@ -51,7 +51,7 @@ public class InvokeDefinition : BaseOutputComponent
         outputContext.Write(_methodName);
         outputContext.Write("(");
 
-        _arguments.OutputCommaSeparatedList(outputContext);
+        _arguments.OutputCommaSeparatedList(outputContext, outputContext.Options.BreakInvokeLines);
 
         outputContext.Write(")");
     }
