@@ -69,7 +69,19 @@ public class InterfaceDefinition : BaseOutputComponent
 
         WriteInterfaceClosing(outputContext);
     }
+
+    protected override void WriteComment(IOutputContext outputContext)
+    {
+        if (string.IsNullOrWhiteSpace(Comment))
+        {
+            return;
+        }
         
+        outputContext.WriteIndentedLine("/// <summary>");
+        outputContext.WriteIndentedLine($"/// {Comment}");
+        outputContext.WriteIndentedLine("/// </summary>");
+    }
+
     private void WriteInterfaceClosing(IOutputContext outputContext)
     {
         outputContext.CloseScope();

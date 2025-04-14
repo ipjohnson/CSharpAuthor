@@ -136,6 +136,18 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer
         WriteClassClosing(outputContext);
     }
 
+    protected override void WriteComment(IOutputContext outputContext)
+    {
+        if (string.IsNullOrWhiteSpace(Comment))
+        {
+            return;
+        }
+        
+        outputContext.WriteIndentedLine("/// <summary>");
+        outputContext.WriteIndentedLine($"/// {Comment}");
+        outputContext.WriteIndentedLine("/// </summary>");
+    }
+
     private void ApplyAllComponents(Action<IOutputComponent> componentAction, IOutputContext outputContext)
     {
         foreach (var field in _fields)

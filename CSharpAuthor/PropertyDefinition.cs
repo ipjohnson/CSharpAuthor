@@ -109,6 +109,18 @@ public class PropertyDefinition : BaseOutputComponent
         outputContext.CloseScope();
     }
 
+    protected override void WriteComment(IOutputContext outputContext)
+    {
+        if (string.IsNullOrWhiteSpace(Comment))
+        {
+            return;
+        }
+        
+        outputContext.WriteIndentedLine($"/// <summary>");
+        outputContext.WriteIndentedLine($"/// {Comment}");
+        outputContext.WriteIndentedLine($"/// </summary>");
+    }
+
     protected virtual void WriteAccessModifiers(IOutputContext outputContext)
     {
         var modifier = GetAccessModifier("public");

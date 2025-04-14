@@ -47,4 +47,16 @@ public class FieldDefinition : BaseOutputComponent
         
         outputContext.WriteLine(";");
     }
+
+    protected override void WriteComment(IOutputContext outputContext)
+    {
+        if (Comment == null)
+        {
+            return;
+        }
+        
+        outputContext.WriteLine("/// <summary>");
+        outputContext.WriteLine($"/// {Comment}");
+        outputContext.WriteLine("/// </summary>");
+    }
 }

@@ -80,6 +80,11 @@ public abstract class BaseOutputComponent : IOutputComponent
             outputContext.AddImportNamespaces(UsingNamespaces);
         }
 
+        if (outputContext.Options.GenerateDocumentation)
+        {
+            WriteComment(outputContext);
+        }
+
         ProcessLeadingTraits(outputContext);
         
         ProcessAttributes(outputContext);
@@ -87,6 +92,11 @@ public abstract class BaseOutputComponent : IOutputComponent
         WriteComponentOutput(outputContext);
 
         ProcessTrailingTraits(outputContext);
+    }
+
+    protected virtual void WriteComment(IOutputContext outputContext)
+    {
+        
     }
 
     protected virtual void ProcessTrailingTraits(IOutputContext outputContext)

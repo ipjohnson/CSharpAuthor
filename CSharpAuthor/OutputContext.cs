@@ -22,6 +22,8 @@ public class OutputContextOptions
     
     public bool BreakInvokeLines { get; set; } = true;
     
+    public bool GenerateDocumentation { get; set; } = true;
+    
     public TypeOutputMode TypeOutputMode { get; set; } = TypeOutputMode.ShortName;
 }
 

@@ -18,6 +18,8 @@ public class MethodDefinition : BaseBlockDefinition
     }
 
     public string Name { get; }
+    
+    public string? ReturnComment { get; set; }
 
     public List<ITypeDefinition> GenericParameters => _genericParameters;
 
@@ -79,6 +81,31 @@ public class MethodDefinition : BaseBlockDefinition
         WriteMethodSignature(outputContext);
 
         WriteMethodBody(outputContext);
+    }
+    
+    protected override void WriteComment(IOutputContext outputContext)
+    {
+        if (string.IsNullOrEmpty(Comment))
+        {
+            return;
+        }
+        
+        outputContext.WriteIndentedLine("/// <summary>");
+        outputContext.WriteIndentedLine("/// " + Comment);
+        outputContext.WriteIndentedLine("/// </summary>");
+
+        foreach (ParameterDefinition parameterDefinition in ParameterList)
+        {
+            if (parameterDefinition.Comment != null)
+            {
+                outputContext.WriteIndentedLine("/// <param name=\"" + parameterDefinition.Name + "\">" + parameterDefinition.Comment + "</param>");
+            }
+        }
+        
+        if (ReturnComment != null)
+        {
+            outputContext.WriteIndentedLine("/// <returns>" + ReturnComment + "</returns>");
+        }
     }
 
     private void ProcessNamespaces(IOutputContext outputContext)
