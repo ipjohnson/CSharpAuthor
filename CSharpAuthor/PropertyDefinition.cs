@@ -1,6 +1,6 @@
 ﻿namespace CSharpAuthor;
 
-public class PropertyDefinition : BaseOutputComponent
+public class PropertyDefinition : BaseOutputComponent, INamedComponent
 {
     public PropertyDefinition(ITypeDefinition type, string name)
     {

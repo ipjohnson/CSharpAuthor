@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace CSharpAuthor;
 
-public class MethodDefinition : BaseBlockDefinition
+public class MethodDefinition : BaseBlockDefinition, INamedComponent
 {
     protected readonly List<ParameterDefinition> ParameterList = new ();
     private readonly List<ITypeDefinition> _genericParameters = new();

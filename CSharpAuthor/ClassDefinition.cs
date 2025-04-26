@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 
 namespace CSharpAuthor;
 
-public class ClassDefinition : BaseOutputComponent, IConstructContainer
+public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedComponent
 {
     private readonly List<ITypeDefinition> _baseTypes = new();
     private readonly List<FieldDefinition> _fields = new();
@@ -57,6 +57,52 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer
         }
     }
 
+    public IEnumerable<IOutputComponent> GetAllNamedComponents()
+    {
+        if (_fields.Count > 0)
+        {
+            foreach (var field in _fields)
+            {
+                yield return field;
+            }
+        }
+
+        if (_methods.Count > 0)
+        {
+            foreach (var method in _methods)
+            {
+                yield return method;
+            }
+        }
+
+        if (_properties.Count > 0)
+        {
+            foreach (var property in _properties)
+            {
+                yield return property;
+            }
+        }
+
+        if (_classes.Count > 0)
+        {
+            foreach (var classDefinition in _classes)
+            {
+                yield return classDefinition;
+            }
+        }
+
+        if (_otherComponents.Count > 0)
+        {
+            foreach (var outputComponent in _otherComponents)
+            {
+                if (outputComponent is INamedComponent)
+                {
+                    yield return outputComponent;
+                }
+            }
+        }
+    }
+
     public ClassDefinition AddClass(string name)
     {
         var classDefinition = new ClassDefinition(name);
@@ -64,6 +110,22 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer
         _classes.Add(classDefinition);
 
         return classDefinition;
+    }
+
+    public InterfaceDefinition AddInterface(string name)
+    {
+        var interfaceDefinition = new InterfaceDefinition(name);
+        
+        _otherComponents.Add(interfaceDefinition);
+        
+        return interfaceDefinition;
+    }
+
+    public EnumDefinition AddEnum(string name)
+    {
+        var enumDefinition = new EnumDefinition(name);
+        _otherComponents.Add(enumDefinition);
+        return enumDefinition;
     }
 
     public PropertyDefinition AddProperty(Type type, string fieldName)

@@ -1,8 +1,7 @@
 ﻿namespace CSharpAuthor;
 
-public class FieldDefinition : BaseOutputComponent
+public class FieldDefinition : BaseOutputComponent, INamedComponent
 {
-        
     public FieldDefinition(ITypeDefinition typeDefinition, string name)
     {
         TypeDefinition = typeDefinition;

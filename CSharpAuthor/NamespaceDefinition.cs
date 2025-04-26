@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CSharpAuthor;
 
@@ -21,6 +22,11 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
         return namespaceDefinition;
     }
     
+    public IEnumerable<IOutputComponent> GetAllNamedComponents()
+    {
+        return _outputComponents.Where(x => x is INamedComponent);
+    }
+
     public ClassDefinition AddClass(string name)
     {
         var classDefinition = new ClassDefinition(name);
@@ -52,6 +58,7 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
     {
         _outputComponents.Add(component);
     }
+    
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {

@@ -13,6 +13,9 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
         _namespaceDefinition = new NamespaceDefinition(ns);
     }
 
+    public IEnumerable<IOutputComponent> GetAllNamedComponents() => 
+        _namespaceDefinition.GetAllNamedComponents();
+
     public ClassDefinition AddClass(string name)
     {
         return _namespaceDefinition.AddClass(name);

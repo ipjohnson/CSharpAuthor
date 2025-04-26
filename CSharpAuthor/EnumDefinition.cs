@@ -4,7 +4,7 @@ using System.Text;
 
 namespace CSharpAuthor;
 
-public class EnumDefinition : BaseOutputComponent
+public class EnumDefinition : BaseOutputComponent, INamedComponent
 {
     private readonly List<EnumValueDefinition> _enumValueDefinitions = new ();
     private readonly string _enumName;
@@ -70,4 +70,6 @@ public class EnumDefinition : BaseOutputComponent
 
         outputContext.WriteLine();
     }
+
+    public string Name => _enumName;
 }

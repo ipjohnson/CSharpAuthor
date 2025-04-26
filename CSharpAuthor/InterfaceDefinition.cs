@@ -4,7 +4,7 @@ using System.Text;
 
 namespace CSharpAuthor;
 
-public class InterfaceDefinition : BaseOutputComponent
+public class InterfaceDefinition : BaseOutputComponent, INamedComponent
 {
     protected readonly List<InterfacePropertyDefinition> Properties = new ();
     protected readonly List<InterfaceMethodDefinition> Methods = new ();
