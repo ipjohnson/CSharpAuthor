@@ -6,86 +6,37 @@ namespace CSharpAuthor;
 
 public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
 {
-    private readonly string _namespace;
-    private readonly List<IOutputComponent> _outputComponents = new ();
+    private readonly NamespaceDefinition _namespaceDefinition;
 
     public CSharpFileDefinition(string ns = "")
     {
-        _namespace = ns;
+        _namespaceDefinition = new NamespaceDefinition(ns);
     }
 
     public ClassDefinition AddClass(string name)
     {
-        var classDefinition = new ClassDefinition(name);
-
-        _outputComponents.Add(classDefinition);
-
-        return classDefinition;
+        return _namespaceDefinition.AddClass(name);
     }
 
     public EnumDefinition AddEnum(string name)
     {
-        var enumDefinition = new EnumDefinition(name);
-
-        _outputComponents.Add(enumDefinition);
-
-        return enumDefinition;
+        return _namespaceDefinition.AddEnum(name);
     }
 
     public InterfaceDefinition AddInterface(string interfaceName)
     {
-        var interfaceDefinition = new InterfaceDefinition(interfaceName);
-
-        _outputComponents.Add(interfaceDefinition);
-
-        return interfaceDefinition;
+        return _namespaceDefinition.AddInterface(interfaceName);
     }
 
     public void AddComponent(IOutputComponent component)
     {
-        _outputComponents.Add(component);
+        _namespaceDefinition.AddComponent(component);
     }
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        if (!string.IsNullOrEmpty(_namespace))
-        {
-            WriteNamespaceOpen(outputContext);
-        }
-
-        var newLine = false;
-
-        foreach (var outputComponent in _outputComponents)
-        {
-            if (newLine)
-            {
-                outputContext.WriteLine();
-            }
-            else
-            {
-                newLine = true;
-            }
-
-            outputComponent.WriteOutput(outputContext);
-        }
-
-        if (!string.IsNullOrEmpty(_namespace))
-        {
-            WriteNamespaceClose(outputContext);
-        }
+        _namespaceDefinition.WriteOutput(outputContext);
 
         outputContext.GenerateUsingStatements();
-    }
-
-
-    private void WriteNamespaceClose(IOutputContext outputContext)
-    {
-        outputContext.CloseScope();
-    }
-
-    private void WriteNamespaceOpen(IOutputContext outputContext)
-    {
-        outputContext.WriteIndentedLine("namespace " + _namespace);
-        outputContext.OpenScope();
     }
 }
