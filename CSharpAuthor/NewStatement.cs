@@ -37,14 +37,14 @@ public class NewStatement : InstanceDefinition
         outputContext.Write(_typeDefinition);
         outputContext.Write("(");
             
-        _arguments.OutputCommaSeparatedList(outputContext);
+        _arguments.OutputCommaSeparatedList(outputContext, outputContext.Options.BreakInvokeLines);
 
         outputContext.Write(")");
 
         if (_initValues.Count > 0)
         {
             outputContext.Write("{ ");
-            _initValues.OutputCommaSeparatedList(outputContext);
+            _initValues.OutputCommaSeparatedList(outputContext, outputContext.Options.BreakInvokeLines);
             outputContext.Write(" }");
         }
     }

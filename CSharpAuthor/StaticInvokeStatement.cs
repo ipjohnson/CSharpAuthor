@@ -28,7 +28,7 @@ public class StaticInvokeStatement : BaseOutputComponent
         outputContext.Write(".");
         outputContext.Write(_methodName);
         outputContext.Write("(");
-        _parameters.OutputCommaSeparatedList(outputContext);
+        _parameters.OutputCommaSeparatedList(outputContext, outputContext.Options.BreakInvokeLines);
         outputContext.Write(")");
     }
 }

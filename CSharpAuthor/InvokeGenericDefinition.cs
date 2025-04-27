@@ -48,7 +48,7 @@ public class InvokeGenericDefinition : BaseOutputComponent
 
         outputContext.Write(_methodName);
         outputContext.Write("<");
-        _genericArguments.OutputCommaSeparatedList(outputContext);
+        _genericArguments.OutputCommaSeparatedList(outputContext, outputContext.Options.BreakInvokeLines);
         outputContext.Write(">");
         outputContext.Write("(");
 

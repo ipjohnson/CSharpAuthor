@@ -34,9 +34,9 @@ public class StaticInvokeGenericStatement : BaseOutputComponent
         outputContext.Write(".");
         outputContext.Write(_methodName);
         outputContext.Write("<");
-        _genericArguments.OutputCommaSeparatedList(outputContext);
+        _genericArguments.OutputCommaSeparatedList(outputContext, outputContext.Options.BreakInvokeLines);
         outputContext.Write(">(");
-        _parameters.OutputCommaSeparatedList(outputContext);
+        _parameters.OutputCommaSeparatedList(outputContext, outputContext.Options.BreakInvokeLines);
         outputContext.Write(")");
     }
 }
