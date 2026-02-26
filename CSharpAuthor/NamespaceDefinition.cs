@@ -8,6 +8,8 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
     private readonly string _namespace;
     private readonly List<IOutputComponent> _outputComponents = new ();
 
+    public bool FileScopedNamespace { get; set; }
+
     public NamespaceDefinition(string ns = "")
     {
         _namespace = ns;
@@ -30,6 +32,15 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
     public ClassDefinition AddClass(string name)
     {
         var classDefinition = new ClassDefinition(name);
+
+        _outputComponents.Add(classDefinition);
+
+        return classDefinition;
+    }
+
+    public ClassDefinition AddRecord(string name)
+    {
+        var classDefinition = new ClassDefinition(name) { TypeKeyword = ClassKeyword.Record };
 
         _outputComponents.Add(classDefinition);
 
@@ -64,7 +75,15 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
     {
         if (!string.IsNullOrEmpty(_namespace))
         {
-            WriteNamespaceOpen(outputContext);
+            if (FileScopedNamespace)
+            {
+                outputContext.WriteIndentedLine("namespace " + _namespace + ";");
+                outputContext.WriteLine();
+            }
+            else
+            {
+                WriteNamespaceOpen(outputContext);
+            }
         }
 
         var newLine = false;
@@ -83,7 +102,7 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
             outputComponent.WriteOutput(outputContext);
         }
 
-        if (!string.IsNullOrEmpty(_namespace))
+        if (!string.IsNullOrEmpty(_namespace) && !FileScopedNamespace)
         {
             WriteNamespaceClose(outputContext);
         }
@@ -94,7 +113,7 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
         outputContext.WriteIndentedLine("namespace " + _namespace);
         outputContext.OpenScope();
     }
-    
+
     private void WriteNamespaceClose(IOutputContext outputContext)
     {
         outputContext.CloseScope();

@@ -13,12 +13,23 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
         _namespaceDefinition = new NamespaceDefinition(ns);
     }
 
-    public IEnumerable<IOutputComponent> GetAllNamedComponents() => 
+    public bool FileScopedNamespace
+    {
+        get => _namespaceDefinition.FileScopedNamespace;
+        set => _namespaceDefinition.FileScopedNamespace = value;
+    }
+
+    public IEnumerable<IOutputComponent> GetAllNamedComponents() =>
         _namespaceDefinition.GetAllNamedComponents();
 
     public ClassDefinition AddClass(string name)
     {
         return _namespaceDefinition.AddClass(name);
+    }
+
+    public ClassDefinition AddRecord(string name)
+    {
+        return _namespaceDefinition.AddRecord(name);
     }
 
     public EnumDefinition AddEnum(string name)

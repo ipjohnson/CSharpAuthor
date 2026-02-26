@@ -57,10 +57,14 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
                 return;
             }
         }
-        else if (Get.StatementCount == 0 && 
+        else if (Get.StatementCount == 0 &&
                  Set is { StatementCount: 0 })
         {
-            if ((Set.Modifiers & ComponentModifier.Private) == ComponentModifier.Private)
+            if (Set.IsInit)
+            {
+                outputContext.Write(" { get; init; }");
+            }
+            else if ((Set.Modifiers & ComponentModifier.Private) == ComponentModifier.Private)
             {
                 outputContext.Write(" { get; private set; }");
             }

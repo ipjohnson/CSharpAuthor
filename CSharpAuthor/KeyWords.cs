@@ -29,4 +29,8 @@ public static class KeyWords
     public static string Virtual => "virtual";
 
     public static string Internal => "internal";
+
+    public static string Sealed => "sealed";
+
+    public static string Record => "record";
 }

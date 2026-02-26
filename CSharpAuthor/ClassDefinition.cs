@@ -5,6 +5,14 @@ using System.Net.Http.Headers;
 
 namespace CSharpAuthor;
 
+public enum ClassKeyword
+{
+    Class,
+    Record,
+    Struct,
+    RecordStruct
+}
+
 public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedComponent
 {
     private readonly List<ITypeDefinition> _baseTypes = new();
@@ -21,6 +29,8 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
     }
 
     public string Name { get; }
+
+    public ClassKeyword TypeKeyword { get; set; } = ClassKeyword.Class;
 
     public int FieldCount => _fields.Count;
 
@@ -305,7 +315,12 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
             outputContext.WriteSpace();
         }
 
-        if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
+        if ((Modifiers & ComponentModifier.Sealed) == ComponentModifier.Sealed)
+        {
+            outputContext.Write(KeyWords.Sealed);
+            outputContext.WriteSpace();
+        }
+        else if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
         {
             outputContext.Write(KeyWords.Static);
             outputContext.WriteSpace();
@@ -322,7 +337,7 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
             outputContext.WriteSpace();
         }
 
-        outputContext.Write(KeyWords.Class);
+        outputContext.Write(GetTypeKeywordString());
         outputContext.WriteSpace();
 
         outputContext.Write(Name);
@@ -336,4 +351,12 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
 
         outputContext.WriteLine();
     }
+
+    private string GetTypeKeywordString() => TypeKeyword switch
+    {
+        ClassKeyword.Record => KeyWords.Record,
+        ClassKeyword.Struct => "struct",
+        ClassKeyword.RecordStruct => "record struct",
+        _ => KeyWords.Class
+    };
 }

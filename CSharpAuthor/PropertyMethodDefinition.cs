@@ -14,6 +14,8 @@ public class PropertyMethodDefinition : MethodDefinition
 
     public bool LambdaSyntax { get; set; }
 
+    public bool IsInit { get; set; }
+
     protected override void WriteMethodSignature(IOutputContext outputContext)
     {
         // don't write anything as it will be covered 

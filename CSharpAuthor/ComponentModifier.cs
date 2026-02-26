@@ -30,4 +30,6 @@ public enum ComponentModifier
     Internal = 1024,
     
     NoAccessibility = 2048,
+
+    Sealed = 4096,
 }
