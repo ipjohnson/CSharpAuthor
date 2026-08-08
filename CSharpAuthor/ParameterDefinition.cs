@@ -1,4 +1,4 @@
-﻿namespace CSharpAuthor;
+namespace CSharpAuthor;
 
 public class ParameterDefinition : InstanceDefinition
 {
@@ -8,10 +8,36 @@ public class ParameterDefinition : InstanceDefinition
         TypeDefinition = typeDefinition;
     }
 
-    public bool IsOut { get; set; } = false;
+    /// <summary>
+    /// How the parameter is passed.
+    /// </summary>
+    public ParameterModifier Modifier { get; set; } = ParameterModifier.None;
 
+    /// <summary>
+    /// Whether the parameter is declared with <c>params</c>.
+    /// </summary>
+    /// <remarks>
+    /// Only meaningful on the last parameter, and only for a type the caller can spread into. It is
+    /// written as declared rather than validated here, matching how the rest of this library treats
+    /// what it is handed.
+    /// </remarks>
+    public bool IsParams { get; set; } = false;
+
+    /// <summary>
+    /// Assigned by the callee. Shorthand for <see cref="Modifier"/>.
+    /// </summary>
+    public bool IsOut
+    {
+        get => Modifier == ParameterModifier.Out;
+        set => Modifier = value ? ParameterModifier.Out : ParameterModifier.None;
+    }
+
+    /// <summary>
+    /// Whether this is the receiver of an extension method. Combines with <see cref="Modifier"/>,
+    /// since <c>this ref</c> and <c>this in</c> are both allowed on a struct receiver.
+    /// </summary>
     public bool This { get; set; } = false;
-    
+
     public ITypeDefinition TypeDefinition { get; }
 
     public IOutputComponent? DefaultValue { get; set; }
@@ -22,11 +48,22 @@ public class ParameterDefinition : InstanceDefinition
 
         if (This)
         {
-            outputContext.Write("this ");
+            outputContext.Write(KeyWords.This);
+            outputContext.WriteSpace();
         }
-        else if (IsOut)
+
+        var modifier = GetModifierKeyword();
+
+        if (modifier != null)
         {
-            outputContext.Write("out ");
+            outputContext.Write(modifier);
+            outputContext.WriteSpace();
+        }
+
+        if (IsParams)
+        {
+            outputContext.Write(KeyWords.Params);
+            outputContext.WriteSpace();
         }
 
         outputContext.Write(TypeDefinition);
@@ -38,6 +75,45 @@ public class ParameterDefinition : InstanceDefinition
             outputContext.Write(" = ");
             DefaultValue.WriteOutput(outputContext);
         }
+    }
+
+    /// <summary>
+    /// The parameter as an argument at a call site, carrying the modifier the callee declared, for
+    /// passing to <c>Invoke</c>, <c>New</c> and anything else that takes arguments.
+    /// </summary>
+    /// <remarks>
+    /// Forwarding a call has to repeat <c>ref</c> and <c>out</c>; leaving them off does not compile.
+    /// The parameter writes its bare name on its own, so one used as an ordinary value expression is
+    /// unaffected.
+    ///
+    /// <c>in</c> is optional at a call site and <c>ref readonly</c> only warns without it, so neither
+    /// is written: the argument reads the same either way.
+    /// </remarks>
+    public IOutputComponent AsArgument()
+    {
+        var modifier = Modifier switch
+        {
+            ParameterModifier.Ref => KeyWords.Ref,
+            ParameterModifier.Out => KeyWords.Out,
+            _ => null
+        };
+
+        return new CodeOutputComponent(modifier == null ? Name : modifier + " " + Name)
+        {
+            Indented = false
+        };
+    }
+
+    private string? GetModifierKeyword()
+    {
+        return Modifier switch
+        {
+            ParameterModifier.Ref => KeyWords.Ref,
+            ParameterModifier.Out => KeyWords.Out,
+            ParameterModifier.In => KeyWords.In,
+            ParameterModifier.RefReadOnly => KeyWords.Ref + " " + KeyWords.ReadOnly,
+            _ => null
+        };
     }
 
     protected override void WriteComponentOutput(IOutputContext outputContext)

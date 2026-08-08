@@ -33,4 +33,14 @@ public static class KeyWords
     public static string Sealed => "sealed";
 
     public static string Record => "record";
+
+    public static string Ref => "ref";
+
+    public static string Out => "out";
+
+    public static string In => "in";
+
+    public static string Params => "params";
+
+    public static string This => "this";
 }
