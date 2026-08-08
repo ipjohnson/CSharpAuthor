@@ -27,8 +27,8 @@ public class MethodInvokeTests
 {
     var helloVar = ""Hello"";
     helloVar.ToString(
-        1, 
-        2, 
+        1,
+        2,
         3
     );
 }
