@@ -24,48 +24,47 @@ public static class IEnumerableExtensions
 
     public static void OutputSeparatedList<T>(this IEnumerable<T> components, IOutputContext context, Action<IOutputContext, T> writeAction, string separator, bool newLineBeforeItems = false)
     {
-        var writeSeparator = false;
+        IReadOnlyList<T> list = components as IReadOnlyList<T> ?? components.ToList();
 
-        if (newLineBeforeItems)
+        // A list of one stays on the line it was opened on. Indenting for a break that never
+        // happens leaves the closing bracket stranded mid-line, which is what a single argument
+        // wrapping a broken one used to produce: Intercept(new Context(\n ... \n    )    );
+        var breakLines = newLineBeforeItems && list.Count > 1;
+
+        if (breakLines)
         {
             context.IncrementIndent();
         }
-        
-        IReadOnlyList<T>? list = components as IReadOnlyList<T> ?? components.ToList();
+
+        var writeSeparator = false;
 
         foreach (var tValue in list)
         {
             if (writeSeparator)
             {
-                context.Write(separator);
+                // The line break already separates the items, so the separator does not also pad
+                // the end of the line it terminates.
+                context.Write(breakLines ? separator.TrimEnd() : separator);
             }
             else
             {
                 writeSeparator = true;
             }
-            
-            if (newLineBeforeItems && list.Count > 1)
+
+            if (breakLines)
             {
                 context.WriteLine();
                 context.WriteIndent();
             }
-            
+
             writeAction(context, tValue);
         }
-        
-        if (newLineBeforeItems)
-        {
-            if (list.Count > 1)
-            {
-                context.WriteLine();
-            }
-            
-            context.DecrementIndent();
 
-            if (list.Count > 0)
-            {
-                context.WriteIndent();
-            }
+        if (breakLines)
+        {
+            context.WriteLine();
+            context.DecrementIndent();
+            context.WriteIndent();
         }
     }
 }
