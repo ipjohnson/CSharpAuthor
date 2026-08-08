@@ -1,4 +1,6 @@
-﻿namespace CSharpAuthor;
+﻿using System.Collections.Generic;
+
+namespace CSharpAuthor;
 
 public class PropertyDefinition : BaseOutputComponent, INamedComponent
 {
@@ -19,9 +21,31 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
 
     public PropertyMethodDefinition? Set { get; set; }
 
+    /// <summary>
+    /// The type of a single index, for the common <c>this[int index]</c> shape. Ignored when
+    /// <see cref="IndexParameters"/> has entries.
+    /// </summary>
     public ITypeDefinition? IndexType { get; set; }
 
+    /// <summary>
+    /// The name of the single index declared through <see cref="IndexType"/>.
+    /// </summary>
     public string IndexName { get; set; } = "index";
+
+    /// <summary>
+    /// Indices for an indexer that takes more than one, such as <c>this[int row, int column]</c>.
+    /// Takes precedence over <see cref="IndexType"/>.
+    /// </summary>
+    public List<ParameterDefinition> IndexParameters { get; } = new();
+
+    public PropertyDefinition AddIndexParameter(ITypeDefinition type, string name)
+    {
+        IndexParameters.Add(new ParameterDefinition(type, name));
+
+        return this;
+    }
+
+    private bool IsIndexer => IndexParameters.Count > 0 || IndexType != null;
 
     public InstanceDefinition Instance => new(Name);
     
@@ -34,7 +58,23 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
         outputContext.Write(Type);
         outputContext.Write($" {Name}");
 
-        if (IndexType != null)
+        if (IndexParameters.Count > 0)
+        {
+            outputContext.Write("[");
+
+            for (var i = 0; i < IndexParameters.Count; i++)
+            {
+                if (i > 0)
+                {
+                    outputContext.Write(", ");
+                }
+
+                IndexParameters[i].WriteWithSignature(outputContext);
+            }
+
+            outputContext.Write("]");
+        }
+        else if (IndexType != null)
         {
             outputContext.Write("[");
             outputContext.Write(IndexType);
@@ -43,7 +83,9 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
             outputContext.Write("]");
         }
 
-        if (Set == null && IndexType == null)
+        // An indexer has no auto-property or expression-bodied form to fall back to, so it always
+        // writes its accessors out in full.
+        if (Set == null && !IsIndexer)
         {
             if (Get.StatementCount == 0)
             {
@@ -57,7 +99,8 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
                 return;
             }
         }
-        else if (Get.StatementCount == 0 &&
+        else if (!IsIndexer &&
+                 Get.StatementCount == 0 &&
                  Set is { StatementCount: 0 })
         {
             if (Set.IsInit)

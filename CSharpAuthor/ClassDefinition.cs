@@ -22,6 +22,8 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
     private readonly List<PropertyDefinition> _properties = new();
     private readonly List<ClassDefinition> _classes = new();
     private readonly List<IOutputComponent> _otherComponents = new();
+    private readonly List<ITypeDefinition> _genericParameters = new();
+    private readonly List<EventDefinition> _events = new();
 
     public ClassDefinition(string name)
     {
@@ -31,6 +33,31 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
     public string Name { get; }
 
     public ClassKeyword TypeKeyword { get; set; } = ClassKeyword.Class;
+
+    /// <summary>
+    /// The type parameters this type is declared with, written as Name&lt;T, U&gt;.
+    /// </summary>
+    public IReadOnlyList<ITypeDefinition> GenericParameters => _genericParameters;
+
+    /// <summary>
+    /// The constraint clause, written after the base types: <c>where T : class, new()</c>.
+    /// </summary>
+    public IOutputComponent? WhereStatement { get; set; }
+
+    public ClassDefinition AddGenericParameter(ITypeDefinition typeDefinition)
+    {
+        _genericParameters.Add(typeDefinition);
+
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a type parameter by name, for the common case of an unbound one.
+    /// </summary>
+    public ClassDefinition AddGenericParameter(string name)
+    {
+        return AddGenericParameter(new TypeParameterDefinition(name));
+    }
 
     public int FieldCount => _fields.Count;
 
@@ -51,6 +78,9 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
                 break;
             case PropertyDefinition propertyDefinition:
                 _properties.Add(propertyDefinition);
+                break;
+            case EventDefinition eventDefinition:
+                _events.Add(eventDefinition);
                 break;
             case FieldDefinition fieldDefinition:
                 _fields.Add(fieldDefinition);
@@ -90,6 +120,14 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
             foreach (var property in _properties)
             {
                 yield return property;
+            }
+        }
+
+        if (_events.Count > 0)
+        {
+            foreach (var eventDefinition in _events)
+            {
+                yield return eventDefinition;
             }
         }
 
@@ -141,6 +179,20 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
     public PropertyDefinition AddProperty(Type type, string fieldName)
     {
         return AddProperty(TypeDefinition.Get(type), fieldName);
+    }
+
+    public EventDefinition AddEvent(Type handlerType, string name)
+    {
+        return AddEvent(TypeDefinition.Get(handlerType), name);
+    }
+
+    public EventDefinition AddEvent(ITypeDefinition handlerType, string name)
+    {
+        var eventDefinition = new EventDefinition(handlerType, name);
+
+        _events.Add(eventDefinition);
+
+        return eventDefinition;
     }
 
     public PropertyDefinition AddProperty(ITypeDefinition type, string fieldName)
@@ -239,25 +291,37 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
             outputContext,
             _properties,
             method => method.Modifiers.HasFlag(ComponentModifier.Public));
-        
+
         WriteMemberComponents(
-            componentAction, 
-            outputContext, 
+            componentAction,
+            outputContext,
+            _events,
+            e => e.Modifiers.HasFlag(ComponentModifier.Public));
+
+        WriteMemberComponents(
+            componentAction,
+            outputContext,
             _methods,
             m => m.Modifiers.HasFlag(ComponentModifier.Public));
-        
+
         WriteMemberComponents(
             componentAction,
             outputContext,
             _properties,
             method => !method.Modifiers.HasFlag(ComponentModifier.Public));
-        
+
         WriteMemberComponents(
-            componentAction, 
-            outputContext, 
+            componentAction,
+            outputContext,
+            _events,
+            e => !e.Modifiers.HasFlag(ComponentModifier.Public));
+
+        WriteMemberComponents(
+            componentAction,
+            outputContext,
             _methods,
             m => !m.Modifiers.HasFlag(ComponentModifier.Public));
-        
+
         foreach (var classDefinition in _classes)
         {
             outputContext.WriteLine();
@@ -342,12 +406,24 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
 
         outputContext.Write(Name);
 
+        if (_genericParameters.Count > 0)
+        {
+            outputContext.Write("<");
+
+            _genericParameters.OutputCommaSeparatedList(outputContext);
+
+            outputContext.Write(">");
+        }
+
         if (_baseTypes.Count > 0)
         {
             outputContext.Write(" : ");
 
             _baseTypes.OutputCommaSeparatedList(outputContext);
         }
+
+        // After the base types, which is where C# puts it.
+        WhereStatement?.WriteOutput(outputContext);
 
         outputContext.WriteLine();
     }
