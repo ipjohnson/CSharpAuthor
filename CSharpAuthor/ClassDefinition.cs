@@ -35,6 +35,18 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
     public ClassKeyword TypeKeyword { get; set; } = ClassKeyword.Class;
 
     /// <summary>
+    /// Whether the declaration is terminated with <c>;</c> rather than a body.
+    /// </summary>
+    /// <remarks>
+    /// For a type that declares everything in its header and has nothing else to say -
+    /// <c>public partial record Pet(string Id);</c> - where an empty <c>{ }</c> would be legal but
+    /// is not what anyone writes. Any members added are still written, so this is only correct on a
+    /// type that has none; it is left as the caller's choice rather than inferred, because a type
+    /// that is empty today and gains a member tomorrow should not silently change shape.
+    /// </remarks>
+    public bool TerminateWithSemicolon { get; set; }
+
+    /// <summary>
     /// The type parameters this type is declared with, written as Name&lt;T, U&gt;.
     /// </summary>
     public IReadOnlyList<ITypeDefinition> GenericParameters => _genericParameters;
@@ -253,6 +265,12 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
+        if (TerminateWithSemicolon)
+        {
+            WriteClassSignature(outputContext, terminator: ";");
+            return;
+        }
+
         WriteClassOpening(outputContext);
 
         ApplyAllComponents(component => component.WriteOutput(outputContext), outputContext);
@@ -281,6 +299,12 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
 
         foreach (var constructor in _constructors)
         {
+            // The primary constructor is part of the type header, written by WriteClassSignature.
+            if (constructor.IsPrimary)
+            {
+                continue;
+            }
+
             outputContext.WriteLine();
 
             componentAction(constructor);
@@ -367,7 +391,7 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         outputContext.OpenScope();
     }
 
-    private void WriteClassSignature(IOutputContext outputContext)
+    private void WriteClassSignature(IOutputContext outputContext, string? terminator = null)
     {
         outputContext.Write(outputContext.IndentString);
 
@@ -415,6 +439,8 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
             outputContext.Write(">");
         }
 
+        WritePrimaryConstructorParameters(outputContext);
+
         if (_baseTypes.Count > 0)
         {
             outputContext.Write(" : ");
@@ -425,7 +451,53 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         // After the base types, which is where C# puts it.
         WhereStatement?.WriteOutput(outputContext);
 
+        if (terminator != null)
+        {
+            outputContext.Write(terminator);
+        }
+
         outputContext.WriteLine();
+    }
+
+    /// <summary>
+    /// The primary constructor's parameters, written between the type name and its base types.
+    /// </summary>
+    /// <remarks>
+    /// An empty list still writes <c>()</c>, because a primary constructor taking nothing is a
+    /// different declaration from no primary constructor at all - and on a record it is what gives
+    /// the type value equality with no members.
+    /// </remarks>
+    private void WritePrimaryConstructorParameters(IOutputContext outputContext)
+    {
+        ConstructorDefinition? primary = null;
+
+        foreach (var constructor in _constructors)
+        {
+            if (constructor.IsPrimary)
+            {
+                primary = constructor;
+                break;
+            }
+        }
+
+        if (primary == null)
+        {
+            return;
+        }
+
+        outputContext.Write("(");
+
+        for (var i = 0; i < primary.Parameters.Count; i++)
+        {
+            if (i > 0)
+            {
+                outputContext.Write(", ");
+            }
+
+            primary.Parameters[i].WriteWithSignature(outputContext);
+        }
+
+        outputContext.Write(")");
     }
 
     private string GetTypeKeywordString() => TypeKeyword switch
