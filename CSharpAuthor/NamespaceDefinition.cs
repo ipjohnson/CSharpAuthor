@@ -15,12 +15,36 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
         _namespace = ns;
     }
 
+    /// <summary>
+    /// The namespace this definition declares, relative to its parent.
+    /// </summary>
+    public string Namespace => _namespace;
+
+    /// <summary>
+    /// Returns the nested namespace with this name, adding it if it is not already there.
+    /// </summary>
+    /// <remarks>
+    /// Reuse rather than append, because a file is usually built by several independent pieces of
+    /// code and more than one of them will want the same namespace. Appending a second definition
+    /// gave a file with two <c>namespace Models { }</c> blocks - which compiles, and is not what
+    /// anyone meant. Callers that want a distinct block can still construct a
+    /// <see cref="NamespaceDefinition"/> and pass it to <see cref="AddComponent"/>.
+    /// </remarks>
     public NamespaceDefinition AddNamespace(string @namespace)
     {
+        foreach (var outputComponent in _outputComponents)
+        {
+            if (outputComponent is NamespaceDefinition existing &&
+                string.Equals(existing._namespace, @namespace, System.StringComparison.Ordinal))
+            {
+                return existing;
+            }
+        }
+
         var namespaceDefinition = new NamespaceDefinition(@namespace);
-        
+
         _outputComponents.Add(namespaceDefinition);
-        
+
         return namespaceDefinition;
     }
     
