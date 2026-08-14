@@ -8,6 +8,7 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
 {
     protected readonly List<ParameterDefinition> ParameterList = new ();
     private readonly List<ITypeDefinition> _genericParameters = new();
+    private readonly List<ConstraintDefinition> _constraints = new();
     protected int VariableCount = 1;
         
     private ITypeDefinition? _returnType;
@@ -23,7 +24,41 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
 
     public List<ITypeDefinition> GenericParameters => _genericParameters;
 
+    /// <remarks>
+    /// A clause the caller has already rendered. <see cref="AddConstraint"/> builds one part by part
+    /// instead, and the two can be used together — this is written first.
+    /// </remarks>
     public IOutputComponent? WhereStatement { get; set; }
+
+    /// <summary>
+    /// The constraints declared through <see cref="AddConstraint"/>.
+    /// </summary>
+    public IReadOnlyList<ConstraintDefinition> Constraints => _constraints;
+
+    /// <summary>
+    /// Constrains one of this method's type parameters, written after the parameter list.
+    /// </summary>
+    /// <remarks>
+    /// Returns the constraint so its parts can be added in any order; they are written in the order
+    /// C# requires. Calling this twice for one parameter returns the same constraint rather than
+    /// declaring a second <c>where</c> for it, which would not compile.
+    /// </remarks>
+    public ConstraintDefinition AddConstraint(string typeParameter)
+    {
+        foreach (var existing in _constraints)
+        {
+            if (existing.TypeParameter == typeParameter)
+            {
+                return existing;
+            }
+        }
+
+        var constraint = new ConstraintDefinition(typeParameter);
+
+        _constraints.Add(constraint);
+
+        return constraint;
+    }
     
     public ITypeDefinition? InterfaceImplementation { get; set; }
 
@@ -169,6 +204,18 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
     protected virtual void WriteEndOfMethodSignature(IOutputContext outputContext)
     {
         WhereStatement?.WriteOutput(outputContext);
+
+        foreach (var constraint in _constraints)
+        {
+            if (constraint.IsEmpty)
+            {
+                continue;
+            }
+
+            outputContext.WriteSpace();
+
+            constraint.WriteOutput(outputContext);
+        }
         
         outputContext.WriteLine();
     }
