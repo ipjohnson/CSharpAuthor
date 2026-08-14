@@ -77,9 +77,7 @@ public class InterfaceDefinition : BaseOutputComponent, INamedComponent
             return;
         }
         
-        outputContext.WriteIndentedLine("/// <summary>");
-        outputContext.WriteIndentedLine($"/// {Comment}");
-        outputContext.WriteIndentedLine("/// </summary>");
+        DocumentationComment.WriteSummary(outputContext.WriteIndentedLine, Comment);
     }
 
     private void WriteInterfaceClosing(IOutputContext outputContext)

@@ -54,8 +54,6 @@ public class FieldDefinition : BaseOutputComponent, INamedComponent
             return;
         }
         
-        outputContext.WriteLine("/// <summary>");
-        outputContext.WriteLine($"/// {Comment}");
-        outputContext.WriteLine("/// </summary>");
+        DocumentationComment.WriteSummary(outputContext.WriteLine, Comment);
     }
 }

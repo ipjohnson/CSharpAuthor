@@ -41,6 +41,16 @@ public class EnumDefinition : BaseOutputComponent, INamedComponent
         return enumValueDefinition;
     }
 
+    /// <summary>
+    /// An enum inherits <see cref="BaseOutputComponent.Comment"/> like every other declaration, and
+    /// used to be one of the two that never wrote it - so setting one compiled, read as documented,
+    /// and emitted nothing.
+    /// </summary>
+    protected override void WriteComment(IOutputContext outputContext)
+    {
+        DocumentationComment.WriteSummary(outputContext.WriteIndentedLine, Comment);
+    }
+
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
         WriteEnumSignature(outputContext);

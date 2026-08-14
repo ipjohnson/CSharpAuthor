@@ -125,21 +125,24 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
             return;
         }
         
-        outputContext.WriteIndentedLine("/// <summary>");
-        outputContext.WriteIndentedLine("/// " + Comment);
-        outputContext.WriteIndentedLine("/// </summary>");
+        DocumentationComment.WriteSummary(outputContext.WriteIndentedLine, Comment);
 
         foreach (ParameterDefinition parameterDefinition in ParameterList)
         {
             if (parameterDefinition.Comment != null)
             {
-                outputContext.WriteIndentedLine("/// <param name=\"" + parameterDefinition.Name + "\">" + parameterDefinition.Comment + "</param>");
+                DocumentationComment.WriteElement(
+                    outputContext.WriteIndentedLine,
+                    "<param name=\"" + parameterDefinition.Name + "\">",
+                    "</param>",
+                    parameterDefinition.Comment);
             }
         }
-        
+
         if (ReturnComment != null)
         {
-            outputContext.WriteIndentedLine("/// <returns>" + ReturnComment + "</returns>");
+            DocumentationComment.WriteElement(
+                outputContext.WriteIndentedLine, "<returns>", "</returns>", ReturnComment);
         }
     }
 
