@@ -36,8 +36,12 @@ public class MultiLineCommentTests
             Comment = "First line.\r\nSecond line."
         };
 
-        Assert.DoesNotContain("\r", Write(classDefinition));
-        Assert.Contains("/// First line.\n/// Second line.", Write(classDefinition));
+        // Real line breaks first: AppendLine writes Environment.NewLine, so on Windows the output
+        // carries carriage returns by design. What must not survive is one inside the comment's own
+        // text, which is what is left once the line breaks are taken out.
+        Assert.DoesNotContain("\r", Write(classDefinition).Replace("\r\n", "\n"));
+
+        AssertEqual.ContainsWithoutNewLine("/// First line.\n/// Second line.", Write(classDefinition));
     }
 
     /// <summary>
@@ -51,7 +55,7 @@ public class MultiLineCommentTests
             Comment = "First paragraph.\n\nSecond paragraph."
         };
 
-        Assert.Contains("/// First paragraph.\n///\n/// Second paragraph.", Write(classDefinition));
+        AssertEqual.ContainsWithoutNewLine("/// First paragraph.\n///\n/// Second paragraph.", Write(classDefinition));
     }
 
     /// <summary>
@@ -65,7 +69,7 @@ public class MultiLineCommentTests
         var method = classDefinition.AddMethod("MyMethod");
         method.Comment = "First line.\nSecond line.";
 
-        Assert.Contains("    /// First line.\n    /// Second line.", Write(classDefinition));
+        AssertEqual.ContainsWithoutNewLine("    /// First line.\n    /// Second line.", Write(classDefinition));
     }
 
     /// <summary>
@@ -96,8 +100,8 @@ public class MultiLineCommentTests
 
         var output = Write(classDefinition);
 
-        Assert.Contains("""/// <param name="single">On one line.</param>""", output);
-        Assert.Contains(
+        AssertEqual.ContainsWithoutNewLine("""/// <param name="single">On one line.</param>""", output);
+        AssertEqual.ContainsWithoutNewLine(
             "/// <param name=\"wrapped\">\n    /// First line.\n    /// Second line.\n    /// </param>",
             output);
     }

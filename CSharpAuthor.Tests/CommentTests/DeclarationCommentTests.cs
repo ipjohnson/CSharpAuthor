@@ -21,7 +21,7 @@ public class DeclarationCommentTests
 
         enumDefinition.AddValue("Available");
 
-        Assert.Contains(
+        AssertEqual.ContainsWithoutNewLine(
             "/// <summary>\n/// How far along a pet is.\n/// </summary>\npublic enum Status",
             Write(enumDefinition));
     }
@@ -36,10 +36,10 @@ public class DeclarationCommentTests
 
         var output = Write(enumDefinition);
 
-        Assert.Contains("    /// <summary>\n    /// Ready to be adopted.\n    /// </summary>\n    Available,", output);
+        AssertEqual.ContainsWithoutNewLine("    /// <summary>\n    /// Ready to be adopted.\n    /// </summary>\n    Available,", output);
 
         // The undocumented member is untouched.
-        Assert.Contains("    Pending,", output);
+        AssertEqual.ContainsWithoutNewLine("    Pending,", output);
     }
 
     /// <summary>
@@ -92,7 +92,7 @@ public class DeclarationCommentTests
 
         var output = Write(classDefinition);
 
-        Assert.Contains("""<param name="Id">""", output);
+        AssertEqual.ContainsWithoutNewLine("""<param name="Id">""", output);
         Assert.DoesNotContain("""<param name="Name">""", output);
     }
 
