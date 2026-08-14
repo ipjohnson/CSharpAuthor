@@ -163,9 +163,7 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
             return;
         }
         
-        outputContext.WriteIndentedLine($"/// <summary>");
-        outputContext.WriteIndentedLine($"/// {Comment}");
-        outputContext.WriteIndentedLine($"/// </summary>");
+        DocumentationComment.WriteSummary(outputContext.WriteIndentedLine, Comment);
     }
 
     protected virtual void WriteAccessModifiers(IOutputContext outputContext)

@@ -15,7 +15,7 @@ public enum ClassKeyword
 
 public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedComponent
 {
-    private readonly List<ITypeDefinition> _baseTypes = new();
+    private readonly List<BaseTypeReference> _baseTypes = new();
     private readonly List<FieldDefinition> _fields = new();
     private readonly List<ConstructorDefinition> _constructors = new();
     private readonly List<MethodDefinition> _methods = new();
@@ -281,10 +281,35 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
 
     public ClassDefinition AddBaseType(ITypeDefinition typeDefinition)
     {
-        if (!_baseTypes.Contains(typeDefinition))
+        return AddBaseType(typeDefinition, Array.Empty<IOutputComponent>());
+    }
+
+    /// <summary>
+    /// A base type, with the arguments its constructor is called with.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For a positional record this is the only way to say <c>record Dog(string Id, string Breed) :
+    /// Pet(Id)</c>. Without it a derived record could name its base but not pass anything to it, so
+    /// any generator emitting an inheritance hierarchy had to abandon positional records entirely
+    /// and fall back to init-only properties.
+    /// </para>
+    /// <para>
+    /// C# allows the arguments on the base class only, and it has to come first in the list. That
+    /// is the caller's to get right - this writes the arguments wherever they were attached.
+    /// </para>
+    /// </remarks>
+    public ClassDefinition AddBaseType(ITypeDefinition typeDefinition, params IOutputComponent[] arguments)
+    {
+        foreach (var existing in _baseTypes)
         {
-            _baseTypes.Add(typeDefinition);
+            if (existing.Type.Equals(typeDefinition))
+            {
+                return this;
+            }
         }
+
+        _baseTypes.Add(new BaseTypeReference(typeDefinition, arguments));
 
         return this;
     }
@@ -313,16 +338,43 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         WriteClassClosing(outputContext);
     }
 
+    /// <summary>
+    /// The type's summary, followed by a <c>&lt;param&gt;</c> for each documented primary
+    /// constructor parameter.
+    /// </summary>
+    /// <remarks>
+    /// A positional record declares its properties in its header, so <c>&lt;param&gt;</c> on the
+    /// type is where documentation for them belongs - the same arrangement a method uses, and the
+    /// only place the compiler will accept it. Without this a record's properties could not be
+    /// documented at all, only the record itself.
+    /// </remarks>
     protected override void WriteComment(IOutputContext outputContext)
     {
         if (string.IsNullOrWhiteSpace(Comment))
         {
             return;
         }
-        
-        outputContext.WriteIndentedLine("/// <summary>");
-        outputContext.WriteIndentedLine($"/// {Comment}");
-        outputContext.WriteIndentedLine("/// </summary>");
+
+        DocumentationComment.WriteSummary(outputContext.WriteIndentedLine, Comment);
+
+        foreach (var constructor in _constructors)
+        {
+            if (!constructor.IsPrimary)
+            {
+                continue;
+            }
+
+            foreach (var parameter in constructor.Parameters)
+            {
+                DocumentationComment.WriteElement(
+                    outputContext.WriteIndentedLine,
+                    "<param name=\"" + parameter.Name + "\">",
+                    "</param>",
+                    parameter.Comment);
+            }
+
+            break;
+        }
     }
 
     private void ApplyAllComponents(Action<IOutputComponent> componentAction, IOutputContext outputContext)
@@ -480,7 +532,8 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         {
             outputContext.Write(" : ");
 
-            _baseTypes.OutputCommaSeparatedList(outputContext);
+            _baseTypes.OutputCommaSeparatedList(
+                outputContext, (context, baseType) => baseType.WriteOutput(context));
         }
 
         // After the base types, which is where C# puts them.
