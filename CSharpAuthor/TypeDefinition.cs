@@ -7,13 +7,17 @@ namespace CSharpAuthor;
 
 public class TypeDefinition : BaseTypeDefinition
 {
-    private int? _hashCode;
-
     public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray, bool isNullable = false) : base(typeDefinitionEnum, ns, name,  isArray, isNullable)
     {
-            
+
     }
-        
+
+    public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable = false)
+        : base(typeDefinitionEnum, ns, name, arrayRanks, isNullable)
+    {
+
+    }
+
     public override IEnumerable<string> KnownNamespaces
     {
         get { yield return Namespace; }
@@ -21,36 +25,18 @@ public class TypeDefinition : BaseTypeDefinition
 
     public override void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
-        
+
         if (Name == "Void" && Namespace == "System")
         {
             builder.Append("void");
             return;
         }
 
-        if (!string.IsNullOrEmpty(Namespace))
-        {
-            if (typeOutputMode == TypeOutputMode.Global)
-            {
-                builder.Append("global::");
-                builder.Append(Namespace);
-                builder.Append('.');
-
-            }
-            else if (typeOutputMode == TypeOutputMode.FullName)
-            {
-                builder.Append(Namespace);
-                builder.Append('.');
-            }
-        }
-
+        WriteNamespacePrefix(builder, typeOutputMode);
 
         builder.Append(Name);
-        
-        if (IsArray)
-        {
-            builder.Append("[]");
-        }
+
+        WriteArrayRanks(builder);
 
         if (IsNullable)
         {
@@ -60,12 +46,12 @@ public class TypeDefinition : BaseTypeDefinition
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, IsArray, nullable);
+        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanks, nullable);
     }
 
-    public override ITypeDefinition MakeArray()
+    public override ITypeDefinition MakeArray(int rank)
     {
-        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, true, IsNullable);
+        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanksWithOuterRank(rank), IsNullable);
     }
 
     public override IReadOnlyList<ITypeDefinition> TypeArguments => Array.Empty<ITypeDefinition>();
@@ -73,27 +59,6 @@ public class TypeDefinition : BaseTypeDefinition
     public override int CompareTo(ITypeDefinition other)
     {
         return BaseCompareTo(other);
-    }
-
-    public override bool Equals(object obj)
-    {
-        if (obj is TypeDefinition typeDefinition)
-        {
-            return CompareTo(typeDefinition) == 0;
-        }
-
-        return false;
-    }
-
-    public override int GetHashCode()
-    {
-        // ReSharper disable once NonReadonlyMemberInGetHashCode
-        return _hashCode ??= ToString().GetHashCode();
-    }
-
-    public override string ToString()
-    {
-        return $"{Namespace}.{Name}";
     }
 
     public static ITypeDefinition IOptions(object typeObject)
@@ -207,11 +172,24 @@ public class TypeDefinition : BaseTypeDefinition
         return new TypeDefinition(definitionEnum, ns, name, isArray, isNullable);
     }
 
+    /// <summary>
+    /// A type with array specifiers, outermost first: <c>[2, 1]</c> is <c>Name[,][]</c>.
+    /// </summary>
+    public static TypeDefinition Get(TypeDefinitionEnum definitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable = false)
+    {
+        return new TypeDefinition(definitionEnum, ns, name, arrayRanks, isNullable);
+    }
+
     public static ITypeDefinition Get(Type type)
     {
         if (type == null)
         {
             throw new ArgumentNullException(nameof(type));
+        }
+
+        if (type.IsArray)
+        {
+            return GetArray(type);
         }
 
         if (IsKnownType(type, out var knownDefinition))
@@ -243,11 +221,39 @@ public class TypeDefinition : BaseTypeDefinition
                 closingTypes.Add(Get(genericArgument));
             }
 
-            return new GenericTypeDefinition(typeDefinition, 
-                genericTypeDefinition.Namespace!, className, closingTypes, type.IsArray);
+            return new GenericTypeDefinition(typeDefinition,
+                genericTypeDefinition.Namespace!, className, closingTypes);
         }
 
-        return new TypeDefinition(typeDefinition, type.Namespace!, type.Name, type.IsArray);
+        return new TypeDefinition(typeDefinition, type.Namespace!, type.Name, false);
+    }
+
+    /// <summary>
+    /// Unwraps an array type one array at a time, outermost first, which is the order C# writes the
+    /// specifiers in. Reflection writes them the other way round - <c>typeof(int[,][])</c> is named
+    /// <c>Int32[][,]</c> - so reading <see cref="Type.Name"/> gives a reversed, and previously
+    /// doubled, answer.
+    /// </summary>
+    private static ITypeDefinition GetArray(Type type)
+    {
+        var ranks = new List<int>();
+        var elementType = type;
+
+        while (elementType.IsArray)
+        {
+            ranks.Add(elementType.GetArrayRank());
+
+            elementType = elementType.GetElementType()!;
+        }
+
+        var definition = Get(elementType);
+
+        for (var i = ranks.Count - 1; i >= 0; i--)
+        {
+            definition = definition.MakeArray(ranks[i]);
+        }
+
+        return definition;
     }
 
     /// <summary>
@@ -280,29 +286,13 @@ public class TypeDefinition : BaseTypeDefinition
         { typeof(IntPtr), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "nint", false) },
         { typeof(UIntPtr), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "nuint", false) },
     };
-    private static readonly Dictionary<Type, ITypeDefinition> _knownArrayTypes = new()
-    {
-        { typeof(object[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "object", true) },
-        { typeof(string[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string", true) },
-        { typeof(int[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "int", true) },
-        { typeof(uint[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "uint", true) },
-        { typeof(long[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "long", true) },
-        { typeof(ulong[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ulong", true) },
-        { typeof(short[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "short", true) },
-        { typeof(ushort[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ushort", true) },
-        { typeof(byte[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "byte", true) },
-        { typeof(bool[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "bool", true) },
-        { typeof(double[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "double", true) },
-        { typeof(decimal[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "decimal", true) },
-    };
-
+    /// <remarks>
+    /// Array forms are not listed: an array is unwrapped to its element type first, so
+    /// <c>float[][]</c> reaches the keyword the same way <c>float</c> does, and no table has to
+    /// enumerate the shapes.
+    /// </remarks>
     private static bool IsKnownType(Type type, out ITypeDefinition? typeDefinition)
     {
-        if (type.IsArray)
-        {
-            return _knownArrayTypes.TryGetValue(type, out typeDefinition);
-        }
-
         return _knownTypes.TryGetValue(type, out typeDefinition);
     }
 }

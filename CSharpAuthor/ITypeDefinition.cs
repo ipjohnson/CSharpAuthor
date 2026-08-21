@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Text;
 
 namespace CSharpAuthor;
@@ -13,6 +12,19 @@ public interface ITypeDefinition : IComparable<ITypeDefinition>
 
     bool IsArray { get; }
 
+    /// <summary>
+    /// The rank of each array wrapping this type, outermost first - the order the specifiers are
+    /// written in. <c>int[,][]</c> is <c>[2, 1]</c>; <c>int[][,]</c> is <c>[1, 2]</c>. Empty when the
+    /// type is not an array.
+    /// </summary>
+    /// <remarks>
+    /// A single flag cannot tell <c>int[]</c> from <c>int[][]</c> from <c>int[,]</c>, and all three
+    /// are different types. Reflection names them in the opposite order to C# — <c>typeof(int[,][])</c>
+    /// is named <c>Int32[][,]</c> — so the list is the order the emitter needs, not the order
+    /// <see cref="Type.Name"/> gives.
+    /// </remarks>
+    IReadOnlyList<int> ArrayRanks { get; }
+
     string Name { get; }
 
     string Namespace { get; }
@@ -23,7 +35,16 @@ public interface ITypeDefinition : IComparable<ITypeDefinition>
 
     ITypeDefinition MakeNullable(bool nullable = true);
 
+    /// <summary>
+    /// A one-dimensional array of this type.
+    /// </summary>
     ITypeDefinition MakeArray();
+
+    /// <summary>
+    /// An array of this type with the given rank. The new array goes on the outside, so
+    /// <c>Get(typeof(int)).MakeArray().MakeArray()</c> is <c>int[][]</c>.
+    /// </summary>
+    ITypeDefinition MakeArray(int rank);
 
     IReadOnlyList<ITypeDefinition> TypeArguments { get; }
 }
