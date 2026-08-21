@@ -20,7 +20,7 @@ namespace CSharpAuthor.Syntax;
 /// <see cref="TokenRole.Raw"/>, which neither claims a space nor forbids one.
 /// </para>
 /// </remarks>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class Raw : SyntaxNode, IExpression, IStatement, IPattern, IMemberDeclaration, IType
@@ -67,7 +67,7 @@ sealed class Raw : SyntaxNode, IExpression, IStatement, IPattern, IMemberDeclara
 /// that string - escaping a quote, or writing <c>1.5</c> rather than <c>1,5</c> on a
 /// de-DE machine.
 /// </remarks>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 static class Literal

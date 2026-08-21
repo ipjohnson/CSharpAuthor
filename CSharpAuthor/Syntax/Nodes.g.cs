@@ -13,190 +13,190 @@ using System.Collections.Generic;
 namespace CSharpAuthor.Syntax;
 
 /// <summary>Root of the generated grammar. Every node is an <see cref="IOutputComponent"/>.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface ISyntax : IOutputComponent { }
 
 /// <summary>A statement that brings its own braces, so it is never re-indented as an embedded statement.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBlockLike : ISyntax { }
 
 /// <summary>A statement that may follow <c>else</c> on the same line.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IElseChainable : ISyntax { }
 
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IAllowsConstraint : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IAnonymousFunctionExpression : IExpression { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBaseArgumentList : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBaseCrefParameterList : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBaseExpressionColon : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBaseFieldDeclaration : IMemberDeclaration { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBaseMethodDeclaration : IMemberDeclaration { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBaseNamespaceDeclaration : IMemberDeclaration { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBaseObjectCreationExpression : IExpression { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBaseParameterList : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBaseParameter : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBasePropertyDeclaration : IMemberDeclaration { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBaseTypeDeclaration : IMemberDeclaration { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBaseType : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IBranchingDirectiveTrivia : IDirectiveTrivia { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface ICollectionElement : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface ICommonForEachStatement : IStatement { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IConditionalDirectiveTrivia : IBranchingDirectiveTrivia { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface ICref : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IDirectiveTrivia : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IExpressionOrPattern : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IExpression : IExpressionOrPattern { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IInstanceExpression : IExpression { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IInterpolatedStringContent : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface ILambdaExpression : IAnonymousFunctionExpression { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface ILineOrSpanDirectiveTrivia : IDirectiveTrivia { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IMemberCref : ICref { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IMemberDeclaration : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IName : IType { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IPattern : IExpressionOrPattern { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IQueryClause : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface ISelectOrGroupClause : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface ISimpleName : IName { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IStatement : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface ISwitchLabel : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface ITypeDeclaration : IBaseTypeDeclaration { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface ITypeParameterConstraint : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IType : IExpression { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IVariableDesignation : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IXmlAttribute : ISyntax { }
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 interface IXmlNode : ISyntax { }
 
 /// <summary>AccessorDeclaration - <c>AccessorDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AccessorDeclaration : SyntaxNode, ISyntax
@@ -228,7 +228,7 @@ sealed class AccessorDeclaration : SyntaxNode, ISyntax
 }
 
 /// <summary>AccessorList - <c>AccessorListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AccessorList : SyntaxNode, ISyntax
@@ -247,7 +247,7 @@ sealed class AccessorList : SyntaxNode, ISyntax
 }
 
 /// <summary>AliasQualifiedName - <c>AliasQualifiedNameSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AliasQualifiedName : SyntaxNode, IName
@@ -273,7 +273,7 @@ sealed class AliasQualifiedName : SyntaxNode, IName
 }
 
 /// <summary>AllowsConstraintClause - <c>AllowsConstraintClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AllowsConstraintClause : SyntaxNode, ITypeParameterConstraint
@@ -291,7 +291,7 @@ sealed class AllowsConstraintClause : SyntaxNode, ITypeParameterConstraint
 }
 
 /// <summary>AnonymousMethodExpression - <c>AnonymousMethodExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AnonymousMethodExpression : SyntaxNode, IAnonymousFunctionExpression
@@ -320,7 +320,7 @@ sealed class AnonymousMethodExpression : SyntaxNode, IAnonymousFunctionExpressio
 }
 
 /// <summary>AnonymousObjectCreationExpression - <c>AnonymousObjectCreationExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AnonymousObjectCreationExpression : SyntaxNode, IExpression
@@ -340,7 +340,7 @@ sealed class AnonymousObjectCreationExpression : SyntaxNode, IExpression
 }
 
 /// <summary>AnonymousObjectMemberDeclarator - <c>AnonymousObjectMemberDeclaratorSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AnonymousObjectMemberDeclarator : SyntaxNode, ISyntax
@@ -364,7 +364,7 @@ sealed class AnonymousObjectMemberDeclarator : SyntaxNode, ISyntax
 }
 
 /// <summary>ArgumentList - <c>ArgumentListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ArgumentList : SyntaxNode, IBaseArgumentList
@@ -383,7 +383,7 @@ sealed class ArgumentList : SyntaxNode, IBaseArgumentList
 }
 
 /// <summary>Argument - <c>ArgumentSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class Argument : SyntaxNode, ISyntax
@@ -409,7 +409,7 @@ sealed class Argument : SyntaxNode, ISyntax
 }
 
 /// <summary>ArrayCreationExpression - <c>ArrayCreationExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ArrayCreationExpression : SyntaxNode, IExpression
@@ -434,7 +434,7 @@ sealed class ArrayCreationExpression : SyntaxNode, IExpression
 }
 
 /// <summary>ArrayRankSpecifier - <c>ArrayRankSpecifierSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ArrayRankSpecifier : SyntaxNode, ISyntax
@@ -453,7 +453,7 @@ sealed class ArrayRankSpecifier : SyntaxNode, ISyntax
 }
 
 /// <summary>ArrayType - <c>ArrayTypeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ArrayType : SyntaxNode, IType
@@ -477,7 +477,7 @@ sealed class ArrayType : SyntaxNode, IType
 }
 
 /// <summary>ArrowExpressionClause - <c>ArrowExpressionClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ArrowExpressionClause : SyntaxNode, ISyntax
@@ -500,7 +500,7 @@ sealed class ArrowExpressionClause : SyntaxNode, ISyntax
 }
 
 /// <summary>AssignmentExpression - <c>AssignmentExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AssignmentExpression : SyntaxNode, IExpression
@@ -528,7 +528,7 @@ sealed class AssignmentExpression : SyntaxNode, IExpression
 }
 
 /// <summary>AttributeArgumentList - <c>AttributeArgumentListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AttributeArgumentList : SyntaxNode, ISyntax
@@ -547,7 +547,7 @@ sealed class AttributeArgumentList : SyntaxNode, ISyntax
 }
 
 /// <summary>AttributeArgument - <c>AttributeArgumentSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AttributeArgument : SyntaxNode, ISyntax
@@ -573,7 +573,7 @@ sealed class AttributeArgument : SyntaxNode, ISyntax
 }
 
 /// <summary>AttributeList - <c>AttributeListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AttributeList : SyntaxNode, ISyntax
@@ -594,7 +594,7 @@ sealed class AttributeList : SyntaxNode, ISyntax
 }
 
 /// <summary>Attribute - <c>AttributeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class Attribute : SyntaxNode, ISyntax
@@ -618,7 +618,7 @@ sealed class Attribute : SyntaxNode, ISyntax
 }
 
 /// <summary>AttributeTargetSpecifier - <c>AttributeTargetSpecifierSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AttributeTargetSpecifier : SyntaxNode, ISyntax
@@ -641,7 +641,7 @@ sealed class AttributeTargetSpecifier : SyntaxNode, ISyntax
 }
 
 /// <summary>AwaitExpression - <c>AwaitExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class AwaitExpression : SyntaxNode, IExpression
@@ -664,7 +664,7 @@ sealed class AwaitExpression : SyntaxNode, IExpression
 }
 
 /// <summary>BadDirectiveTrivia - <c>BadDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class BadDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -688,7 +688,7 @@ sealed class BadDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>BaseExpression - <c>BaseExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class BaseExpression : SyntaxNode, IInstanceExpression
@@ -704,7 +704,7 @@ sealed class BaseExpression : SyntaxNode, IInstanceExpression
 }
 
 /// <summary>BaseList - <c>BaseListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class BaseList : SyntaxNode, ISyntax
@@ -722,7 +722,7 @@ sealed class BaseList : SyntaxNode, ISyntax
 }
 
 /// <summary>BinaryExpression - <c>BinaryExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class BinaryExpression : SyntaxNode, IExpression
@@ -750,7 +750,7 @@ sealed class BinaryExpression : SyntaxNode, IExpression
 }
 
 /// <summary>BinaryPattern - <c>BinaryPatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class BinaryPattern : SyntaxNode, IPattern
@@ -778,7 +778,7 @@ sealed class BinaryPattern : SyntaxNode, IPattern
 }
 
 /// <summary>Block - <c>BlockSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class Block : SyntaxNode, IStatement, IBlockLike
@@ -799,7 +799,7 @@ sealed class Block : SyntaxNode, IStatement, IBlockLike
 }
 
 /// <summary>BracketedArgumentList - <c>BracketedArgumentListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class BracketedArgumentList : SyntaxNode, IBaseArgumentList
@@ -818,7 +818,7 @@ sealed class BracketedArgumentList : SyntaxNode, IBaseArgumentList
 }
 
 /// <summary>BracketedParameterList - <c>BracketedParameterListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class BracketedParameterList : SyntaxNode, IBaseParameterList
@@ -837,7 +837,7 @@ sealed class BracketedParameterList : SyntaxNode, IBaseParameterList
 }
 
 /// <summary>BreakStatement - <c>BreakStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class BreakStatement : SyntaxNode, IStatement
@@ -858,7 +858,7 @@ sealed class BreakStatement : SyntaxNode, IStatement
 }
 
 /// <summary>CasePatternSwitchLabel - <c>CasePatternSwitchLabelSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CasePatternSwitchLabel : SyntaxNode, ISwitchLabel
@@ -884,7 +884,7 @@ sealed class CasePatternSwitchLabel : SyntaxNode, ISwitchLabel
 }
 
 /// <summary>CaseSwitchLabel - <c>CaseSwitchLabelSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CaseSwitchLabel : SyntaxNode, ISwitchLabel
@@ -908,7 +908,7 @@ sealed class CaseSwitchLabel : SyntaxNode, ISwitchLabel
 }
 
 /// <summary>CastExpression - <c>CastExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CastExpression : SyntaxNode, IExpression
@@ -935,7 +935,7 @@ sealed class CastExpression : SyntaxNode, IExpression
 }
 
 /// <summary>CatchClause - <c>CatchClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CatchClause : SyntaxNode, ISyntax
@@ -962,7 +962,7 @@ sealed class CatchClause : SyntaxNode, ISyntax
 }
 
 /// <summary>CatchDeclaration - <c>CatchDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CatchDeclaration : SyntaxNode, ISyntax
@@ -988,7 +988,7 @@ sealed class CatchDeclaration : SyntaxNode, ISyntax
 }
 
 /// <summary>CatchFilterClause - <c>CatchFilterClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CatchFilterClause : SyntaxNode, ISyntax
@@ -1013,7 +1013,7 @@ sealed class CatchFilterClause : SyntaxNode, ISyntax
 }
 
 /// <summary>CheckedExpression - <c>CheckedExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CheckedExpression : SyntaxNode, IExpression
@@ -1040,7 +1040,7 @@ sealed class CheckedExpression : SyntaxNode, IExpression
 }
 
 /// <summary>CheckedStatement - <c>CheckedStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CheckedStatement : SyntaxNode, IStatement
@@ -1067,7 +1067,7 @@ sealed class CheckedStatement : SyntaxNode, IStatement
 }
 
 /// <summary>ClassDeclaration - <c>ClassDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ClassDeclaration : SyntaxNode, ITypeDeclaration
@@ -1110,7 +1110,7 @@ sealed class ClassDeclaration : SyntaxNode, ITypeDeclaration
 }
 
 /// <summary>ClassOrStructConstraint - <c>ClassOrStructConstraintSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ClassOrStructConstraint : SyntaxNode, ITypeParameterConstraint
@@ -1134,7 +1134,7 @@ sealed class ClassOrStructConstraint : SyntaxNode, ITypeParameterConstraint
 }
 
 /// <summary>CollectionExpression - <c>CollectionExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CollectionExpression : SyntaxNode, IExpression
@@ -1153,7 +1153,7 @@ sealed class CollectionExpression : SyntaxNode, IExpression
 }
 
 /// <summary>CompilationUnit - <c>CompilationUnitSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CompilationUnit : SyntaxNode, ISyntax
@@ -1177,7 +1177,7 @@ sealed class CompilationUnit : SyntaxNode, ISyntax
 }
 
 /// <summary>ConditionalAccessExpression - <c>ConditionalAccessExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ConditionalAccessExpression : SyntaxNode, IExpression
@@ -1203,7 +1203,7 @@ sealed class ConditionalAccessExpression : SyntaxNode, IExpression
 }
 
 /// <summary>ConditionalExpression - <c>ConditionalExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ConditionalExpression : SyntaxNode, IExpression
@@ -1233,7 +1233,7 @@ sealed class ConditionalExpression : SyntaxNode, IExpression
 }
 
 /// <summary>ConstantPattern - <c>ConstantPatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ConstantPattern : SyntaxNode, IPattern
@@ -1255,7 +1255,7 @@ sealed class ConstantPattern : SyntaxNode, IPattern
 }
 
 /// <summary>ConstructorConstraint - <c>ConstructorConstraintSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ConstructorConstraint : SyntaxNode, ITypeParameterConstraint
@@ -1273,7 +1273,7 @@ sealed class ConstructorConstraint : SyntaxNode, ITypeParameterConstraint
 }
 
 /// <summary>ConstructorDeclaration - <c>ConstructorDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ConstructorDeclaration : SyntaxNode, IBaseMethodDeclaration
@@ -1310,7 +1310,7 @@ sealed class ConstructorDeclaration : SyntaxNode, IBaseMethodDeclaration
 }
 
 /// <summary>ConstructorInitializer - <c>ConstructorInitializerSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ConstructorInitializer : SyntaxNode, ISyntax
@@ -1336,7 +1336,7 @@ sealed class ConstructorInitializer : SyntaxNode, ISyntax
 }
 
 /// <summary>ContinueStatement - <c>ContinueStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ContinueStatement : SyntaxNode, IStatement
@@ -1357,7 +1357,7 @@ sealed class ContinueStatement : SyntaxNode, IStatement
 }
 
 /// <summary>ConversionOperatorDeclaration - <c>ConversionOperatorDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ConversionOperatorDeclaration : SyntaxNode, IBaseMethodDeclaration
@@ -1400,7 +1400,7 @@ sealed class ConversionOperatorDeclaration : SyntaxNode, IBaseMethodDeclaration
 }
 
 /// <summary>ConversionOperatorMemberCref - <c>ConversionOperatorMemberCrefSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ConversionOperatorMemberCref : SyntaxNode, IMemberCref
@@ -1430,7 +1430,7 @@ sealed class ConversionOperatorMemberCref : SyntaxNode, IMemberCref
 }
 
 /// <summary>CrefBracketedParameterList - <c>CrefBracketedParameterListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CrefBracketedParameterList : SyntaxNode, IBaseCrefParameterList
@@ -1449,7 +1449,7 @@ sealed class CrefBracketedParameterList : SyntaxNode, IBaseCrefParameterList
 }
 
 /// <summary>CrefParameterList - <c>CrefParameterListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CrefParameterList : SyntaxNode, IBaseCrefParameterList
@@ -1468,7 +1468,7 @@ sealed class CrefParameterList : SyntaxNode, IBaseCrefParameterList
 }
 
 /// <summary>CrefParameter - <c>CrefParameterSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class CrefParameter : SyntaxNode, ISyntax
@@ -1494,7 +1494,7 @@ sealed class CrefParameter : SyntaxNode, ISyntax
 }
 
 /// <summary>DeclarationExpression - <c>DeclarationExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class DeclarationExpression : SyntaxNode, IExpression
@@ -1519,7 +1519,7 @@ sealed class DeclarationExpression : SyntaxNode, IExpression
 }
 
 /// <summary>DeclarationPattern - <c>DeclarationPatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class DeclarationPattern : SyntaxNode, IPattern
@@ -1544,7 +1544,7 @@ sealed class DeclarationPattern : SyntaxNode, IPattern
 }
 
 /// <summary>DefaultConstraint - <c>DefaultConstraintSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class DefaultConstraint : SyntaxNode, ITypeParameterConstraint
@@ -1560,7 +1560,7 @@ sealed class DefaultConstraint : SyntaxNode, ITypeParameterConstraint
 }
 
 /// <summary>DefaultExpression - <c>DefaultExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class DefaultExpression : SyntaxNode, IExpression
@@ -1585,7 +1585,7 @@ sealed class DefaultExpression : SyntaxNode, IExpression
 }
 
 /// <summary>DefaultSwitchLabel - <c>DefaultSwitchLabelSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class DefaultSwitchLabel : SyntaxNode, ISwitchLabel
@@ -1602,7 +1602,7 @@ sealed class DefaultSwitchLabel : SyntaxNode, ISwitchLabel
 }
 
 /// <summary>DefineDirectiveTrivia - <c>DefineDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class DefineDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -1627,7 +1627,7 @@ sealed class DefineDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>DelegateDeclaration - <c>DelegateDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class DelegateDeclaration : SyntaxNode, IMemberDeclaration
@@ -1665,7 +1665,7 @@ sealed class DelegateDeclaration : SyntaxNode, IMemberDeclaration
 }
 
 /// <summary>DestructorDeclaration - <c>DestructorDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class DestructorDeclaration : SyntaxNode, IBaseMethodDeclaration
@@ -1701,7 +1701,7 @@ sealed class DestructorDeclaration : SyntaxNode, IBaseMethodDeclaration
 }
 
 /// <summary>DiscardDesignation - <c>DiscardDesignationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class DiscardDesignation : SyntaxNode, IVariableDesignation
@@ -1717,7 +1717,7 @@ sealed class DiscardDesignation : SyntaxNode, IVariableDesignation
 }
 
 /// <summary>DiscardPattern - <c>DiscardPatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class DiscardPattern : SyntaxNode, IPattern
@@ -1733,7 +1733,7 @@ sealed class DiscardPattern : SyntaxNode, IPattern
 }
 
 /// <summary>DoStatement - <c>DoStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class DoStatement : SyntaxNode, IStatement
@@ -1765,7 +1765,7 @@ sealed class DoStatement : SyntaxNode, IStatement
 }
 
 /// <summary>DocumentationCommentTrivia - <c>DocumentationCommentTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class DocumentationCommentTrivia : SyntaxNode, ISyntax
@@ -1783,7 +1783,7 @@ sealed class DocumentationCommentTrivia : SyntaxNode, ISyntax
 }
 
 /// <summary>ElementAccessExpression - <c>ElementAccessExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ElementAccessExpression : SyntaxNode, IExpression
@@ -1808,7 +1808,7 @@ sealed class ElementAccessExpression : SyntaxNode, IExpression
 }
 
 /// <summary>ElementBindingExpression - <c>ElementBindingExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ElementBindingExpression : SyntaxNode, IExpression
@@ -1830,7 +1830,7 @@ sealed class ElementBindingExpression : SyntaxNode, IExpression
 }
 
 /// <summary>ElifDirectiveTrivia - <c>ElifDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ElifDirectiveTrivia : SyntaxNode, IConditionalDirectiveTrivia
@@ -1855,7 +1855,7 @@ sealed class ElifDirectiveTrivia : SyntaxNode, IConditionalDirectiveTrivia
 }
 
 /// <summary>ElseClause - <c>ElseClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ElseClause : SyntaxNode, ISyntax
@@ -1878,7 +1878,7 @@ sealed class ElseClause : SyntaxNode, ISyntax
 }
 
 /// <summary>ElseDirectiveTrivia - <c>ElseDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ElseDirectiveTrivia : SyntaxNode, IBranchingDirectiveTrivia
@@ -1896,7 +1896,7 @@ sealed class ElseDirectiveTrivia : SyntaxNode, IBranchingDirectiveTrivia
 }
 
 /// <summary>EmptyStatement - <c>EmptyStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class EmptyStatement : SyntaxNode, IStatement
@@ -1914,7 +1914,7 @@ sealed class EmptyStatement : SyntaxNode, IStatement
 }
 
 /// <summary>EndIfDirectiveTrivia - <c>EndIfDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class EndIfDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -1932,7 +1932,7 @@ sealed class EndIfDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>EndRegionDirectiveTrivia - <c>EndRegionDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class EndRegionDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -1950,7 +1950,7 @@ sealed class EndRegionDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>EnumDeclaration - <c>EnumDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class EnumDeclaration : SyntaxNode, IBaseTypeDeclaration
@@ -1987,7 +1987,7 @@ sealed class EnumDeclaration : SyntaxNode, IBaseTypeDeclaration
 }
 
 /// <summary>EnumMemberDeclaration - <c>EnumMemberDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class EnumMemberDeclaration : SyntaxNode, IMemberDeclaration
@@ -2015,7 +2015,7 @@ sealed class EnumMemberDeclaration : SyntaxNode, IMemberDeclaration
 }
 
 /// <summary>EqualsValueClause - <c>EqualsValueClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class EqualsValueClause : SyntaxNode, ISyntax
@@ -2038,7 +2038,7 @@ sealed class EqualsValueClause : SyntaxNode, ISyntax
 }
 
 /// <summary>ErrorDirectiveTrivia - <c>ErrorDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ErrorDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -2056,7 +2056,7 @@ sealed class ErrorDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>EventDeclaration - <c>EventDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class EventDeclaration : SyntaxNode, IBasePropertyDeclaration
@@ -2092,7 +2092,7 @@ sealed class EventDeclaration : SyntaxNode, IBasePropertyDeclaration
 }
 
 /// <summary>EventFieldDeclaration - <c>EventFieldDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class EventFieldDeclaration : SyntaxNode, IBaseFieldDeclaration
@@ -2120,7 +2120,7 @@ sealed class EventFieldDeclaration : SyntaxNode, IBaseFieldDeclaration
 }
 
 /// <summary>ExplicitInterfaceSpecifier - <c>ExplicitInterfaceSpecifierSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ExplicitInterfaceSpecifier : SyntaxNode, ISyntax
@@ -2143,7 +2143,7 @@ sealed class ExplicitInterfaceSpecifier : SyntaxNode, ISyntax
 }
 
 /// <summary>ExpressionColon - <c>ExpressionColonSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ExpressionColon : SyntaxNode, IBaseExpressionColon
@@ -2166,7 +2166,7 @@ sealed class ExpressionColon : SyntaxNode, IBaseExpressionColon
 }
 
 /// <summary>ExpressionElement - <c>ExpressionElementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ExpressionElement : SyntaxNode, ICollectionElement
@@ -2188,7 +2188,7 @@ sealed class ExpressionElement : SyntaxNode, ICollectionElement
 }
 
 /// <summary>ExpressionStatement - <c>ExpressionStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ExpressionStatement : SyntaxNode, IStatement
@@ -2213,7 +2213,7 @@ sealed class ExpressionStatement : SyntaxNode, IStatement
 }
 
 /// <summary>ExtensionBlockDeclaration - <c>ExtensionBlockDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ExtensionBlockDeclaration : SyntaxNode, ITypeDeclaration
@@ -2247,7 +2247,7 @@ sealed class ExtensionBlockDeclaration : SyntaxNode, ITypeDeclaration
 }
 
 /// <summary>ExtensionMemberCref - <c>ExtensionMemberCrefSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ExtensionMemberCref : SyntaxNode, IMemberCref
@@ -2276,7 +2276,7 @@ sealed class ExtensionMemberCref : SyntaxNode, IMemberCref
 }
 
 /// <summary>ExternAliasDirective - <c>ExternAliasDirectiveSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ExternAliasDirective : SyntaxNode, ISyntax
@@ -2301,7 +2301,7 @@ sealed class ExternAliasDirective : SyntaxNode, ISyntax
 }
 
 /// <summary>FieldDeclaration - <c>FieldDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class FieldDeclaration : SyntaxNode, IBaseFieldDeclaration
@@ -2328,7 +2328,7 @@ sealed class FieldDeclaration : SyntaxNode, IBaseFieldDeclaration
 }
 
 /// <summary>FieldExpression - <c>FieldExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class FieldExpression : SyntaxNode, IExpression
@@ -2344,7 +2344,7 @@ sealed class FieldExpression : SyntaxNode, IExpression
 }
 
 /// <summary>FileScopedNamespaceDeclaration - <c>FileScopedNamespaceDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class FileScopedNamespaceDeclaration : SyntaxNode, IBaseNamespaceDeclaration
@@ -2378,7 +2378,7 @@ sealed class FileScopedNamespaceDeclaration : SyntaxNode, IBaseNamespaceDeclarat
 }
 
 /// <summary>FinallyClause - <c>FinallyClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class FinallyClause : SyntaxNode, ISyntax
@@ -2401,7 +2401,7 @@ sealed class FinallyClause : SyntaxNode, ISyntax
 }
 
 /// <summary>FixedStatement - <c>FixedStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class FixedStatement : SyntaxNode, IStatement
@@ -2431,7 +2431,7 @@ sealed class FixedStatement : SyntaxNode, IStatement
 }
 
 /// <summary>ForEachStatement - <c>ForEachStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ForEachStatement : SyntaxNode, ICommonForEachStatement
@@ -2470,7 +2470,7 @@ sealed class ForEachStatement : SyntaxNode, ICommonForEachStatement
 }
 
 /// <summary>ForEachVariableStatement - <c>ForEachVariableStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ForEachVariableStatement : SyntaxNode, ICommonForEachStatement
@@ -2506,7 +2506,7 @@ sealed class ForEachVariableStatement : SyntaxNode, ICommonForEachStatement
 }
 
 /// <summary>ForStatement - <c>ForStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ForStatement : SyntaxNode, IStatement
@@ -2543,7 +2543,7 @@ sealed class ForStatement : SyntaxNode, IStatement
 }
 
 /// <summary>FromClause - <c>FromClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class FromClause : SyntaxNode, IQueryClause
@@ -2572,7 +2572,7 @@ sealed class FromClause : SyntaxNode, IQueryClause
 }
 
 /// <summary>FunctionPointerCallingConvention - <c>FunctionPointerCallingConventionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class FunctionPointerCallingConvention : SyntaxNode, ISyntax
@@ -2596,7 +2596,7 @@ sealed class FunctionPointerCallingConvention : SyntaxNode, ISyntax
 }
 
 /// <summary>FunctionPointerParameterList - <c>FunctionPointerParameterListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class FunctionPointerParameterList : SyntaxNode, ISyntax
@@ -2615,7 +2615,7 @@ sealed class FunctionPointerParameterList : SyntaxNode, ISyntax
 }
 
 /// <summary>FunctionPointerParameter - <c>FunctionPointerParameterSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class FunctionPointerParameter : SyntaxNode, IBaseParameter
@@ -2641,7 +2641,7 @@ sealed class FunctionPointerParameter : SyntaxNode, IBaseParameter
 }
 
 /// <summary>FunctionPointerType - <c>FunctionPointerTypeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class FunctionPointerType : SyntaxNode, IType
@@ -2667,7 +2667,7 @@ sealed class FunctionPointerType : SyntaxNode, IType
 }
 
 /// <summary>FunctionPointerUnmanagedCallingConventionList - <c>FunctionPointerUnmanagedCallingConventionListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class FunctionPointerUnmanagedCallingConventionList : SyntaxNode, ISyntax
@@ -2686,7 +2686,7 @@ sealed class FunctionPointerUnmanagedCallingConventionList : SyntaxNode, ISyntax
 }
 
 /// <summary>FunctionPointerUnmanagedCallingConvention - <c>FunctionPointerUnmanagedCallingConventionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class FunctionPointerUnmanagedCallingConvention : SyntaxNode, ISyntax
@@ -2708,7 +2708,7 @@ sealed class FunctionPointerUnmanagedCallingConvention : SyntaxNode, ISyntax
 }
 
 /// <summary>GenericName - <c>GenericNameSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class GenericName : SyntaxNode, ISimpleName
@@ -2733,7 +2733,7 @@ sealed class GenericName : SyntaxNode, ISimpleName
 }
 
 /// <summary>GlobalStatement - <c>GlobalStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class GlobalStatement : SyntaxNode, IMemberDeclaration
@@ -2759,7 +2759,7 @@ sealed class GlobalStatement : SyntaxNode, IMemberDeclaration
 }
 
 /// <summary>GotoStatement - <c>GotoStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class GotoStatement : SyntaxNode, IStatement
@@ -2782,7 +2782,7 @@ sealed class GotoStatement : SyntaxNode, IStatement
 }
 
 /// <summary>GroupClause - <c>GroupClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class GroupClause : SyntaxNode, ISelectOrGroupClause
@@ -2809,7 +2809,7 @@ sealed class GroupClause : SyntaxNode, ISelectOrGroupClause
 }
 
 /// <summary>IdentifierName - <c>IdentifierNameSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class IdentifierName : SyntaxNode, ISimpleName
@@ -2831,7 +2831,7 @@ sealed class IdentifierName : SyntaxNode, ISimpleName
 }
 
 /// <summary>IfDirectiveTrivia - <c>IfDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class IfDirectiveTrivia : SyntaxNode, IConditionalDirectiveTrivia
@@ -2856,7 +2856,7 @@ sealed class IfDirectiveTrivia : SyntaxNode, IConditionalDirectiveTrivia
 }
 
 /// <summary>IfStatement - <c>IfStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class IfStatement : SyntaxNode, IStatement, IElseChainable
@@ -2888,7 +2888,7 @@ sealed class IfStatement : SyntaxNode, IStatement, IElseChainable
 }
 
 /// <summary>IgnoredDirectiveTrivia - <c>IgnoredDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class IgnoredDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -2908,7 +2908,7 @@ sealed class IgnoredDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>ImplicitArrayCreationExpression - <c>ImplicitArrayCreationExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ImplicitArrayCreationExpression : SyntaxNode, IExpression
@@ -2935,7 +2935,7 @@ sealed class ImplicitArrayCreationExpression : SyntaxNode, IExpression
 }
 
 /// <summary>ImplicitElementAccess - <c>ImplicitElementAccessSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ImplicitElementAccess : SyntaxNode, IExpression
@@ -2957,7 +2957,7 @@ sealed class ImplicitElementAccess : SyntaxNode, IExpression
 }
 
 /// <summary>ImplicitObjectCreationExpression - <c>ImplicitObjectCreationExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ImplicitObjectCreationExpression : SyntaxNode, IBaseObjectCreationExpression
@@ -2982,7 +2982,7 @@ sealed class ImplicitObjectCreationExpression : SyntaxNode, IBaseObjectCreationE
 }
 
 /// <summary>ImplicitStackAllocArrayCreationExpression - <c>ImplicitStackAllocArrayCreationExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ImplicitStackAllocArrayCreationExpression : SyntaxNode, IExpression
@@ -3007,7 +3007,7 @@ sealed class ImplicitStackAllocArrayCreationExpression : SyntaxNode, IExpression
 }
 
 /// <summary>IncompleteMember - <c>IncompleteMemberSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class IncompleteMember : SyntaxNode, IMemberDeclaration
@@ -3028,7 +3028,7 @@ sealed class IncompleteMember : SyntaxNode, IMemberDeclaration
 }
 
 /// <summary>IndexerDeclaration - <c>IndexerDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class IndexerDeclaration : SyntaxNode, IBasePropertyDeclaration
@@ -3066,7 +3066,7 @@ sealed class IndexerDeclaration : SyntaxNode, IBasePropertyDeclaration
 }
 
 /// <summary>IndexerMemberCref - <c>IndexerMemberCrefSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class IndexerMemberCref : SyntaxNode, IMemberCref
@@ -3084,7 +3084,7 @@ sealed class IndexerMemberCref : SyntaxNode, IMemberCref
 }
 
 /// <summary>InitializerExpression - <c>InitializerExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class InitializerExpression : SyntaxNode, IExpression
@@ -3103,7 +3103,7 @@ sealed class InitializerExpression : SyntaxNode, IExpression
 }
 
 /// <summary>InterfaceDeclaration - <c>InterfaceDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class InterfaceDeclaration : SyntaxNode, ITypeDeclaration
@@ -3146,7 +3146,7 @@ sealed class InterfaceDeclaration : SyntaxNode, ITypeDeclaration
 }
 
 /// <summary>InterpolatedStringExpression - <c>InterpolatedStringExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class InterpolatedStringExpression : SyntaxNode, IExpression
@@ -3173,7 +3173,7 @@ sealed class InterpolatedStringExpression : SyntaxNode, IExpression
 }
 
 /// <summary>InterpolatedStringText - <c>InterpolatedStringTextSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class InterpolatedStringText : SyntaxNode, IInterpolatedStringContent
@@ -3195,7 +3195,7 @@ sealed class InterpolatedStringText : SyntaxNode, IInterpolatedStringContent
 }
 
 /// <summary>InterpolationAlignmentClause - <c>InterpolationAlignmentClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class InterpolationAlignmentClause : SyntaxNode, ISyntax
@@ -3218,7 +3218,7 @@ sealed class InterpolationAlignmentClause : SyntaxNode, ISyntax
 }
 
 /// <summary>InterpolationFormatClause - <c>InterpolationFormatClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class InterpolationFormatClause : SyntaxNode, ISyntax
@@ -3241,7 +3241,7 @@ sealed class InterpolationFormatClause : SyntaxNode, ISyntax
 }
 
 /// <summary>Interpolation - <c>InterpolationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class Interpolation : SyntaxNode, IInterpolatedStringContent
@@ -3269,7 +3269,7 @@ sealed class Interpolation : SyntaxNode, IInterpolatedStringContent
 }
 
 /// <summary>InvocationExpression - <c>InvocationExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class InvocationExpression : SyntaxNode, IExpression
@@ -3294,7 +3294,7 @@ sealed class InvocationExpression : SyntaxNode, IExpression
 }
 
 /// <summary>IsPatternExpression - <c>IsPatternExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class IsPatternExpression : SyntaxNode, IExpression
@@ -3320,7 +3320,7 @@ sealed class IsPatternExpression : SyntaxNode, IExpression
 }
 
 /// <summary>JoinClause - <c>JoinClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class JoinClause : SyntaxNode, IQueryClause
@@ -3359,7 +3359,7 @@ sealed class JoinClause : SyntaxNode, IQueryClause
 }
 
 /// <summary>JoinIntoClause - <c>JoinIntoClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class JoinIntoClause : SyntaxNode, ISyntax
@@ -3382,7 +3382,7 @@ sealed class JoinIntoClause : SyntaxNode, ISyntax
 }
 
 /// <summary>LabeledStatement - <c>LabeledStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class LabeledStatement : SyntaxNode, IStatement
@@ -3410,7 +3410,7 @@ sealed class LabeledStatement : SyntaxNode, IStatement
 }
 
 /// <summary>LetClause - <c>LetClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class LetClause : SyntaxNode, IQueryClause
@@ -3437,7 +3437,7 @@ sealed class LetClause : SyntaxNode, IQueryClause
 }
 
 /// <summary>LineDirectivePosition - <c>LineDirectivePositionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class LineDirectivePosition : SyntaxNode, ISyntax
@@ -3465,7 +3465,7 @@ sealed class LineDirectivePosition : SyntaxNode, ISyntax
 }
 
 /// <summary>LineDirectiveTrivia - <c>LineDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class LineDirectiveTrivia : SyntaxNode, ILineOrSpanDirectiveTrivia
@@ -3492,7 +3492,7 @@ sealed class LineDirectiveTrivia : SyntaxNode, ILineOrSpanDirectiveTrivia
 }
 
 /// <summary>LineSpanDirectiveTrivia - <c>LineSpanDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class LineSpanDirectiveTrivia : SyntaxNode, ILineOrSpanDirectiveTrivia
@@ -3526,7 +3526,7 @@ sealed class LineSpanDirectiveTrivia : SyntaxNode, ILineOrSpanDirectiveTrivia
 }
 
 /// <summary>ListPattern - <c>ListPatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ListPattern : SyntaxNode, IPattern
@@ -3547,7 +3547,7 @@ sealed class ListPattern : SyntaxNode, IPattern
 }
 
 /// <summary>LiteralExpression - <c>LiteralExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class LiteralExpression : SyntaxNode, IExpression
@@ -3569,7 +3569,7 @@ sealed class LiteralExpression : SyntaxNode, IExpression
 }
 
 /// <summary>LoadDirectiveTrivia - <c>LoadDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class LoadDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -3594,7 +3594,7 @@ sealed class LoadDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>LocalDeclarationStatement - <c>LocalDeclarationStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class LocalDeclarationStatement : SyntaxNode, IStatement
@@ -3625,7 +3625,7 @@ sealed class LocalDeclarationStatement : SyntaxNode, IStatement
 }
 
 /// <summary>LocalFunctionStatement - <c>LocalFunctionStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class LocalFunctionStatement : SyntaxNode, IStatement
@@ -3667,7 +3667,7 @@ sealed class LocalFunctionStatement : SyntaxNode, IStatement
 }
 
 /// <summary>LockStatement - <c>LockStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class LockStatement : SyntaxNode, IStatement
@@ -3697,7 +3697,7 @@ sealed class LockStatement : SyntaxNode, IStatement
 }
 
 /// <summary>MakeRefExpression - <c>MakeRefExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class MakeRefExpression : SyntaxNode, IExpression
@@ -3722,7 +3722,7 @@ sealed class MakeRefExpression : SyntaxNode, IExpression
 }
 
 /// <summary>MemberAccessExpression - <c>MemberAccessExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class MemberAccessExpression : SyntaxNode, IExpression
@@ -3750,7 +3750,7 @@ sealed class MemberAccessExpression : SyntaxNode, IExpression
 }
 
 /// <summary>MemberBindingExpression - <c>MemberBindingExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class MemberBindingExpression : SyntaxNode, IExpression
@@ -3773,7 +3773,7 @@ sealed class MemberBindingExpression : SyntaxNode, IExpression
 }
 
 /// <summary>MethodDeclaration - <c>MethodDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class MethodDeclaration : SyntaxNode, IBaseMethodDeclaration
@@ -3817,7 +3817,7 @@ sealed class MethodDeclaration : SyntaxNode, IBaseMethodDeclaration
 }
 
 /// <summary>NameColon - <c>NameColonSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class NameColon : SyntaxNode, IBaseExpressionColon
@@ -3840,7 +3840,7 @@ sealed class NameColon : SyntaxNode, IBaseExpressionColon
 }
 
 /// <summary>NameEquals - <c>NameEqualsSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class NameEquals : SyntaxNode, ISyntax
@@ -3863,7 +3863,7 @@ sealed class NameEquals : SyntaxNode, ISyntax
 }
 
 /// <summary>NameMemberCref - <c>NameMemberCrefSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class NameMemberCref : SyntaxNode, IMemberCref
@@ -3887,7 +3887,7 @@ sealed class NameMemberCref : SyntaxNode, IMemberCref
 }
 
 /// <summary>NamespaceDeclaration - <c>NamespaceDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class NamespaceDeclaration : SyntaxNode, IBaseNamespaceDeclaration
@@ -3924,7 +3924,7 @@ sealed class NamespaceDeclaration : SyntaxNode, IBaseNamespaceDeclaration
 }
 
 /// <summary>NullableDirectiveTrivia - <c>NullableDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class NullableDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -3951,7 +3951,7 @@ sealed class NullableDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>NullableType - <c>NullableTypeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class NullableType : SyntaxNode, IType
@@ -3974,7 +3974,7 @@ sealed class NullableType : SyntaxNode, IType
 }
 
 /// <summary>ObjectCreationExpression - <c>ObjectCreationExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ObjectCreationExpression : SyntaxNode, IBaseObjectCreationExpression
@@ -4001,7 +4001,7 @@ sealed class ObjectCreationExpression : SyntaxNode, IBaseObjectCreationExpressio
 }
 
 /// <summary>OmittedArraySizeExpression - <c>OmittedArraySizeExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class OmittedArraySizeExpression : SyntaxNode, IExpression
@@ -4014,7 +4014,7 @@ sealed class OmittedArraySizeExpression : SyntaxNode, IExpression
 }
 
 /// <summary>OmittedTypeArgument - <c>OmittedTypeArgumentSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class OmittedTypeArgument : SyntaxNode, IType
@@ -4027,7 +4027,7 @@ sealed class OmittedTypeArgument : SyntaxNode, IType
 }
 
 /// <summary>OperatorDeclaration - <c>OperatorDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class OperatorDeclaration : SyntaxNode, IBaseMethodDeclaration
@@ -4070,7 +4070,7 @@ sealed class OperatorDeclaration : SyntaxNode, IBaseMethodDeclaration
 }
 
 /// <summary>OperatorMemberCref - <c>OperatorMemberCrefSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class OperatorMemberCref : SyntaxNode, IMemberCref
@@ -4097,7 +4097,7 @@ sealed class OperatorMemberCref : SyntaxNode, IMemberCref
 }
 
 /// <summary>OrderByClause - <c>OrderByClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class OrderByClause : SyntaxNode, IQueryClause
@@ -4115,7 +4115,7 @@ sealed class OrderByClause : SyntaxNode, IQueryClause
 }
 
 /// <summary>Ordering - <c>OrderingSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class Ordering : SyntaxNode, ISyntax
@@ -4139,7 +4139,7 @@ sealed class Ordering : SyntaxNode, ISyntax
 }
 
 /// <summary>ParameterList - <c>ParameterListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ParameterList : SyntaxNode, IBaseParameterList
@@ -4158,7 +4158,7 @@ sealed class ParameterList : SyntaxNode, IBaseParameterList
 }
 
 /// <summary>Parameter - <c>ParameterSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class Parameter : SyntaxNode, IBaseParameter
@@ -4183,7 +4183,7 @@ sealed class Parameter : SyntaxNode, IBaseParameter
 }
 
 /// <summary>ParenthesizedExpression - <c>ParenthesizedExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ParenthesizedExpression : SyntaxNode, IExpression
@@ -4207,7 +4207,7 @@ sealed class ParenthesizedExpression : SyntaxNode, IExpression
 }
 
 /// <summary>ParenthesizedLambdaExpression - <c>ParenthesizedLambdaExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ParenthesizedLambdaExpression : SyntaxNode, ILambdaExpression
@@ -4240,7 +4240,7 @@ sealed class ParenthesizedLambdaExpression : SyntaxNode, ILambdaExpression
 }
 
 /// <summary>ParenthesizedPattern - <c>ParenthesizedPatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ParenthesizedPattern : SyntaxNode, IPattern
@@ -4264,7 +4264,7 @@ sealed class ParenthesizedPattern : SyntaxNode, IPattern
 }
 
 /// <summary>ParenthesizedVariableDesignation - <c>ParenthesizedVariableDesignationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ParenthesizedVariableDesignation : SyntaxNode, IVariableDesignation
@@ -4283,7 +4283,7 @@ sealed class ParenthesizedVariableDesignation : SyntaxNode, IVariableDesignation
 }
 
 /// <summary>PointerType - <c>PointerTypeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class PointerType : SyntaxNode, IType
@@ -4306,7 +4306,7 @@ sealed class PointerType : SyntaxNode, IType
 }
 
 /// <summary>PositionalPatternClause - <c>PositionalPatternClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class PositionalPatternClause : SyntaxNode, ISyntax
@@ -4325,7 +4325,7 @@ sealed class PositionalPatternClause : SyntaxNode, ISyntax
 }
 
 /// <summary>PostfixUnaryExpression - <c>PostfixUnaryExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class PostfixUnaryExpression : SyntaxNode, IExpression
@@ -4350,7 +4350,7 @@ sealed class PostfixUnaryExpression : SyntaxNode, IExpression
 }
 
 /// <summary>PragmaChecksumDirectiveTrivia - <c>PragmaChecksumDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class PragmaChecksumDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -4382,7 +4382,7 @@ sealed class PragmaChecksumDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>PragmaWarningDirectiveTrivia - <c>PragmaWarningDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class PragmaWarningDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -4410,7 +4410,7 @@ sealed class PragmaWarningDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>PredefinedType - <c>PredefinedTypeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class PredefinedType : SyntaxNode, IType
@@ -4432,7 +4432,7 @@ sealed class PredefinedType : SyntaxNode, IType
 }
 
 /// <summary>PrefixUnaryExpression - <c>PrefixUnaryExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class PrefixUnaryExpression : SyntaxNode, IExpression
@@ -4457,7 +4457,7 @@ sealed class PrefixUnaryExpression : SyntaxNode, IExpression
 }
 
 /// <summary>PrimaryConstructorBaseType - <c>PrimaryConstructorBaseTypeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class PrimaryConstructorBaseType : SyntaxNode, IBaseType
@@ -4482,7 +4482,7 @@ sealed class PrimaryConstructorBaseType : SyntaxNode, IBaseType
 }
 
 /// <summary>PropertyDeclaration - <c>PropertyDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class PropertyDeclaration : SyntaxNode, IBasePropertyDeclaration
@@ -4521,7 +4521,7 @@ sealed class PropertyDeclaration : SyntaxNode, IBasePropertyDeclaration
 }
 
 /// <summary>PropertyPatternClause - <c>PropertyPatternClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class PropertyPatternClause : SyntaxNode, ISyntax
@@ -4540,7 +4540,7 @@ sealed class PropertyPatternClause : SyntaxNode, ISyntax
 }
 
 /// <summary>QualifiedCref - <c>QualifiedCrefSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class QualifiedCref : SyntaxNode, ICref
@@ -4566,7 +4566,7 @@ sealed class QualifiedCref : SyntaxNode, ICref
 }
 
 /// <summary>QualifiedName - <c>QualifiedNameSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class QualifiedName : SyntaxNode, IName
@@ -4592,7 +4592,7 @@ sealed class QualifiedName : SyntaxNode, IName
 }
 
 /// <summary>QueryBody - <c>QueryBodySyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class QueryBody : SyntaxNode, ISyntax
@@ -4618,7 +4618,7 @@ sealed class QueryBody : SyntaxNode, ISyntax
 }
 
 /// <summary>QueryContinuation - <c>QueryContinuationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class QueryContinuation : SyntaxNode, ISyntax
@@ -4644,7 +4644,7 @@ sealed class QueryContinuation : SyntaxNode, ISyntax
 }
 
 /// <summary>QueryExpression - <c>QueryExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class QueryExpression : SyntaxNode, IExpression
@@ -4669,7 +4669,7 @@ sealed class QueryExpression : SyntaxNode, IExpression
 }
 
 /// <summary>RangeExpression - <c>RangeExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class RangeExpression : SyntaxNode, IExpression
@@ -4689,7 +4689,7 @@ sealed class RangeExpression : SyntaxNode, IExpression
 }
 
 /// <summary>RecordDeclaration - <c>RecordDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class RecordDeclaration : SyntaxNode, ITypeDeclaration
@@ -4736,7 +4736,7 @@ sealed class RecordDeclaration : SyntaxNode, ITypeDeclaration
 }
 
 /// <summary>RecursivePattern - <c>RecursivePatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class RecursivePattern : SyntaxNode, IPattern
@@ -4759,7 +4759,7 @@ sealed class RecursivePattern : SyntaxNode, IPattern
 }
 
 /// <summary>RefExpression - <c>RefExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class RefExpression : SyntaxNode, IExpression
@@ -4782,7 +4782,7 @@ sealed class RefExpression : SyntaxNode, IExpression
 }
 
 /// <summary>RefStructConstraint - <c>RefStructConstraintSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class RefStructConstraint : SyntaxNode, IAllowsConstraint
@@ -4799,7 +4799,7 @@ sealed class RefStructConstraint : SyntaxNode, IAllowsConstraint
 }
 
 /// <summary>RefTypeExpression - <c>RefTypeExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class RefTypeExpression : SyntaxNode, IExpression
@@ -4824,7 +4824,7 @@ sealed class RefTypeExpression : SyntaxNode, IExpression
 }
 
 /// <summary>RefType - <c>RefTypeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class RefType : SyntaxNode, IType
@@ -4849,7 +4849,7 @@ sealed class RefType : SyntaxNode, IType
 }
 
 /// <summary>RefValueExpression - <c>RefValueExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class RefValueExpression : SyntaxNode, IExpression
@@ -4878,7 +4878,7 @@ sealed class RefValueExpression : SyntaxNode, IExpression
 }
 
 /// <summary>ReferenceDirectiveTrivia - <c>ReferenceDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ReferenceDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -4903,7 +4903,7 @@ sealed class ReferenceDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>RegionDirectiveTrivia - <c>RegionDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class RegionDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -4921,7 +4921,7 @@ sealed class RegionDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>RelationalPattern - <c>RelationalPatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class RelationalPattern : SyntaxNode, IPattern
@@ -4946,7 +4946,7 @@ sealed class RelationalPattern : SyntaxNode, IPattern
 }
 
 /// <summary>ReturnStatement - <c>ReturnStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ReturnStatement : SyntaxNode, IStatement
@@ -4967,7 +4967,7 @@ sealed class ReturnStatement : SyntaxNode, IStatement
 }
 
 /// <summary>ScopedType - <c>ScopedTypeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ScopedType : SyntaxNode, IType
@@ -4990,7 +4990,7 @@ sealed class ScopedType : SyntaxNode, IType
 }
 
 /// <summary>SelectClause - <c>SelectClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SelectClause : SyntaxNode, ISelectOrGroupClause
@@ -5013,7 +5013,7 @@ sealed class SelectClause : SyntaxNode, ISelectOrGroupClause
 }
 
 /// <summary>ShebangDirectiveTrivia - <c>ShebangDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ShebangDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -5031,7 +5031,7 @@ sealed class ShebangDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>SimpleBaseType - <c>SimpleBaseTypeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SimpleBaseType : SyntaxNode, IBaseType
@@ -5053,7 +5053,7 @@ sealed class SimpleBaseType : SyntaxNode, IBaseType
 }
 
 /// <summary>SimpleLambdaExpression - <c>SimpleLambdaExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SimpleLambdaExpression : SyntaxNode, ILambdaExpression
@@ -5084,7 +5084,7 @@ sealed class SimpleLambdaExpression : SyntaxNode, ILambdaExpression
 }
 
 /// <summary>SingleVariableDesignation - <c>SingleVariableDesignationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SingleVariableDesignation : SyntaxNode, IVariableDesignation
@@ -5106,7 +5106,7 @@ sealed class SingleVariableDesignation : SyntaxNode, IVariableDesignation
 }
 
 /// <summary>SizeOfExpression - <c>SizeOfExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SizeOfExpression : SyntaxNode, IExpression
@@ -5131,7 +5131,7 @@ sealed class SizeOfExpression : SyntaxNode, IExpression
 }
 
 /// <summary>SkippedTokensTrivia - <c>SkippedTokensTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SkippedTokensTrivia : SyntaxNode, ISyntax
@@ -5148,7 +5148,7 @@ sealed class SkippedTokensTrivia : SyntaxNode, ISyntax
 }
 
 /// <summary>SlicePattern - <c>SlicePatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SlicePattern : SyntaxNode, IPattern
@@ -5166,7 +5166,7 @@ sealed class SlicePattern : SyntaxNode, IPattern
 }
 
 /// <summary>SpreadElement - <c>SpreadElementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SpreadElement : SyntaxNode, ICollectionElement
@@ -5189,7 +5189,7 @@ sealed class SpreadElement : SyntaxNode, ICollectionElement
 }
 
 /// <summary>StackAllocArrayCreationExpression - <c>StackAllocArrayCreationExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class StackAllocArrayCreationExpression : SyntaxNode, IExpression
@@ -5214,7 +5214,7 @@ sealed class StackAllocArrayCreationExpression : SyntaxNode, IExpression
 }
 
 /// <summary>StructDeclaration - <c>StructDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class StructDeclaration : SyntaxNode, ITypeDeclaration
@@ -5257,7 +5257,7 @@ sealed class StructDeclaration : SyntaxNode, ITypeDeclaration
 }
 
 /// <summary>Subpattern - <c>SubpatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class Subpattern : SyntaxNode, ISyntax
@@ -5281,7 +5281,7 @@ sealed class Subpattern : SyntaxNode, ISyntax
 }
 
 /// <summary>SwitchExpressionArm - <c>SwitchExpressionArmSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SwitchExpressionArm : SyntaxNode, ISyntax
@@ -5309,7 +5309,7 @@ sealed class SwitchExpressionArm : SyntaxNode, ISyntax
 }
 
 /// <summary>SwitchExpression - <c>SwitchExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SwitchExpression : SyntaxNode, IExpression
@@ -5336,7 +5336,7 @@ sealed class SwitchExpression : SyntaxNode, IExpression
 }
 
 /// <summary>SwitchSection - <c>SwitchSectionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SwitchSection : SyntaxNode, ISyntax
@@ -5355,7 +5355,7 @@ sealed class SwitchSection : SyntaxNode, ISyntax
 }
 
 /// <summary>SwitchStatement - <c>SwitchStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SwitchStatement : SyntaxNode, IStatement, IBlockLike
@@ -5388,7 +5388,7 @@ sealed class SwitchStatement : SyntaxNode, IStatement, IBlockLike
 }
 
 /// <summary>ThisExpression - <c>ThisExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ThisExpression : SyntaxNode, IInstanceExpression
@@ -5404,7 +5404,7 @@ sealed class ThisExpression : SyntaxNode, IInstanceExpression
 }
 
 /// <summary>ThrowExpression - <c>ThrowExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ThrowExpression : SyntaxNode, IExpression
@@ -5427,7 +5427,7 @@ sealed class ThrowExpression : SyntaxNode, IExpression
 }
 
 /// <summary>ThrowStatement - <c>ThrowStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class ThrowStatement : SyntaxNode, IStatement
@@ -5448,7 +5448,7 @@ sealed class ThrowStatement : SyntaxNode, IStatement
 }
 
 /// <summary>TryStatement - <c>TryStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class TryStatement : SyntaxNode, IStatement
@@ -5477,7 +5477,7 @@ sealed class TryStatement : SyntaxNode, IStatement
 }
 
 /// <summary>TupleElement - <c>TupleElementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class TupleElement : SyntaxNode, ISyntax
@@ -5501,7 +5501,7 @@ sealed class TupleElement : SyntaxNode, ISyntax
 }
 
 /// <summary>TupleExpression - <c>TupleExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class TupleExpression : SyntaxNode, IExpression
@@ -5520,7 +5520,7 @@ sealed class TupleExpression : SyntaxNode, IExpression
 }
 
 /// <summary>TupleType - <c>TupleTypeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class TupleType : SyntaxNode, IType
@@ -5539,7 +5539,7 @@ sealed class TupleType : SyntaxNode, IType
 }
 
 /// <summary>TypeArgumentList - <c>TypeArgumentListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class TypeArgumentList : SyntaxNode, ISyntax
@@ -5558,7 +5558,7 @@ sealed class TypeArgumentList : SyntaxNode, ISyntax
 }
 
 /// <summary>TypeConstraint - <c>TypeConstraintSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class TypeConstraint : SyntaxNode, ITypeParameterConstraint
@@ -5580,7 +5580,7 @@ sealed class TypeConstraint : SyntaxNode, ITypeParameterConstraint
 }
 
 /// <summary>TypeCref - <c>TypeCrefSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class TypeCref : SyntaxNode, ICref
@@ -5602,7 +5602,7 @@ sealed class TypeCref : SyntaxNode, ICref
 }
 
 /// <summary>TypeOfExpression - <c>TypeOfExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class TypeOfExpression : SyntaxNode, IExpression
@@ -5627,7 +5627,7 @@ sealed class TypeOfExpression : SyntaxNode, IExpression
 }
 
 /// <summary>TypeParameterConstraintClause - <c>TypeParameterConstraintClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class TypeParameterConstraintClause : SyntaxNode, ISyntax
@@ -5653,7 +5653,7 @@ sealed class TypeParameterConstraintClause : SyntaxNode, ISyntax
 }
 
 /// <summary>TypeParameterList - <c>TypeParameterListSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class TypeParameterList : SyntaxNode, ISyntax
@@ -5672,7 +5672,7 @@ sealed class TypeParameterList : SyntaxNode, ISyntax
 }
 
 /// <summary>TypeParameter - <c>TypeParameterSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class TypeParameter : SyntaxNode, ISyntax
@@ -5698,7 +5698,7 @@ sealed class TypeParameter : SyntaxNode, ISyntax
 }
 
 /// <summary>TypePattern - <c>TypePatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class TypePattern : SyntaxNode, IPattern
@@ -5720,7 +5720,7 @@ sealed class TypePattern : SyntaxNode, IPattern
 }
 
 /// <summary>UnaryPattern - <c>UnaryPatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class UnaryPattern : SyntaxNode, IPattern
@@ -5743,7 +5743,7 @@ sealed class UnaryPattern : SyntaxNode, IPattern
 }
 
 /// <summary>UndefDirectiveTrivia - <c>UndefDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class UndefDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -5768,7 +5768,7 @@ sealed class UndefDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>UnionDeclaration - <c>UnionDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class UnionDeclaration : SyntaxNode, ITypeDeclaration
@@ -5813,7 +5813,7 @@ sealed class UnionDeclaration : SyntaxNode, ITypeDeclaration
 }
 
 /// <summary>UnsafeExpression - <c>UnsafeExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class UnsafeExpression : SyntaxNode, IExpression
@@ -5838,7 +5838,7 @@ sealed class UnsafeExpression : SyntaxNode, IExpression
 }
 
 /// <summary>UnsafeStatement - <c>UnsafeStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class UnsafeStatement : SyntaxNode, IStatement
@@ -5863,7 +5863,7 @@ sealed class UnsafeStatement : SyntaxNode, IStatement
 }
 
 /// <summary>UsingDirective - <c>UsingDirectiveSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class UsingDirective : SyntaxNode, ISyntax
@@ -5895,7 +5895,7 @@ sealed class UsingDirective : SyntaxNode, ISyntax
 }
 
 /// <summary>UsingStatement - <c>UsingStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class UsingStatement : SyntaxNode, IStatement
@@ -5928,7 +5928,7 @@ sealed class UsingStatement : SyntaxNode, IStatement
 }
 
 /// <summary>VarPattern - <c>VarPatternSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class VarPattern : SyntaxNode, IPattern
@@ -5951,7 +5951,7 @@ sealed class VarPattern : SyntaxNode, IPattern
 }
 
 /// <summary>VariableDeclaration - <c>VariableDeclarationSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class VariableDeclaration : SyntaxNode, ISyntax
@@ -5975,7 +5975,7 @@ sealed class VariableDeclaration : SyntaxNode, ISyntax
 }
 
 /// <summary>VariableDeclarator - <c>VariableDeclaratorSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class VariableDeclarator : SyntaxNode, ISyntax
@@ -6001,7 +6001,7 @@ sealed class VariableDeclarator : SyntaxNode, ISyntax
 }
 
 /// <summary>WarningDirectiveTrivia - <c>WarningDirectiveTriviaSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class WarningDirectiveTrivia : SyntaxNode, IDirectiveTrivia
@@ -6019,7 +6019,7 @@ sealed class WarningDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 }
 
 /// <summary>WhenClause - <c>WhenClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class WhenClause : SyntaxNode, ISyntax
@@ -6042,7 +6042,7 @@ sealed class WhenClause : SyntaxNode, ISyntax
 }
 
 /// <summary>WhereClause - <c>WhereClauseSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class WhereClause : SyntaxNode, IQueryClause
@@ -6065,7 +6065,7 @@ sealed class WhereClause : SyntaxNode, IQueryClause
 }
 
 /// <summary>WhileStatement - <c>WhileStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class WhileStatement : SyntaxNode, IStatement
@@ -6095,7 +6095,7 @@ sealed class WhileStatement : SyntaxNode, IStatement
 }
 
 /// <summary>WithElement - <c>WithElementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class WithElement : SyntaxNode, ICollectionElement
@@ -6118,7 +6118,7 @@ sealed class WithElement : SyntaxNode, ICollectionElement
 }
 
 /// <summary>WithExpression - <c>WithExpressionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class WithExpression : SyntaxNode, IExpression
@@ -6144,7 +6144,7 @@ sealed class WithExpression : SyntaxNode, IExpression
 }
 
 /// <summary>XmlCDataSection - <c>XmlCDataSectionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlCDataSection : SyntaxNode, IXmlNode
@@ -6163,7 +6163,7 @@ sealed class XmlCDataSection : SyntaxNode, IXmlNode
 }
 
 /// <summary>XmlComment - <c>XmlCommentSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlComment : SyntaxNode, IXmlNode
@@ -6182,7 +6182,7 @@ sealed class XmlComment : SyntaxNode, IXmlNode
 }
 
 /// <summary>XmlCrefAttribute - <c>XmlCrefAttributeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlCrefAttribute : SyntaxNode, IXmlAttribute
@@ -6214,7 +6214,7 @@ sealed class XmlCrefAttribute : SyntaxNode, IXmlAttribute
 }
 
 /// <summary>XmlElementEndTag - <c>XmlElementEndTagSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlElementEndTag : SyntaxNode, ISyntax
@@ -6238,7 +6238,7 @@ sealed class XmlElementEndTag : SyntaxNode, ISyntax
 }
 
 /// <summary>XmlElementStartTag - <c>XmlElementStartTagSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlElementStartTag : SyntaxNode, ISyntax
@@ -6264,7 +6264,7 @@ sealed class XmlElementStartTag : SyntaxNode, ISyntax
 }
 
 /// <summary>XmlElement - <c>XmlElementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlElement : SyntaxNode, IXmlNode
@@ -6291,7 +6291,7 @@ sealed class XmlElement : SyntaxNode, IXmlNode
 }
 
 /// <summary>XmlEmptyElement - <c>XmlEmptyElementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlEmptyElement : SyntaxNode, IXmlNode
@@ -6317,7 +6317,7 @@ sealed class XmlEmptyElement : SyntaxNode, IXmlNode
 }
 
 /// <summary>XmlNameAttribute - <c>XmlNameAttributeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlNameAttribute : SyntaxNode, IXmlAttribute
@@ -6349,7 +6349,7 @@ sealed class XmlNameAttribute : SyntaxNode, IXmlAttribute
 }
 
 /// <summary>XmlName - <c>XmlNameSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlName : SyntaxNode, ISyntax
@@ -6373,7 +6373,7 @@ sealed class XmlName : SyntaxNode, ISyntax
 }
 
 /// <summary>XmlPrefix - <c>XmlPrefixSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlPrefix : SyntaxNode, ISyntax
@@ -6396,7 +6396,7 @@ sealed class XmlPrefix : SyntaxNode, ISyntax
 }
 
 /// <summary>XmlProcessingInstruction - <c>XmlProcessingInstructionSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlProcessingInstruction : SyntaxNode, IXmlNode
@@ -6422,7 +6422,7 @@ sealed class XmlProcessingInstruction : SyntaxNode, IXmlNode
 }
 
 /// <summary>XmlTextAttribute - <c>XmlTextAttributeSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlTextAttribute : SyntaxNode, IXmlAttribute
@@ -6453,7 +6453,7 @@ sealed class XmlTextAttribute : SyntaxNode, IXmlAttribute
 }
 
 /// <summary>XmlText - <c>XmlTextSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class XmlText : SyntaxNode, IXmlNode
@@ -6470,7 +6470,7 @@ sealed class XmlText : SyntaxNode, IXmlNode
 }
 
 /// <summary>YieldStatement - <c>YieldStatementSyntax</c> in the grammar.</summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class YieldStatement : SyntaxNode, IStatement

@@ -19,7 +19,7 @@ namespace CSharpAuthor.Syntax;
 /// structurally impossible, so the empty body here is the correct body, not a stub.
 /// </para>
 /// </remarks>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 abstract class SyntaxNode : ISyntax

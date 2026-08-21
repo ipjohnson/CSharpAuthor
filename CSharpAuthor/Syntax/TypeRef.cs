@@ -20,7 +20,7 @@ namespace CSharpAuthor.Syntax;
 /// <see cref="ITypeDefinition"/>.
 /// </para>
 /// </remarks>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 readonly struct TypeRef

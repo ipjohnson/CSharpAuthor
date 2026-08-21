@@ -29,7 +29,7 @@ namespace CSharpAuthor.Syntax;
 /// context serialises.
 /// </para>
 /// </remarks>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 sealed class SyntaxWriter

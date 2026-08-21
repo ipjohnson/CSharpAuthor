@@ -12,7 +12,7 @@ namespace CSharpAuthor.Syntax;
 /// No rule here is keyed on an individual node name. Every role assignment in
 /// <c>gen_all.py</c> is a category rule, so adding a C# version cannot invalidate them.
 /// </remarks>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 enum TokenRole
@@ -111,7 +111,7 @@ enum TokenRole
 /// How the elements of a grammar list are joined. Chosen by the generator from the list's
 /// element type and the containing node's category - never from the node's name.
 /// </summary>
-#if !CSHARPAUTHOR_SOURCE
+#if CSHARPAUTHOR_PUBLIC_SYNTAX
 public
 #endif
 enum ListStyle

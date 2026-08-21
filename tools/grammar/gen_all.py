@@ -415,19 +415,19 @@ w('')
 # --- interfaces -------------------------------------------------------------
 
 w('/// <summary>Root of the generated grammar. Every node is an <see cref="IOutputComponent"/>.</summary>')
-w('#if !CSHARPAUTHOR_SOURCE')
+w('#if CSHARPAUTHOR_PUBLIC_SYNTAX')
 w('public')
 w('#endif')
 w('interface ISyntax : IOutputComponent { }')
 w('')
 w('/// <summary>A statement that brings its own braces, so it is never re-indented as an embedded statement.</summary>')
-w('#if !CSHARPAUTHOR_SOURCE')
+w('#if CSHARPAUTHOR_PUBLIC_SYNTAX')
 w('public')
 w('#endif')
 w('interface IBlockLike : ISyntax { }')
 w('')
 w('/// <summary>A statement that may follow <c>else</c> on the same line.</summary>')
-w('#if !CSHARPAUTHOR_SOURCE')
+w('#if CSHARPAUTHOR_PUBLIC_SYNTAX')
 w('public')
 w('#endif')
 w('interface IElseChainable : ISyntax { }')
@@ -441,7 +441,7 @@ for name in sorted(abstract):
     parent = iface_for(b) if b not in ROOTS and b is not None else 'ISyntax'
     if parent == iface_name(name):
         parent = 'ISyntax'
-    w('#if !CSHARPAUTHOR_SOURCE')
+    w('#if CSHARPAUTHOR_PUBLIC_SYNTAX')
     w('public')
     w('#endif')
     w(f'interface {iface_name(name)} : {parent} {{ }}')
@@ -568,7 +568,7 @@ for name in sorted(concrete):
     implements = ', '.join(['SyntaxNode', parent] + markers)
 
     w(f'/// <summary>{cls} - <c>{name}</c> in the grammar.</summary>')
-    w('#if !CSHARPAUTHOR_SOURCE')
+    w('#if CSHARPAUTHOR_PUBLIC_SYNTAX')
     w('public')
     w('#endif')
     w(f'sealed class {cls} : {implements}')
