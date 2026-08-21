@@ -314,9 +314,11 @@ public class OutputContext : IOutputContext
 
         // A component that hands over its own indent string is describing structure, not characters.
         // Recorded as an indent so the file can still be restyled after it has been written.
-        // The first character is tested before the strings are: a token that does not begin with the
-        // indent character cannot be an indent, and that is very nearly every token in the file.
-        if (_indentIndex > 0 && Options.IndentCharCount > 0 && text[0] == Options.IndentChar)
+        // The first character is tested before the strings are, and before the indent width is even
+        // read: a token that does not begin with the indent character cannot be an indent, and that
+        // is very nearly every token in the file, so very nearly every write asks Options one
+        // question rather than two.
+        if (_indentIndex > 0 && text[0] == Options.IndentChar && Options.IndentCharCount > 0)
         {
             if (text == IndentString)
             {
@@ -988,16 +990,38 @@ public class OutputContext : IOutputContext
         var written = new List<ITypeDefinition>();
         var seen = new HashSet<ITypeDefinition>();
 
-        // Every value store entry is either a string or a type, and only the types are wanted.
-        for (var chunkIndex = 0; chunkIndex < _values.ChunkCount; chunkIndex++)
+        // Over the codes rather than over the values, counting past the strings. Asking each value
+        // whether it is a type instead means an interface type test per written token, and five
+        // tokens in six are text.
+        var valueChunkIndex = -1;
+        var valueChunk = Array.Empty<object>();
+        var valueUsed = 0;
+        var valueIndex = 0;
+
+        for (var chunkIndex = 0; chunkIndex < _codes.ChunkCount; chunkIndex++)
         {
-            var chunk = _values.ChunkAt(chunkIndex, out var used);
+            var chunk = _codes.ChunkAt(chunkIndex, out var used);
 
             for (var i = 0; i < used; i++)
             {
-                if (chunk[i] is ITypeDefinition type)
+                var kind = KindOf(chunk[i]);
+
+                if (kind != SegmentKind.Text && kind != SegmentKind.TypeReference)
                 {
-                    CollectType(type, written, seen);
+                    continue;
+                }
+
+                if (valueIndex == valueUsed)
+                {
+                    valueChunk = _values.ChunkAt(++valueChunkIndex, out valueUsed);
+                    valueIndex = 0;
+                }
+
+                var value = valueChunk[valueIndex++];
+
+                if (kind == SegmentKind.TypeReference)
+                {
+                    CollectType((ITypeDefinition)value, written, seen);
                 }
             }
         }
