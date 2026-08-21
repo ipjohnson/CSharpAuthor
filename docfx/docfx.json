@@ -1,0 +1,61 @@
+{
+  "$schema": "https://raw.githubusercontent.com/dotnet/docfx/main/schemas/docfx.schema.json",
+
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": "..",
+          "files": [ "CSharpAuthor/CSharpAuthor.csproj" ]
+        }
+      ],
+      "dest": "api",
+      "outputFormat": "mref",
+      "namespaceLayout": "nested",
+      "memberLayout": "separatePages",
+      "enumSortOrder": "declaringOrder",
+      "allowCompilationErrors": false
+    }
+  ],
+
+  "build": {
+    "content": [
+      {
+        "files": [
+          "index.md",
+          "toc.yml",
+          "docs/**.md",
+          "docs/**/toc.yml",
+          "api/**.yml",
+          "api/index.md"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [ "images/**" ]
+      }
+    ],
+    "output": "_site",
+    "template": [ "default", "modern" ],
+    "globalMetadata": {
+      "_appName": "CSharpAuthor",
+      "_appTitle": "CSharpAuthor",
+      "_description": "A library for programmatically generating C# source, aimed at Roslyn source generators.",
+      "_enableSearch": true,
+      "_disableContribution": false,
+      "_gitContribute": {
+        "repo": "https://github.com/ipjohnson/CSharpAuthor",
+        "branch": "main"
+      },
+      "pdf": false
+    },
+    "sitemap": {
+      "baseUrl": "https://ipjohnson.github.io/CSharpAuthor/",
+      "changefreq": "weekly"
+    },
+    "postProcessors": [ "ExtractSearchIndex" ],
+    "keepFileLink": false,
+    "disableGitFeatures": false
+  }
+}

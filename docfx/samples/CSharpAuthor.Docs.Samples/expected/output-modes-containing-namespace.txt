@@ -1,0 +1,12 @@
+using Acme.Diagnostics;
+
+namespace Acme.Services
+{
+    public class GreetingServiceFactory
+    {
+
+        public GreetingService Service { get; set; }
+
+        public Log Log { get; set; }
+    }
+}

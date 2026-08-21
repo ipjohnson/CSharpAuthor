@@ -1,0 +1,52 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <!--
+        A working Roslyn incremental generator built on CSharpAuthor, wired the way the package
+        wires itself: the library's source is compiled into this assembly, so the generator ships
+        as one analyzer file with no CSharpAuthor.dll to load beside it.
+
+        docfx/docs/source-generators.md shows the two properties a real consumer sets against the
+        published package. This project cannot use them, because it builds against the working
+        tree rather than a restored package, so it reproduces exactly what those properties do -
+        the same two globs, against the checkout instead of against the package's src/ and
+        srcRoslyn/ folders. That is also how Hardened.Framework wires its own local checkout.
+    -->
+
+    <PropertyGroup>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <LangVersion>10</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <IsRoslynComponent>true</IsRoslynComponent>
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        <IsPackable>false</IsPackable>
+        <RootNamespace>CSharpAuthor.Docs.Samples.Generator</RootNamespace>
+        <!-- Missing XML comments on a sample generator are not interesting. -->
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <CSharpAuthorRoot>$(MSBuildThisFileDirectory)../../..</CSharpAuthorRoot>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!--
+            A generator project already references Roslyn; that is the whole reason the bridge can
+            ship as source and add no dependency to anything.
+        -->
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- What PackageCSharpAuthorIncludeSource=true compiles: the library, minus the bridge. -->
+        <Compile Include="$(CSharpAuthorRoot)/CSharpAuthor/**/*.cs"
+                 Exclude="$(CSharpAuthorRoot)/CSharpAuthor/obj/**/*.cs;$(CSharpAuthorRoot)/CSharpAuthor/bin/**/*.cs;$(CSharpAuthorRoot)/CSharpAuthor/Roslyn/**/*.cs"
+                 Visible="false" />
+
+        <!-- What PackageCSharpAuthorIncludeRoslyn=true adds: the Roslyn bridge. -->
+        <Compile Include="$(CSharpAuthorRoot)/CSharpAuthor/Roslyn/**/*.cs"
+                 Exclude="$(CSharpAuthorRoot)/CSharpAuthor/obj/**/*.cs;$(CSharpAuthorRoot)/CSharpAuthor/bin/**/*.cs"
+                 Visible="false" />
+    </ItemGroup>
+
+</Project>

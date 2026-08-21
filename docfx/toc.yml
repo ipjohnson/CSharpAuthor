@@ -1,0 +1,8 @@
+- name: Docs
+  href: docs/
+  homepage: docs/getting-started.md
+- name: API
+  href: api/
+  homepage: api/index.md
+- name: GitHub
+  href: https://github.com/ipjohnson/CSharpAuthor

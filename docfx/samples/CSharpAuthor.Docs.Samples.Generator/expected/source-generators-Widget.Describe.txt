@@ -1,0 +1,14 @@
+namespace Acme.Inventory;
+
+public partial class Widget
+{
+
+    public string Describe()
+    {
+        var builder = new global::System.Text.StringBuilder();
+        builder.Append(("Sku: " + typeof(string).Name + "\n"));
+        builder.Append(("Quantity: " + typeof(int?).Name + "\n"));
+        builder.Append(("Tags: " + typeof(global::System.Collections.Generic.IReadOnlyList<string>).Name + "\n"));
+        return builder.ToString();
+    }
+}

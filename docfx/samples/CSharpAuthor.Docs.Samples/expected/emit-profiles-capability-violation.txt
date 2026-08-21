@@ -1,0 +1,14 @@
+HasErrors: true
+Info  CSA0001: 'file-scoped namespace' on namespace - emitted in its pre-C#10 form, which means the same thing.
+Error  CSA1001: 'record' on Pet requires C#9 and the target is C#8. There is no downlevel form, so anything emitted here would mean something else.
+
+=== emitted ===
+namespace Acme.Model
+{
+    #error CSA1001: 'record' on Pet requires C#9 and the target is C#8. There is no downlevel form, so anything emitted here would mean something else.
+    public record Pet
+    {
+
+        public string Name { get; set; }
+    }
+}

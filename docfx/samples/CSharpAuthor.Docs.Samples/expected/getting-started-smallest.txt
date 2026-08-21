@@ -1,0 +1,10 @@
+namespace Acme.Greetings
+{
+    public class Greeter
+    {
+
+        public void Greet()
+        {
+        }
+    }
+}

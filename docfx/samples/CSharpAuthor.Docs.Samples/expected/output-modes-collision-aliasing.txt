@@ -1,0 +1,13 @@
+using System.Threading.Tasks;
+using DomainTask = Acme.Domain.Task;
+
+namespace Acme.Scheduling
+{
+    public class Runner
+    {
+
+        public Task Running { get; set; }
+
+        public DomainTask Pending { get; set; }
+    }
+}
