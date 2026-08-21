@@ -86,7 +86,26 @@ public class OutputContextOptions
 /// </remarks>
 public class OutputContext : IOutputContext
 {
-    private enum SegmentKind : byte
+    // -----------------------------------------------------------------------------------------
+    // The recorded file, in two stores.
+    //
+    // A code per write - three bits saying which kind it is and, for the kinds that have one, the
+    // indent depth - and, in a store of its own, the value the two kinds that refer to something
+    // refer to: the string that was written, or the type that has not been rendered yet.
+    //
+    // One array of segment structs is the obvious shape and it is the expensive one. A struct
+    // holding a reference is sixteen bytes whatever else is in it, because the reference forces
+    // eight-byte alignment - so a line break, which needs nothing, costs as much as a string does.
+    // Four bytes for every write plus eight for the two writes in three that name something is a
+    // little over half of that, measured on this library's own payload: 15.7 KB down to 9.7 KB.
+    //
+    // Both stores grow by adding a chunk rather than by copying into a bigger array, because a
+    // List<T> that doubles allocates about twice what it ends up holding and throws half of it
+    // away.
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>The kinds of write that are recorded. Three bits of a code; do not exceed eight.</summary>
+    private enum SegmentKind
     {
         Text,
         NewLine,
@@ -96,71 +115,101 @@ public class OutputContext : IOutputContext
         TypeReference,
     }
 
+    private const int KindBits = 3;
+    private const int KindMask = (1 << KindBits) - 1;
+
     /// <summary>
-    /// One recorded write. A struct so the whole file is one array rather than one object per write.
+    /// A list that grows by adding a chunk rather than by copying everything it holds into a bigger
+    /// array, so recording an N-entry file allocates N rather than about 2N.
     /// </summary>
     /// <remarks>
-    /// The text and the type share one field. A segment is one kind or the other and never both, and
-    /// two reference fields cost sixteen bytes a segment where one costs eight - on a file of a few
-    /// hundred segments that is the difference between the recording being free and it being the
-    /// largest thing in the profile. <see cref="Kind"/> says which field it is, so the cast is
-    /// checked by the switch that already had to happen.
+    /// A struct, and held in a field rather than handed around, so that a context that is never
+    /// written to - and this library makes one per rendered expression - allocates nothing at all
+    /// for the two of them.
     /// </remarks>
-    private readonly struct Segment
+    private struct ChunkChain<T>
     {
-        private readonly object? _value;
+        /// <summary>Small, because most contexts record a handful of entries and are then thrown away.</summary>
+        private const int FirstCapacity = 32;
 
-        private Segment(SegmentKind kind, object? value, int depth)
+        /// <summary>8192 entries is 64 KB of references, the largest chunk that stays off the large object heap.</summary>
+        private const int MaxCapacity = 8192;
+
+        private T[]? _chunk;
+        private List<T[]>? _filled;
+        private int _used;
+
+        public int Count;
+
+        /// <summary>How many chunks hold entries; only the last of them is partly filled.</summary>
+        public int ChunkCount => Count == 0 ? 0 : (_filled?.Count ?? 0) + 1;
+
+        public void Add(T value)
         {
-            _value = value;
-            Depth = depth;
-            Kind = kind;
+            var chunk = _chunk;
+            var index = _used;
+
+            if (chunk == null || index == chunk.Length)
+            {
+                chunk = Grow();
+                index = 0;
+            }
+
+            chunk[index] = value;
+            _used = index + 1;
+            Count++;
         }
 
-        public readonly int Depth;
-        public readonly SegmentKind Kind;
-
-        public string? Text => (string?)_value;
-
-        public ITypeDefinition? Type => (ITypeDefinition?)_value;
-
-        public static Segment ForText(string text)
+        /// <summary>The chunk at <paramref name="chunkIndex"/> and how many of its slots are in use.</summary>
+        public T[] ChunkAt(int chunkIndex, out int used)
         {
-            return new Segment(SegmentKind.Text, text, 0);
+            var filled = _filled;
+
+            if (filled != null && chunkIndex < filled.Count)
+            {
+                var chunk = filled[chunkIndex];
+
+                used = chunk.Length;
+
+                return chunk;
+            }
+
+            used = _used;
+
+            return _chunk!;
         }
 
-        public static Segment ForType(ITypeDefinition type)
+        private T[] Grow()
         {
-            return new Segment(SegmentKind.TypeReference, type, 0);
-        }
+            var current = _chunk;
 
-        public static Segment Structural(SegmentKind kind, int depth)
-        {
-            return new Segment(kind, null, depth);
+            if (current == null)
+            {
+                return _chunk = new T[FirstCapacity];
+            }
+
+            (_filled ??= new List<T[]>()).Add(current);
+
+            _used = 0;
+
+            // A quarter more each time rather than twice as much. Doubling overshoots: the chunk that
+            // takes the store past what it needs is as big as everything before it, so a file that
+            // ends a little over a boundary holds most of a chunk it never fills. Nothing here is
+            // copied on growth, so the only thing more chunks cost is a list entry apiece.
+            var next = current.Length + Math.Max(current.Length >> 2, 8);
+
+            return _chunk = new T[next < MaxCapacity ? next : MaxCapacity];
         }
     }
 
-    // -----------------------------------------------------------------------------------------
-    // The recorded file. A chain of chunks rather than one growing array: a List<T> doubles by
-    // allocating a new array and copying, so recording an N-segment file allocates about 2N
-    // segments' worth of array and throws half of it away. Chunks are never copied and never
-    // reach the large object heap, so it allocates N and copies nothing.
-    // -----------------------------------------------------------------------------------------
-
-    private const int FirstChunkCapacity = 32;
-
-    /// <summary>4096 segments is 64 KB, which is the largest chunk that stays off the large object heap.</summary>
-    private const int MaxChunkCapacity = 4096;
-
-    private Segment[] _chunk = Array.Empty<Segment>();
-    private List<Segment[]>? _filledChunks;
-    private int _chunkCount;
-    private int _segmentCount;
+    private ChunkChain<int> _codes;
+    private ChunkChain<object> _values;
 
     // A running tally of how long the file will be, kept apart from the things whose width is only
     // decided at serialization - line breaks, indents and braces are counted, not measured, because
-    // the newline string and the indent width can still change. It buys the output builder one
-    // allocation of the right size instead of the ten doublings a default StringBuilder does.
+    // the newline string, the indent width and the brace style can all still change. It buys the
+    // output builder one allocation of the right size instead of the ten doublings a default
+    // StringBuilder does.
     private int _textChars;
     private int _typeNameChars;
     private int _typeQualifierChars;
@@ -271,20 +320,22 @@ public class OutputContext : IOutputContext
         {
             if (text == IndentString)
             {
-                Add(Segment.Structural(SegmentKind.Indent, _indentIndex));
+                RecordIndent(_indentIndex);
 
                 return;
             }
 
             if (text == SingleIndent)
             {
-                Add(Segment.Structural(SegmentKind.Indent, 1));
+                RecordIndent(1);
 
                 return;
             }
         }
 
-        Add(Segment.ForText(text));
+        _textChars += text.Length;
+
+        RecordValue(SegmentKind.Text, text);
     }
 
     /// <summary>
@@ -297,45 +348,54 @@ public class OutputContext : IOutputContext
             return;
         }
 
-        Add(Segment.ForType(typeDefinition));
+        // What the name will be is not known yet - that is the point of the whole design - so the
+        // parts it could be built from are counted separately and the output mode decides, at
+        // serialization, which of them to believe.
+        _typeRefCount++;
+        _typeNameChars += NameAllowance(typeDefinition);
+        _typeQualifierChars += typeDefinition.Namespace.Length + 1;
+
+        RecordValue(SegmentKind.TypeReference, typeDefinition);
     }
 
     public void WriteLine()
     {
-        Add(Segment.Structural(SegmentKind.NewLine, 0));
+        RecordNewLine();
     }
 
     public void WriteLine(string text)
     {
         Write(text);
 
-        Add(Segment.Structural(SegmentKind.NewLine, 0));
+        RecordNewLine();
     }
 
     public void WriteSpace()
     {
-        Add(Segment.ForText(" "));
+        _textChars++;
+
+        RecordValue(SegmentKind.Text, " ");
     }
 
     public void WriteIndent(string text = "")
     {
-        Add(Segment.Structural(SegmentKind.Indent, _indentIndex));
+        RecordIndent(_indentIndex);
 
         Write(text);
     }
 
     public void WriteIndentedLine(string text)
     {
-        Add(Segment.Structural(SegmentKind.Indent, _indentIndex));
+        RecordIndent(_indentIndex);
 
         Write(text);
 
-        Add(Segment.Structural(SegmentKind.NewLine, 0));
+        RecordNewLine();
     }
 
     public void OpenScope()
     {
-        Add(Segment.Structural(SegmentKind.ScopeOpen, _indentIndex));
+        RecordScope(SegmentKind.ScopeOpen, _indentIndex);
 
         _indentIndex++;
     }
@@ -344,56 +404,57 @@ public class OutputContext : IOutputContext
     {
         _indentIndex--;
 
-        Add(Segment.Structural(SegmentKind.ScopeClose, _indentIndex));
+        RecordScope(SegmentKind.ScopeClose, _indentIndex);
     }
 
-    private void Add(Segment segment)
+    private void RecordIndent(int depth)
     {
-        switch (segment.Kind)
-        {
-            case SegmentKind.Text:
-                _textChars += segment.Text!.Length;
-                break;
+        _indentUnits += depth;
 
-            case SegmentKind.NewLine:
-                _lineCount++;
-                break;
+        _codes.Add(Code(SegmentKind.Indent, depth));
+    }
 
-            case SegmentKind.Indent:
-                _indentUnits += segment.Depth;
-                break;
+    private void RecordNewLine()
+    {
+        _lineCount++;
 
-            case SegmentKind.ScopeOpen:
-            case SegmentKind.ScopeClose:
-                _indentUnits += segment.Depth;
-                _braceCount++;
-                _lineCount++;
-                break;
+        _codes.Add(Code(SegmentKind.NewLine, 0));
+    }
 
-            case SegmentKind.TypeReference:
-                // What the name will be is not known yet - that is the point of the whole design -
-                // so the parts it could be built from are counted separately and the output mode
-                // decides which of them to believe.
-                var type = segment.Type!;
+    private void RecordScope(SegmentKind kind, int depth)
+    {
+        _indentUnits += depth;
+        _braceCount++;
+        _lineCount++;
 
-                _typeRefCount++;
-                _typeNameChars += NameAllowance(type);
-                _typeQualifierChars += type.Namespace.Length + 1;
-                break;
-        }
+        _codes.Add(Code(kind, depth));
+    }
 
-        var chunk = _chunk;
-        var index = _chunkCount;
+    /// <summary>
+    /// Records a write that names something. The value goes in the value store and the code says
+    /// only what kind it is: the two stores advance together, so a walk over the codes knows which
+    /// value each one meant without either of them saying so.
+    /// </summary>
+    private void RecordValue(SegmentKind kind, object value)
+    {
+        _codes.Add(Code(kind, 0));
+        _values.Add(value);
+    }
 
-        if (index == chunk.Length)
-        {
-            chunk = GrowChunk();
-            index = 0;
-        }
+    private static int Code(SegmentKind kind, int depth)
+    {
+        return (int)kind | (depth << KindBits);
+    }
 
-        chunk[index] = segment;
-        _chunkCount = index + 1;
-        _segmentCount++;
+    private static SegmentKind KindOf(int code)
+    {
+        return (SegmentKind)(code & KindMask);
+    }
+
+    /// <summary>The indent depth a code carries. An arithmetic shift, so an unbalanced negative depth survives.</summary>
+    private static int DepthOf(int code)
+    {
+        return code >> KindBits;
     }
 
     /// <summary>
@@ -416,44 +477,6 @@ public class OutputContext : IOutputContext
         }
 
         return allowance;
-    }
-
-    private Segment[] GrowChunk()
-    {
-        var current = _chunk;
-
-        if (current.Length == 0)
-        {
-            return _chunk = new Segment[FirstChunkCapacity];
-        }
-
-        (_filledChunks ??= new List<Segment[]>()).Add(current);
-
-        _chunkCount = 0;
-
-        return _chunk = new Segment[current.Length < MaxChunkCapacity ? current.Length * 2 : MaxChunkCapacity];
-    }
-
-    /// <summary>The number of chunks holding segments; the last one is the only partly filled one.</summary>
-    private int ChunkCount => _segmentCount == 0 ? 0 : (_filledChunks?.Count ?? 0) + 1;
-
-    /// <summary>The chunk at <paramref name="chunkIndex"/> and how many of its slots are in use.</summary>
-    private Segment[] ChunkAt(int chunkIndex, out int used)
-    {
-        var filled = _filledChunks;
-
-        if (filled != null && chunkIndex < filled.Count)
-        {
-            var chunk = filled[chunkIndex];
-
-            used = chunk.Length;
-
-            return chunk;
-        }
-
-        used = _chunkCount;
-
-        return _chunk;
     }
 
     public void AddImportNamespace(string ns)
@@ -546,22 +569,38 @@ public class OutputContext : IOutputContext
     {
         get
         {
-            for (var chunkIndex = ChunkCount - 1; chunkIndex >= 0; chunkIndex--)
+            // Backwards over the codes, and backwards over the values in step with them: a code that
+            // names something took the value before the one the code after it took.
+            var valueChunkIndex = _values.ChunkCount - 1;
+            var valueChunk = Array.Empty<object>();
+            var valueIndex = 0;
+
+            if (valueChunkIndex >= 0)
             {
-                var chunk = ChunkAt(chunkIndex, out var used);
+                valueChunk = _values.ChunkAt(valueChunkIndex, out valueIndex);
+            }
+
+            for (var chunkIndex = _codes.ChunkCount - 1; chunkIndex >= 0; chunkIndex--)
+            {
+                var chunk = _codes.ChunkAt(chunkIndex, out var used);
 
                 for (var i = used - 1; i >= 0; i--)
                 {
-                    var segment = chunk[i];
+                    var code = chunk[i];
 
-                    switch (segment.Kind)
+                    switch (KindOf(code))
                     {
                         case SegmentKind.Text:
-                            var text = segment.Text;
-
-                            if (!string.IsNullOrEmpty(text))
+                            if (valueIndex == 0)
                             {
-                                return text![text.Length - 1];
+                                valueChunk = _values.ChunkAt(--valueChunkIndex, out valueIndex);
+                            }
+
+                            var text = (string)valueChunk[--valueIndex];
+
+                            if (text.Length > 0)
+                            {
+                                return text[text.Length - 1];
                             }
 
                             break;
@@ -575,7 +614,7 @@ public class OutputContext : IOutputContext
                             break;
 
                         case SegmentKind.Indent:
-                            if (segment.Depth > 0 && Options.IndentCharCount > 0)
+                            if (DepthOf(code) > 0 && Options.IndentCharCount > 0)
                             {
                                 return Options.IndentChar;
                             }
@@ -590,12 +629,17 @@ public class OutputContext : IOutputContext
                                 return Options.NewLine[Options.NewLine.Length - 1];
                             }
 
-                            return segment.Kind == SegmentKind.ScopeOpen ? '{' : '}';
+                            return KindOf(code) == SegmentKind.ScopeOpen ? '{' : '}';
 
                         case SegmentKind.TypeReference:
+                            if (valueIndex == 0)
+                            {
+                                valueChunk = _values.ChunkAt(--valueChunkIndex, out valueIndex);
+                            }
+
                             var builder = new StringBuilder();
 
-                            segment.Type!.WriteTypeName(builder, Options.TypeOutputMode);
+                            ((ITypeDefinition)valueChunk[--valueIndex]).WriteTypeName(builder, Options.TypeOutputMode);
 
                             if (builder.Length > 0)
                             {
@@ -711,18 +755,31 @@ public class OutputContext : IOutputContext
         var typeOutputMode = Options.TypeOutputMode;
         var hasRenames = namePlan.HasRenames;
 
-        for (var chunkIndex = 0; chunkIndex < ChunkCount; chunkIndex++)
+        // The value store is walked in step with the code store rather than indexed into: the two
+        // were filled together, so the next value is always the one the next naming code meant.
+        var valueChunkIndex = -1;
+        var valueChunk = Array.Empty<object>();
+        var valueUsed = 0;
+        var valueIndex = 0;
+
+        for (var chunkIndex = 0; chunkIndex < _codes.ChunkCount; chunkIndex++)
         {
-            var chunk = ChunkAt(chunkIndex, out var used);
+            var chunk = _codes.ChunkAt(chunkIndex, out var used);
 
             for (var i = 0; i < used; i++)
             {
-                var segment = chunk[i];
+                var code = chunk[i];
 
-                switch (segment.Kind)
+                switch (KindOf(code))
                 {
                     case SegmentKind.Text:
-                        builder.Append(segment.Text);
+                        if (valueIndex == valueUsed)
+                        {
+                            valueChunk = _values.ChunkAt(++valueChunkIndex, out valueUsed);
+                            valueIndex = 0;
+                        }
+
+                        builder.Append((string)valueChunk[valueIndex++]);
                         break;
 
                     case SegmentKind.NewLine:
@@ -730,9 +787,11 @@ public class OutputContext : IOutputContext
                         break;
 
                     case SegmentKind.Indent:
-                        if (segment.Depth > 0)
+                        var depth = DepthOf(code);
+
+                        if (depth > 0)
                         {
-                            builder.Append(indentChar, indentWidth * segment.Depth);
+                            builder.Append(indentChar, indentWidth * depth);
                         }
 
                         break;
@@ -745,25 +804,33 @@ public class OutputContext : IOutputContext
                         }
                         else
                         {
-                            builder.Append(indentChar, indentWidth * segment.Depth);
+                            builder.Append(indentChar, indentWidth * DepthOf(code));
                             builder.Append('{').Append(newLine);
                         }
 
                         break;
 
                     case SegmentKind.ScopeClose:
-                        builder.Append(indentChar, indentWidth * segment.Depth);
+                        builder.Append(indentChar, indentWidth * DepthOf(code));
                         builder.Append('}').Append(newLine);
                         break;
 
                     case SegmentKind.TypeReference:
+                        if (valueIndex == valueUsed)
+                        {
+                            valueChunk = _values.ChunkAt(++valueChunkIndex, out valueUsed);
+                            valueIndex = 0;
+                        }
+
+                        var type = (ITypeDefinition)valueChunk[valueIndex++];
+
                         if (hasRenames)
                         {
-                            AppendPlannedName(builder, segment.Type!, namePlan);
+                            AppendPlannedName(builder, type, namePlan);
                         }
                         else
                         {
-                            segment.Type!.WriteTypeName(builder, typeOutputMode);
+                            type.WriteTypeName(builder, typeOutputMode);
                         }
 
                         break;
@@ -921,15 +988,16 @@ public class OutputContext : IOutputContext
         var written = new List<ITypeDefinition>();
         var seen = new HashSet<ITypeDefinition>();
 
-        for (var chunkIndex = 0; chunkIndex < ChunkCount; chunkIndex++)
+        // Every value store entry is either a string or a type, and only the types are wanted.
+        for (var chunkIndex = 0; chunkIndex < _values.ChunkCount; chunkIndex++)
         {
-            var chunk = ChunkAt(chunkIndex, out var used);
+            var chunk = _values.ChunkAt(chunkIndex, out var used);
 
             for (var i = 0; i < used; i++)
             {
-                if (chunk[i].Kind == SegmentKind.TypeReference)
+                if (chunk[i] is ITypeDefinition type)
                 {
-                    CollectType(chunk[i].Type!, written, seen);
+                    CollectType(type, written, seen);
                 }
             }
         }
