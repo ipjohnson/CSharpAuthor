@@ -15,15 +15,31 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<!--
+		  The Roslyn bridge is source only. It extends EmitProfile as a partial and names Roslyn
+		  types, so it cannot be compiled into this assembly: netstandard2.0 with no Roslyn
+		  reference is the whole reason a generator can use this library without dependency grief.
+		  It ships in the same package, in its own folder, gated on its own property.
+		-->
+		<Compile Remove="Roslyn\**\*.cs" />
+		<None Include="Roslyn\**\*.cs" Visible="true" Pack="false" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Remove="Package\CSharpAuthor.*" />
 		<Content Include="Package\CSharpAuthor.*">
 			<Pack>true</Pack>
 			<PackagePath>build\</PackagePath>
 			<PackageCopyToOutput>true</PackageCopyToOutput>
 		</Content>
-		<Content Include="**\*.cs" Exclude="**\obj\**;**\bin\**" Visible="true">
+		<Content Include="**\*.cs" Exclude="**\obj\**;**\bin\**;Roslyn\**" Visible="true">
 			<Pack>true</Pack>
 			<PackagePath>src\CSharpAuthor\</PackagePath>
+			<PackageCopyToOutput>true</PackageCopyToOutput>
+		</Content>
+		<Content Include="Roslyn\**\*.cs" Exclude="**\obj\**;**\bin\**" Visible="true">
+			<Pack>true</Pack>
+			<PackagePath>srcRoslyn\CSharpAuthor.Roslyn\</PackagePath>
 			<PackageCopyToOutput>true</PackageCopyToOutput>
 		</Content>
 	</ItemGroup>

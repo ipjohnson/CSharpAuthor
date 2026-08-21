@@ -44,6 +44,17 @@ public enum LanguageFeature
     /// <summary><c>x switch { ... }</c>. Downlevels to a conditional chain.</summary>
     SwitchExpressions,
 
+    /// <summary>
+    /// <c>nint</c> / <c>nuint</c>. Downlevels to <c>IntPtr</c> / <c>UIntPtr</c>, which is the same
+    /// type - the keyword is a spelling, not a different runtime type.
+    /// </summary>
+    /// <remarks>
+    /// Which spelling was meant cannot be recovered by reflection: a reference built from
+    /// <c>typeof(IntPtr)</c> and one built from <c>nint</c> are the same reference. The emitter's
+    /// choice here is a preference, not a recovered fact.
+    /// </remarks>
+    NativeIntegerKeywords,
+
     /// <summary><c>var</c>. Downlevels to the type written out.</summary>
     ImplicitlyTypedLocals,
 
@@ -76,7 +87,16 @@ public enum LanguageFeature
     FunctionPointers,
 
     /// <summary><c>[InlineArray(n)]</c>. No downlevel.</summary>
-    InlineArrays
+    InlineArrays,
+
+    /// <summary>
+    /// <c>record</c>. No downlevel <em>here</em>: writing <c>class</c> instead drops value
+    /// equality, <c>with</c> and the deconstructor, and nothing in this library generates them.
+    /// </summary>
+    Records,
+
+    /// <summary><c>record struct</c>. As <see cref="Records"/>.</summary>
+    RecordStructs
 }
 
 /// <summary>
@@ -210,6 +230,8 @@ public static class LanguageFeatures
             DownlevelSupport.Policy, "expression-bodied method"),
         Row(LanguageFeature.ExpressionBodiedProperties, LanguageVersion.CSharp7, FeatureCategory.Free,
             DownlevelSupport.Policy, "expression-bodied property"),
+        Row(LanguageFeature.NativeIntegerKeywords, LanguageVersion.CSharp9, FeatureCategory.Free,
+            DownlevelSupport.Policy, "nint"),
 
         // --- polyfillable ----------------------------------------------------------------------
         Row(LanguageFeature.InitOnlyProperties, LanguageVersion.CSharp9, FeatureCategory.Polyfillable,
@@ -229,7 +251,11 @@ public static class LanguageFeatures
         Row(LanguageFeature.FunctionPointers, LanguageVersion.CSharp9, FeatureCategory.Impossible,
             DownlevelSupport.None, "function pointer"),
         Row(LanguageFeature.InlineArrays, LanguageVersion.CSharp12, FeatureCategory.Impossible,
-            DownlevelSupport.None, "inline array")
+            DownlevelSupport.None, "inline array"),
+        Row(LanguageFeature.Records, LanguageVersion.CSharp9, FeatureCategory.Impossible,
+            DownlevelSupport.None, "record"),
+        Row(LanguageFeature.RecordStructs, LanguageVersion.CSharp10, FeatureCategory.Impossible,
+            DownlevelSupport.None, "record struct")
     };
 
     private static FeatureInfo Row(

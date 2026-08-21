@@ -104,6 +104,53 @@ public class CapabilityViolationTests
         Assert.StartsWith("#error", result.Code.TrimStart());
     }
 
+    [Fact]
+    public void ARecordBelowCSharp9Stops()
+    {
+        // Writing `class` instead would compile and would not be a record: no value equality, no
+        // `with`, no deconstructor. Nothing here generates those, so there is no downlevel.
+        var exception = Assert.Throws<EmitCapabilityException>(
+            () => ProfileEmitter.Emit(Record(ClassKeyword.Record), EmitProfile.Conservative));
+
+        Assert.Equal(LanguageFeature.Records, exception.Diagnostic.Feature);
+        Assert.Equal(LanguageVersion.CSharp9, exception.Diagnostic.RequiredVersion);
+    }
+
+    [Fact]
+    public void ARecordIsWrittenFromCSharp9()
+    {
+        AssertEqual.ContainsWithoutNewLine(
+            "public record Pet",
+            ProfileEmitter.Emit(Record(ClassKeyword.Record), Target(LanguageVersion.CSharp9)).Code);
+    }
+
+    [Fact]
+    public void ARecordStructNeedsCSharp10()
+    {
+        Assert.Throws<EmitCapabilityException>(
+            () => ProfileEmitter.Emit(Record(ClassKeyword.RecordStruct), Target(LanguageVersion.CSharp9)));
+
+        AssertEqual.ContainsWithoutNewLine(
+            "public record struct Pet",
+            ProfileEmitter.Emit(Record(ClassKeyword.RecordStruct), Target(LanguageVersion.CSharp10)).Code);
+    }
+
+    [Fact]
+    public void APrimaryConstructorOnAClassNeedsCSharp12()
+    {
+        // Free in the table - it could be written out as fields and a constructor - but nothing
+        // here writes that, and dropping the parameters would leave a type with no way to
+        // construct it. A writer with no alternative demands rather than asks.
+        var exception = Assert.Throws<EmitCapabilityException>(
+            () => ProfileEmitter.Emit(ClassWithPrimaryConstructor(), Target(LanguageVersion.CSharp11)));
+
+        Assert.Equal(LanguageFeature.PrimaryConstructors, exception.Diagnostic.Feature);
+
+        AssertEqual.ContainsWithoutNewLine(
+            "public class Widget(string id)",
+            ProfileEmitter.Emit(ClassWithPrimaryConstructor(), Target(LanguageVersion.CSharp12)).Code);
+    }
+
     [Theory]
     [InlineData(LanguageFeature.FunctionPointers, LanguageVersion.CSharp8)]
     [InlineData(LanguageFeature.InlineArrays, LanguageVersion.CSharp11)]
@@ -167,6 +214,25 @@ public class CapabilityViolationTests
         method.SetReturnType(TypeDefinition.Get("Acme", "Widget"));
 
         return method;
+    }
+
+    private static ClassDefinition Record(ClassKeyword keyword) =>
+        new ClassDefinition("Pet")
+        {
+            TypeKeyword = keyword,
+            Modifiers = ComponentModifier.Public
+        };
+
+    private static ClassDefinition ClassWithPrimaryConstructor()
+    {
+        var definition = new ClassDefinition("Widget") { Modifiers = ComponentModifier.Public };
+
+        var constructor = definition.AddConstructor();
+
+        constructor.IsPrimary = true;
+        constructor.AddParameter(typeof(string), "id");
+
+        return definition;
     }
 
     private static ClassDefinition RefStruct() =>

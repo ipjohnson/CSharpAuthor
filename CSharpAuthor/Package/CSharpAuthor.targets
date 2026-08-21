@@ -2,4 +2,14 @@
   <ItemGroup Condition="'$(PackageCSharpAuthorIncludeSource)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)../src/**/*.cs" Visible="false"/>
   </ItemGroup>
+
+  <!--
+    The Roslyn bridge: EmitProfile.FromEditorConfig(AnalyzerConfigOptions) and the language
+    version detection. It extends EmitProfile as a partial, so it needs the core compiled in
+    beside it - hence both properties. A generator project already references Roslyn, so this
+    adds no package to anything.
+  -->
+  <ItemGroup Condition="'$(PackageCSharpAuthorIncludeSource)' == 'true' AND '$(PackageCSharpAuthorIncludeRoslyn)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)../srcRoslyn/**/*.cs" Visible="false"/>
+  </ItemGroup>
 </Project>

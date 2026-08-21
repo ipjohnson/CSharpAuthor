@@ -175,8 +175,14 @@ public sealed class EmitSession
     }
 
     /// <summary>
-    /// Demands a feature that has no downlevel form.
+    /// Demands a feature the caller has no alternative form for.
     /// </summary>
+    /// <remarks>
+    /// Every <see cref="FeatureCategory.Impossible"/> feature goes through here, and so does a
+    /// free one whose alternative <em>this writer</em> cannot produce - a primary constructor is
+    /// free in principle, but a writer that would have to drop the parameters has no more of an
+    /// alternative than one facing a <c>ref struct</c>.
+    /// </remarks>
     /// <returns>
     /// True when the target has it. False only in
     /// <see cref="CapabilityViolationBehavior.EmitErrorDirective"/> mode - otherwise this throws,

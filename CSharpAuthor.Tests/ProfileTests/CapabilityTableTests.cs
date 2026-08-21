@@ -57,6 +57,9 @@ public class CapabilityTableTests
     [InlineData(LanguageFeature.DefaultInterfaceMembers, LanguageVersion.CSharp8)]
     [InlineData(LanguageFeature.FunctionPointers, LanguageVersion.CSharp9)]
     [InlineData(LanguageFeature.InlineArrays, LanguageVersion.CSharp12)]
+    [InlineData(LanguageFeature.NativeIntegerKeywords, LanguageVersion.CSharp9)]
+    [InlineData(LanguageFeature.Records, LanguageVersion.CSharp9)]
+    [InlineData(LanguageFeature.RecordStructs, LanguageVersion.CSharp10)]
     public void MinimumVersionsAreTheOnesTheFeaturesShippedIn(LanguageFeature feature, LanguageVersion expected)
     {
         Assert.Equal(expected, LanguageFeatures.MinimumVersion(feature));
@@ -73,6 +76,7 @@ public class CapabilityTableTests
     [InlineData(LanguageFeature.PrimaryConstructors)]
     [InlineData(LanguageFeature.FieldKeyword)]
     [InlineData(LanguageFeature.ParamsCollections)]
+    [InlineData(LanguageFeature.NativeIntegerKeywords)]
     public void TheFreeOnesAreFree(LanguageFeature feature)
     {
         var info = LanguageFeatures.Get(feature);
@@ -99,6 +103,8 @@ public class CapabilityTableTests
     [InlineData(LanguageFeature.DefaultInterfaceMembers)]
     [InlineData(LanguageFeature.FunctionPointers)]
     [InlineData(LanguageFeature.InlineArrays)]
+    [InlineData(LanguageFeature.Records)]
+    [InlineData(LanguageFeature.RecordStructs)]
     public void TheImpossibleOnesHaveNoDownlevelAtAll(LanguageFeature feature)
     {
         var info = LanguageFeatures.Get(feature);
@@ -117,6 +123,21 @@ public class CapabilityTableTests
         {
             Assert.False(info.IsLossy, info.Feature + " is free but claims a consequence.");
         }
+    }
+
+    [Fact]
+    public void NintIsAKeywordChoiceNotARecoveredFact()
+    {
+        // nint IS IntPtr - the downlevel is the same type spelled differently, so it costs
+        // nothing and says nothing. Reflection cannot tell the two apart either: a reference built
+        // from typeof(IntPtr) and one built from nint are the same reference, so which spelling
+        // was meant is a preference, never something the emitter recovered.
+        var info = LanguageFeatures.Get(LanguageFeature.NativeIntegerKeywords);
+
+        Assert.Equal(FeatureCategory.Free, info.Category);
+        Assert.False(info.IsLossy);
+        Assert.True(EmitProfile.Default.Supports(LanguageFeature.NativeIntegerKeywords));
+        Assert.False(EmitProfile.Conservative.Supports(LanguageFeature.NativeIntegerKeywords));
     }
 
     [Theory]

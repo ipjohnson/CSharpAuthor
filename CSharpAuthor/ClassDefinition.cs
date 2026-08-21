@@ -336,11 +336,8 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        if (IsRefStruct && IsStruct)
-        {
-            // Before the signature is written, so a #error directive lands on a line of its own.
-            outputContext.EmitSession().Require(LanguageFeature.RefStructs, outputContext, Name);
-        }
+        // Before the signature is written, so a #error directive lands on a line of its own.
+        RequireCapabilities(outputContext);
 
         if (TerminateWithSemicolon)
         {
@@ -625,6 +622,57 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
 
     private bool IsStruct =>
         TypeKeyword == ClassKeyword.Struct || TypeKeyword == ClassKeyword.RecordStruct;
+
+    private bool HasPrimaryConstructor
+    {
+        get
+        {
+            foreach (var constructor in _constructors)
+            {
+                if (constructor.IsPrimary)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Everything about this declaration that the target language version has to have.
+    /// </summary>
+    /// <remarks>
+    /// Every one of these is demanded rather than asked about, because this writer has no
+    /// alternative form for any of them. A primary constructor could in principle be written out
+    /// as fields and a constructor - that is why the capability table calls it free - but nothing
+    /// here does that, and dropping the parameters would give a type with no way to construct it.
+    /// A silent "near enough" is the failure this library exists to remove.
+    /// </remarks>
+    private void RequireCapabilities(IOutputContext outputContext)
+    {
+        var session = outputContext.EmitSession();
+
+        if (IsRefStruct && IsStruct)
+        {
+            session.Require(LanguageFeature.RefStructs, outputContext, Name);
+        }
+
+        if (TypeKeyword == ClassKeyword.Record)
+        {
+            session.Require(LanguageFeature.Records, outputContext, Name);
+        }
+        else if (TypeKeyword == ClassKeyword.RecordStruct)
+        {
+            session.Require(LanguageFeature.RecordStructs, outputContext, Name);
+        }
+        else if (HasPrimaryConstructor)
+        {
+            // A record carries its positional parameters from C# 9; a class or struct only from
+            // C# 12.
+            session.Require(LanguageFeature.PrimaryConstructors, outputContext, Name);
+        }
+    }
 
     private string GetTypeKeywordString() => TypeKeyword switch
     {
