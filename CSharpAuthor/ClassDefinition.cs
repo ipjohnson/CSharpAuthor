@@ -10,7 +10,26 @@ public enum ClassKeyword
     Class,
     Record,
     Struct,
-    RecordStruct
+    RecordStruct,
+
+    /// <summary>
+    /// A C# 15 union - <c>public union Shape(Circle, Square);</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Declared entirely in its header: the cases are the primary constructor's parameters, written
+    /// as bare types with no names, and the compiler synthesises a constructor and an implicit
+    /// conversion per case plus a public <c>object? Value</c>. Add the cases with
+    /// <see cref="ClassDefinition.AddUnionCase"/>, which is the same primary constructor every other
+    /// keyword uses with the parameter names left off.
+    /// </para>
+    /// <para>
+    /// A union has no body, so <see cref="ClassDefinition.TerminateWithSemicolon"/> is set for you
+    /// when this keyword is chosen. It stays settable, because a union may declare members of its
+    /// own and one that does needs braces.
+    /// </para>
+    /// </remarks>
+    Union
 }
 
 public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedComponent
@@ -33,7 +52,29 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
 
     public string Name { get; }
 
-    public ClassKeyword TypeKeyword { get; set; } = ClassKeyword.Class;
+    /// <summary>
+    /// The keyword this type is declared with.
+    /// </summary>
+    /// <remarks>
+    /// Choosing <see cref="ClassKeyword.Union"/> turns on <see cref="TerminateWithSemicolon"/>,
+    /// because a union declares its cases in its header and has nothing to put in a body. It stays
+    /// settable afterwards, for a union that does declare members of its own.
+    /// </remarks>
+    public ClassKeyword TypeKeyword
+    {
+        get => _typeKeyword;
+        set
+        {
+            _typeKeyword = value;
+
+            if (value == ClassKeyword.Union)
+            {
+                TerminateWithSemicolon = true;
+            }
+        }
+    }
+
+    private ClassKeyword _typeKeyword = ClassKeyword.Class;
 
     /// <summary>
     /// Whether the declaration is terminated with <c>;</c> rather than a body.
@@ -323,6 +364,45 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         return definition;
     }
 
+    /// <summary>
+    /// Adds one case to a <see cref="ClassKeyword.Union"/> declaration.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A union's cases are the primary constructor's parameters written as bare types, so this
+    /// creates that constructor on first use and appends to it afterwards. The parameter is given a
+    /// name because a parameter has one; it is not written for a union, and the compiler names the
+    /// synthesised members itself.
+    /// </para>
+    /// <para>
+    /// Order is the order cases are added, which is the order they appear in the declaration - and
+    /// on a union that is the order a <c>switch</c> over the value is checked in.
+    /// </para>
+    /// </remarks>
+    public ClassDefinition AddUnionCase(ITypeDefinition caseType)
+    {
+        ConstructorDefinition? primary = null;
+
+        foreach (var constructor in _constructors)
+        {
+            if (constructor.IsPrimary)
+            {
+                primary = constructor;
+                break;
+            }
+        }
+
+        if (primary == null)
+        {
+            primary = AddConstructor();
+            primary.IsPrimary = true;
+        }
+
+        primary.AddParameter(caseType, "case" + primary.Parameters.Count);
+
+        return this;
+    }
+
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
         if (TerminateWithSemicolon)
@@ -594,7 +674,17 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
                 outputContext.Write(", ");
             }
 
-            primary.Parameters[i].WriteWithSignature(outputContext);
+            // A union's cases are types, not parameters - `union Shape(Circle, Square)`. Writing a
+            // name after each would not compile, and the compiler names the members itself.
+            if (TypeKeyword == ClassKeyword.Union)
+            {
+                outputContext.AddImportNamespace(primary.Parameters[i].TypeDefinition);
+                outputContext.Write(primary.Parameters[i].TypeDefinition);
+            }
+            else
+            {
+                primary.Parameters[i].WriteWithSignature(outputContext);
+            }
         }
 
         outputContext.Write(")");
@@ -605,6 +695,7 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         ClassKeyword.Record => KeyWords.Record,
         ClassKeyword.Struct => "struct",
         ClassKeyword.RecordStruct => "record struct",
+        ClassKeyword.Union => "union",
         _ => KeyWords.Class
     };
 }

@@ -6,6 +6,13 @@
 		<Nullable>enable</Nullable>
 		<LangVersion>10</LangVersion>
 		<PackageId>CSharpAuthor</PackageId>
+
+		<!--
+		  The floor a local pack uses. The published version comes from the release tag, which the
+		  workflow passes as -p:Version - so this is what `dotnet pack` produces on a developer
+		  machine and never what reaches nuget.org.
+		-->
+		<VersionPrefix>1.2.0</VersionPrefix>
 		<Authors>Ian Johnson</Authors>
 		<PackageTags>source code generation</PackageTags>
 		<PackageProjectUrl>https://github.com/ipjohnson/CSharpAuthor</PackageProjectUrl>

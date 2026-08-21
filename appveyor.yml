@@ -1,6 +1,9 @@
+# The build label only. It used to set the package version too, through Version below, and that
+# override outlived the move to tag-based releases - so this CI packed 1.1.1010 while every other
+# path packed the csproj's 1.2.0. The package version comes from VersionPrefix in the csproj, or
+# from the release tag when release.yaml passes -p:Version.
 environment:
-  build_version: 1.1.1010
-  Version: $(build_version)
+  build_version: 1.2.0
 version: $(build_version)-{build}
 configuration: Release
 assembly_info:
@@ -9,18 +12,49 @@ assembly_info:
   assembly_version: '$(build_version).0'
   assembly_file_version: '$(build_version).{build}'
   assembly_informational_version: '$(build_version)'
-before_build:
- - cmd: nuget restore CSharpAuthor.sln
-build:
-  project: CSharpAuthor.sln
-  publish_nuget: true
-  verbosity: minimal
-test:
-  assemblies:
-    only:
-      - '**\*.tests.dll'
+# The image ships 6.0, 7.0, 8.0 and 9.0, and global.json pins the .NET 11 preview - so without
+# this every project fails to resolve Microsoft.NET.Sdk before a single file is compiled.
+#
+# The preview is needed because the test project declares a union, which is how an emitted union
+# declaration gets checked by a compiler rather than against a string. The library itself is
+# netstandard2.0 and unaffected.
+install:
+ - ps: |
+     Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1
+     ./dotnet-install.ps1 -Version 11.0.100-preview.7.26381.103 -InstallDir "$env:ProgramFiles\dotnet"
+     dotnet --list-sdks
+
+# Built through the dotnet CLI rather than through Visual Studio's MSBuild.
+#
+# The image's MSBuild is 17.14, and the .NET 11 SDK that global.json pins requires 18.6 or later:
+#
+#   Version 11.0.100-preview.7 of the .NET SDK requires at least version 18.6.0 of MSBuild.
+#   The current available version of MSBuild is 17.14.23.42201.
+#
+# Installing the SDK above does not help while the build runs through Visual Studio, because the
+# version that matters is MSBuild's. The CLI carries its own, which is the one the SDK shipped with.
+#
+# This file does not publish, and that does not mean AppVeyor does not: releases go out through a
+# deployment configured on the AppVeyor side, which takes the artifact declared below and pushes it
+# to nuget.org. 1.2.0 shipped that way. publish_nuget is a different mechanism and was off already.
+build_script:
+ - cmd: dotnet build CSharpAuthor.sln --configuration Release
+
+test_script:
+ - cmd: dotnet test CSharpAuthor.sln --no-build --configuration Release
+# Packed on every build, and the artifact below is what the AppVeyor deployment publishes - so this
+# step and that declaration are the release path, not merely a convenience for downloading a package
+# from a branch.
+#
+# Worth stating plainly, because the old build: block packed as a side effect of publish_nuget and
+# nothing here said the artifact was load-bearing. Moving to dotnet build dropped the pack, and
+# removing the artifacts declaration as dead weight would take the deployment's input away without
+# failing any build - it would publish nothing, quietly.
+after_test:
+ - cmd: dotnet pack CSharpAuthor/CSharpAuthor.csproj --no-build --configuration Release --output artifacts
+
 artifacts:
-- path: CSharpAuthor*.nupkg
+- path: artifacts/*.nupkg
   name: CSharpAuthor
 image:
 - Visual Studio 2022
