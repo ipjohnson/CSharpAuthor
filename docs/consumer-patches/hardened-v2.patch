@@ -1,8 +1,48 @@
+CSharpAuthor 2.0 migration patch — Hardened.Framework
+Generated 2026-08-21 by `git diff` in a clone of github.com/ipjohnson/Hardened.Framework
+at a90d24d (Generic problem types…, #175), and verified with `git apply --check`
+against a pristine clone of the same commit.
+
+Measured against CSharpAuthor `feature/v2` at 4c7dc35.
+
+Measured, 27 test assemblies:
+  1.2.0 baseline      4,787 passed / 0 failed
+  2.0 unpatched       2,437 passed / 359 failed, and only 16 assemblies
+  2.0 with this patch 4,787 passed /   0 failed — back to baseline exactly.
+                      None of the 13 .approved.txt snapshots moved.
+
+REQUIRES a 2.0 that has ClassKeyword.Union and ClassDefinition.AddUnionCase. Both
+shipped in the published 1.2.0 that this repository pins; the 2.0 branch was cut before
+that release and did not have them, and Hardened.Idl.Emit's UnionResponseEmitter uses
+both with no consumer-side alternative. Fixed on the branch by 51386a0, which also gates
+a union on LanguageFeature.Unions (C# 15) — measured here as tripping nothing in this
+repository. See docs/migration-v1-v2.md section 9.7.
+
+Every generator-side hunk was verified necessary: reverting four of them costs 209
+failures and three assemblies. The changed assertions in the six *.Tests files are inline
+Assert.Contains on generated text, not snapshot files; each is listed in section 9.8.
+
+NOTE ON THE VERSION LINE. The <PackageReference> bump to 2.0.0 is included because
+it is part of the migration, but CSharpAuthor 2.0.0 is not published yet, so a
+`dotnet restore` after applying this will fail with NU1102. To exercise the patch
+today, apply it, put the version line back, and point the build at a 2.0 checkout —
+see docs/migration-v1-v2.md section 9.2. Every measurement quoted above was taken
+that way, with the wiring proved on each run.
+
 diff --git a/src/SourceGenerators/CSharpAuthor.props b/src/SourceGenerators/CSharpAuthor.props
-index 7cb6df6..639b6ca 100644
+index 512b4cb..6dfbc7b 100644
 --- a/src/SourceGenerators/CSharpAuthor.props
 +++ b/src/SourceGenerators/CSharpAuthor.props
-@@ -57,9 +57,35 @@
+@@ -48,7 +48,7 @@
+     </PropertyGroup>
+ 
+     <ItemGroup>
+-        <PackageReference Condition="'$(UseLocalCSharpAuthor)' != 'true'" Include="CSharpAuthor" Version="1.2.0">
++        <PackageReference Condition="'$(UseLocalCSharpAuthor)' != 'true'" Include="CSharpAuthor" Version="2.0.0">
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>build</IncludeAssets>
+         </PackageReference>
+@@ -57,9 +57,37 @@
              The same glob build/CSharpAuthor.targets applies to the package's src/ folder, against
              the checkout instead. bin and obj are excluded because this points at a working tree
              rather than at package content.
@@ -11,16 +51,18 @@ index 7cb6df6..639b6ca 100644
 +            from CSharpAuthor 2.0 the library ships a second, opt-in source root written against
 +            Microsoft.CodeAnalysis, and the package gates it behind
 +            PackageCSharpAuthorIncludeRoslyn. It lives *inside* <root>/CSharpAuthor/, so an
-+            unqualified recursive glob picks it up - and every build task here
-+            (Hardened.Idl.BuildTask, Hardened.OpenApi.BuildTask, Hardened.Smithy.BuildTask)
-+            consumes CSharpAuthor with no Roslyn reference at all. Compiling it unconditionally is
++            unqualified recursive glob picks it up - and Hardened.Idl.Emit, Hardened.Idl.Shared and
++            the three build tasks (Hardened.Idl.BuildTask, Hardened.OpenApi.BuildTask,
++            Hardened.Smithy.BuildTask) consume CSharpAuthor with no Roslyn reference at all.
++            Compiling it unconditionally is
 +
 +                CSharpAuthor/Roslyn/EmitProfileRoslynExtensions.cs(6,54): error CS0234:
 +                The type or namespace name 'CSharp' does not exist in the namespace
 +                'Microsoft.CodeAnalysis'
 +
-+            on net472 and net8.0 alike, which takes six test assemblies down with it. Excluding it
-+            here is what makes the local-checkout glob equal the package's src/ folder again.
++            on net472 and net8.0 alike - 720 errors across eight project/TFM combinations, which
++            takes their dependent test assemblies down with them. Excluding it here is what makes
++            the local-checkout glob equal the package's src/ folder again.
          -->
          <Compile Condition="'$(UseLocalCSharpAuthor)' == 'true'"
                   Include="$(CSharpAuthorRoot)/CSharpAuthor/**/*.cs"

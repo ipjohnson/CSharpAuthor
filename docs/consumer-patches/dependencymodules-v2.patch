@@ -1,3 +1,30 @@
+CSharpAuthor 2.0 migration patch — DependencyModules
+Generated 2026-08-21 by `git diff` in a clone of github.com/ipjohnson/DependencyModules
+at 642bac3 (Release 1.0.0, #39), and verified with `git apply --check`
+against a pristine clone of the same commit.
+
+Measured against CSharpAuthor `feature/v2` at 4c7dc35.
+
+Measured, 8 test assemblies, both TFMs:
+  1.1.1010 baseline   1,812 passed / 0 failed
+  2.0 unpatched         770 passed / 704 failed, and only 4 assemblies —
+                        SutProject fails to build, so SutProject.Tests and
+                        SutProject.NUnitTests never run at all
+  2.0 with this patch 1,792 passed /  20 failed, every one a snapshot pin:
+                        9 ModuleGenerationSnapshotTests + PublicApiTests.SourceGeneratorApi,
+                        each on net8.0 and net10.0. Justified one by one in
+                        docs/migration-v1-v2.md section 9.6. No snapshot was re-baselined;
+                        UPDATE_SNAPSHOTS was unset for every run.
+
+Every hunk was verified necessary by reverting it alone.
+
+NOTE ON THE VERSION LINE. The <PackageReference> bump to 2.0.0 is included because
+it is part of the migration, but CSharpAuthor 2.0.0 is not published yet, so a
+`dotnet restore` after applying this will fail with NU1102. To exercise the patch
+today, apply it, put the version line back, and point the build at a 2.0 checkout —
+see docs/migration-v1-v2.md section 9.2. Every measurement quoted above was taken
+that way, with the wiring proved on each run.
+
 diff --git a/src/DependencyModules.SourceGenerator.Impl/DecoratorFileWriter.cs b/src/DependencyModules.SourceGenerator.Impl/DecoratorFileWriter.cs
 index 9b80133..a46d351 100644
 --- a/src/DependencyModules.SourceGenerator.Impl/DecoratorFileWriter.cs
@@ -70,6 +97,19 @@ index cc5b72f..59e4f70 100644
                  break;
              default:
                  throw new ArgumentOutOfRangeException();
+diff --git a/src/DependencyModules.SourceGenerator.Impl/DependencyModules.SourceGenerator.Impl.csproj b/src/DependencyModules.SourceGenerator.Impl/DependencyModules.SourceGenerator.Impl.csproj
+index 34e7c57..68b25b7 100644
+--- a/src/DependencyModules.SourceGenerator.Impl/DependencyModules.SourceGenerator.Impl.csproj
++++ b/src/DependencyModules.SourceGenerator.Impl/DependencyModules.SourceGenerator.Impl.csproj
+@@ -65,7 +65,7 @@
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+         </PackageReference>
+-        <PackageReference Include="CSharpAuthor" Version="1.1.1010">
++        <PackageReference Include="CSharpAuthor" Version="2.0.0">
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>build</IncludeAssets>
+         </PackageReference>
 diff --git a/src/DependencyModules.SourceGenerator.Impl/InterceptorRegistrationWriter.cs b/src/DependencyModules.SourceGenerator.Impl/InterceptorRegistrationWriter.cs
 index 0e86219..1aa0540 100644
 --- a/src/DependencyModules.SourceGenerator.Impl/InterceptorRegistrationWriter.cs
@@ -116,3 +156,16 @@ index 38cdd72..6d6ec55 100644
                      }
                      else if (argument.Value is ITypeDefinition typeDefinition) {
                          outputComponent = SyntaxHelpers.TypeOf(typeDefinition);
+diff --git a/src/DependencyModules.SourceGenerator/DependencyModules.SourceGenerator.csproj b/src/DependencyModules.SourceGenerator/DependencyModules.SourceGenerator.csproj
+index 3805258..a4456dd 100644
+--- a/src/DependencyModules.SourceGenerator/DependencyModules.SourceGenerator.csproj
++++ b/src/DependencyModules.SourceGenerator/DependencyModules.SourceGenerator.csproj
+@@ -39,7 +39,7 @@
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+         </PackageReference>
+-        <PackageReference Include="CSharpAuthor" Version="1.1.1010">
++        <PackageReference Include="CSharpAuthor" Version="2.0.0">
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>build</IncludeAssets>
+         </PackageReference>

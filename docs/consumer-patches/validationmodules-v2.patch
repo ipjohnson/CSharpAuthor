@@ -1,0 +1,74 @@
+CSharpAuthor 2.0 migration patch — ValidationModules
+Generated 2026-08-21 by `git diff` in a clone of github.com/ipjohnson/ValidationModules
+at 5daa26c (Merge pull request #8), and verified with `git apply --check`
+against a pristine clone of the same commit.
+
+Measured against CSharpAuthor `feature/v2` at 4c7dc35.
+
+This repository needs NO source change. The version bump below is the whole of its
+migration, and this patch contains nothing else.
+
+Measured, 8 test assemblies:
+  1.1.1010 baseline   1,092 passed / 0 failed
+  2.0                 1,092 passed / 0 failed — identical, unpatched
+
+ValidationModules names no CSharpAuthor type anywhere in src/, tests/ or integ-tests/.
+Its emitters build output with a StringBuilder and write their own `using global::`
+lines. It sets PackageCSharpAuthorIncludeSource only to satisfy the 63 DependencyModules
+generator-internal sources it imports from that package — which contain no [Generator]
+and are never called from here. Those unmodified 1.x files compile against 2.0 with zero
+errors.
+
+NOTE ON THE VERSION LINE. The <PackageReference> bump to 2.0.0 is included because
+it is part of the migration, but CSharpAuthor 2.0.0 is not published yet, so a
+`dotnet restore` after applying this will fail with NU1102. To exercise the patch
+today, apply it, put the version line back, and point the build at a 2.0 checkout —
+see docs/migration-v1-v2.md section 9.2. Every measurement quoted above was taken
+that way, with the wiring proved on each run.
+
+diff --git a/src/ValidationModules.SourceGenerator.Impl/ValidationModules.SourceGenerator.Impl.csproj b/src/ValidationModules.SourceGenerator.Impl/ValidationModules.SourceGenerator.Impl.csproj
+index 6cef964..3b5303f 100644
+--- a/src/ValidationModules.SourceGenerator.Impl/ValidationModules.SourceGenerator.Impl.csproj
++++ b/src/ValidationModules.SourceGenerator.Impl/ValidationModules.SourceGenerator.Impl.csproj
+@@ -80,13 +80,20 @@
+             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+         </PackageReference>
+         <!--
+-            1.1.1010 rather than 1.1.1007 because DependencyModules 1.0.0's InterceptorFileWriter
+-            uses CSharpAuthor's ConstraintDefinition, which 1.1.1010 introduced. DM does not declare
+-            a CSharpAuthor dependency - both are source-only packages compiled in side by side, so
+-            the version that satisfies DM's sources is this project's problem to get right, and
+-            nothing in the restore graph will raise it for us.
++            CSharpAuthor is compiled in only to satisfy the DependencyModules generator internals
++            imported above; nothing in this repository names a CSharpAuthor type. DM does not
++            declare a CSharpAuthor dependency - both are source-only packages compiled in side by
++            side, so the version that satisfies DM's sources is this project's problem to get
++            right, and nothing in the restore graph will raise it for us. 1.1.1010 rather than
++            1.1.1007 was because DependencyModules 1.0.0's InterceptorFileWriter uses
++            ConstraintDefinition, which 1.1.1010 introduced.
++
++            2.0.0 compiles those same DM sources unchanged - verified against a 2.0 checkout,
++            8 assemblies, 1,092 tests, 0 failures, byte-identical to the 1.1.1010 baseline.
++            2.0 removes only IOutputContext's two ITypeDefinition overloads of
++            AddImportNamespace/AddImportNamespaces, which DM's sources never call.
+         -->
+-        <PackageReference Include="CSharpAuthor" Version="1.1.1010">
++        <PackageReference Include="CSharpAuthor" Version="2.0.0">
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>build</IncludeAssets>
+         </PackageReference>
+diff --git a/src/ValidationModules.SourceGenerator/ValidationModules.SourceGenerator.csproj b/src/ValidationModules.SourceGenerator/ValidationModules.SourceGenerator.csproj
+index 4440179..8df8a89 100644
+--- a/src/ValidationModules.SourceGenerator/ValidationModules.SourceGenerator.csproj
++++ b/src/ValidationModules.SourceGenerator/ValidationModules.SourceGenerator.csproj
+@@ -42,8 +42,8 @@
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+         </PackageReference>
+-        <!-- Kept in step with the Impl project, which explains why 1.1.1010. -->
+-        <PackageReference Include="CSharpAuthor" Version="1.1.1010">
++        <!-- Kept in step with the Impl project, which explains why 2.0.0. -->
++        <PackageReference Include="CSharpAuthor" Version="2.0.0">
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>build</IncludeAssets>
+         </PackageReference>

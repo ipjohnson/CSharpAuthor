@@ -1442,3 +1442,378 @@ are the **reflection** spelling, which lists the element's ranks first; C# lists
 Verified against the runtime: `typeof(int[,][])` has `GetArrayRank() == 2` and element `int[]`. The
 library emits the correct C# for both and did before wave 2. Satisfying these tests would emit the
 name of a different type, silently — and would break `ArrayRankTests`.
+
+---
+
+# 9. Migrating a real repository — three worked examples
+
+This section is self-contained. It assumes only that you maintain a Roslyn source generator that
+consumes CSharpAuthor and that you are moving it from 1.x to 2.0. Everything in it was measured on
+2026-08-21 against fresh clones of three repositories, driven through their own solution files with
+CSharpAuthor `feature/v2` at `4c7dc35` wired in as a local checkout; no number here was estimated.
+
+| Repository | Commit | How it consumes CSharpAuthor |
+|---|---|---|
+| `ipjohnson/DependencyModules` | `642bac3` | `PackageReference CSharpAuthor 1.1.1010` + `PackageCSharpAuthorIncludeSource=true` in `DependencyModules.SourceGenerator` and `.Impl` |
+| `ipjohnson/ValidationModules` | `5daa26c` | the same pattern in its own two generator projects, **and** it compiles the published `DependencyModules.SourceGenerator.Impl` 1.0.0 sources in beside them |
+| `ipjohnson/Hardened.Framework` | `a90d24d` | `src/SourceGenerators/CSharpAuthor.props`: `PackageReference CSharpAuthor 1.2.0` in package mode, its own `<Compile Include>` glob in `UseLocalCSharpAuthor` mode |
+
+## 9.1 Results
+
+| | Assemblies | Passed | Failed |
+|---|---|---|---|
+| **DependencyModules** — 1.x baseline | 8 | 1,812 | 0 |
+| DependencyModules — 2.0, unpatched | **4** | 770 | 704 |
+| DependencyModules — 2.0, patched | 8 | 1,792 | **20** (all snapshot pins, §9.6) |
+| **ValidationModules** — 1.x baseline | 8 | 1,092 | 0 |
+| ValidationModules — 2.0, unpatched | 8 | 1,092 | **0** |
+| **Hardened.Framework** — 1.x baseline | 27 | 4,787 | 0 |
+| Hardened.Framework — 2.0, unpatched | **16** | 2,437 | 359 |
+| Hardened.Framework — 2.0, patched | 27 | 4,787 | **0** |
+
+Read the assembly column first. **A project that fails to build does not fail its tests — it stops
+existing, and its tests silently leave the total.** Unpatched, DependencyModules loses four test
+assemblies and 338 tests to a build error, and Hardened.Framework loses eleven and 1,991. A pass
+count on its own would have shown a suite getting *smaller*, not redder.
+
+## 9.2 Wiring a repository at a local 2.0 checkout, and proving the wiring took
+
+`dotnet test <some.dll>` against a previously built assembly is a **false green**: it re-runs
+whatever the last successful build produced, which is the published 1.x package, and reports a clean
+pass. Always drive the solution.
+
+For a repository that consumes the package's source inclusion (DependencyModules, ValidationModules),
+point it at a checkout with no edit at all, from the command line:
+
+```bash
+dotnet test <solution> \
+  -p:CustomAfterMicrosoftCommonTargets=<abs path>/local-csharpauthor.targets \
+  -p:PackageCSharpAuthorIncludeSource=false \
+  -p:LocalCSharpAuthorRoot=<abs path to the CSharpAuthor checkout> \
+  -p:LocalCSharpAuthorProjects='|MyGenerator|MyGenerator.Impl|'
+```
+
+where the injected `.targets` adds the same glob the package's `build/CSharpAuthor.targets` adds,
+against the checkout instead:
+
+```xml
+<Compile Include="$(LocalCSharpAuthorRoot)/CSharpAuthor/**/*.cs"
+         Exclude="…/obj/**/*.cs;…/bin/**/*.cs;…/CSharpAuthor/Roslyn/**/*.cs"
+         Visible="false"/>
+```
+
+`PackageCSharpAuthorIncludeSource=false` has to come from the command line, because a command-line
+property is global and a `<PropertyGroup>` in the csproj cannot override it — which is what makes
+this work without touching the consumer's tree. `Roslyn/**` is excluded because the package does not
+ship it under `src/`; see §9.5.
+
+Then **prove it**, before believing any number:
+
+```bash
+dotnet build <the generator csproj> -getItem:Compile   # expect N files under the checkout, 0 under ~/.nuget/packages/csharpauthor
+strings <the built generator>.dll | grep CSharpAuthor.Profiles   # a 2.0-only namespace
+```
+
+Both checks were run for every measurement in this section.
+
+## 9.3 The one change every consumer makes
+
+Bump the package reference. That is the whole of ValidationModules' migration:
+
+```diff
+-<PackageReference Include="CSharpAuthor" Version="1.1.1010">
++<PackageReference Include="CSharpAuthor" Version="2.0.0">
+```
+
+DependencyModules needs it in two csproj files, ValidationModules in two, Hardened.Framework in one
+(`src/SourceGenerators/CSharpAuthor.props`, from `1.2.0`).
+
+It is in all three patches. **2.0.0 is not on nuget.org yet, so `dotnet restore` after applying one
+of them fails with `NU1102: Unable to find package CSharpAuthor with version (>= 2.0.0)`.** To
+exercise a patch before the release, apply it, put the version line back, and wire the build at a
+checkout as in §9.2 — which is how every number in §9.1 was measured, since there is no other way to
+measure a package that does not exist.
+
+## 9.4 Shape A and shape B — the two ways generated code stops compiling
+
+2.0 enforces one invariant: **a type reaches the output only through
+`IOutputContext.Write(ITypeDefinition)`**, and the two `ITypeDefinition` overloads of
+`AddImportNamespace`/`AddImportNamespaces` have left `IOutputContext`. (The `string` overloads stay,
+and `IOutputComponent.AddUsingNamespace(string)` stays. They are the supported channel and both are
+used below.) These two removed members are the *only* public API 1.1.1010 had that 2.0 does not.
+
+The consequence: in `TypeOutputMode.Global` — the mode every generator here uses — 1.x wrote a type
+reference fully qualified *and* emitted a `using` for its namespace as a side effect. The
+qualification made the directive redundant, so nobody noticed it was there. 2.0 does not emit it.
+Any generated code that was silently living off that stray `using` now fails, in exactly two shapes.
+
+### Shape A — an extension method (CS1061, or CS0308 on a generic one)
+
+`global::` cannot name an extension method. `services.AddSingleton<T>()` resolves only if
+`Microsoft.Extensions.DependencyInjection` is imported, and in 1.x it was imported by accident,
+because the file also mentioned `IServiceCollection` as a type.
+
+```
+error CS1061: 'IServiceCollection' does not contain a definition for 'AddSingleton' and no
+accessible extension method 'AddSingleton' accepting a first argument of type 'IServiceCollection'
+could be found (are you missing a using directive or an assembly reference?)
+```
+
+**Fix — one line per generated file**, on the `CSharpFileDefinition` (or on the individual component
+whose call needs it):
+
+```csharp
+var csharpFile = new CSharpFileDefinition(ns);
+csharpFile.AddUsingNamespace("Microsoft.Extensions.DependencyInjection");
+```
+
+This is the string channel, which 2.0 deliberately kept: naming a namespace is the only way to reach
+an extension method, and no amount of type tracking can do it for you.
+
+DependencyModules already had `AddUsingNamespace("Microsoft.Extensions.DependencyInjection.Extensions")`
+for `TryAdd*`. It did not have the one for `Add*`, because that one arrived free. That is the whole
+failure: 76 CS1061 from the first project that reached the compiler, and 512 measured with the
+`DependencyFileWriter` line in place but the decorator and interceptor writers left alone — a
+solution build stops at the first broken project, so the first count is never the whole cost.
+
+### Shape B — a type name written as a raw string (CS0246, CS0103, CS0117)
+
+```csharp
+parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Transient"));                 // 1.x
+field.InitializeValue = new CodeOutputComponent($"new ExecutionRequestHandlerInfo(…)"); // 1.x
+provider.Get.AddCode("RootServiceProvider ?? throw new Exception(\"…\");");             // 1.x
+```
+
+By the time text reaches the writer it is text: it cannot be qualified, aliased, or counted in the
+using list, and it resolved only while some *other* part of the file happened to import the
+namespace. **Fix — hand the type over instead of its name:**
+
+```csharp
+// a member reached off a type
+CodeOutputComponent.Get(KnownTypes.ServiceLifetime, "Transient")
+
+// a statement mixing text and types; each ITypeDefinition stays unrendered until serialization
+CodeOutputComponent.FromParts(new object[] {
+    "new ", KnownTypes.ExecutionRequestHandlerInfo, "(\"/health\", \"GET\", typeof(",
+    handlerModel.ControllerType, "), \"Health\")"
+})
+
+// a substitution into a line of code
+provider.Get.AddCode("RootServiceProvider ?? throw new {arg1}(\"…\");", typeof(Exception));
+```
+
+`CodeOutputComponent.AddType(ITypeDefinition)` still exists for callers written against 1.x, but it
+can only offer the namespace, and only in `TypeOutputMode.ShortName`. Prefer the three forms above.
+
+### Shape C — a string literal quoted twice (silent in 1.x, visible in 2.0)
+
+1.x's `SyntaxHelpers.QuoteString` was `"\"" + s + "\""`. 2.0's escapes embedded quotes and
+backslashes. Code that quoted a value and then handed it to something that quotes values again used
+to produce `""a""` — wrong, but containing the substring a test looked for. It now produces
+`"\"a\""`, and the test fails. The fix is to stop double-quoting; the second quoting was always the
+bug. This cost DependencyModules one line
+(`collectionSyntax.Add(SyntaxHelpers.QuoteString(s))` → `collectionSyntax.Add(s)`).
+
+## 9.5 If you glob a CSharpAuthor checkout yourself: exclude `Roslyn/`
+
+2.0 ships a second, opt-in source root written against `Microsoft.CodeAnalysis`, gated behind
+`PackageCSharpAuthorIncludeRoslyn`. In the package it lives under `srcRoslyn/`, outside the `src/`
+glob. **In a working tree it lives at `<root>/CSharpAuthor/Roslyn/`, inside it.** A recursive glob
+that used to be equivalent to the package no longer is, and every project that consumes CSharpAuthor
+without a Roslyn reference — MSBuild tasks, plain emitters — stops compiling:
+
+```
+CSharpAuthor/Roslyn/EmitProfileRoslynExtensions.cs(6,54): error CS0234: The type or namespace name
+'CSharp' does not exist in the namespace 'Microsoft.CodeAnalysis'
+```
+
+Measured on Hardened.Framework: 720 of its 816 unpatched errors, across eight project/TFM
+combinations, taking eleven test assemblies with them. The fix is one `Exclude` entry, plus a second
+`<Compile>` item gated on `PackageCSharpAuthorIncludeRoslyn` so the opt-in still exists locally. See
+`docs/consumer-patches/hardened-v2.patch`.
+
+This is a local-checkout-mode concern only. A consumer that stays on the package is unaffected.
+
+## 9.6 Snapshots move, and that is a diff to justify — never a re-baseline
+
+Nothing in this exercise ran with `UPDATE_SNAPSHOTS=1` or `APPROVE_PUBLIC_API=1`, and no committed
+`.verified.txt` or `.approved.txt` was edited.
+
+**Hardened.Framework: 13 `.approved.txt`, none moved.** Its snapshots pin runtime assemblies, not
+the generator's own surface, and its generated-output assertions live inline.
+
+**ValidationModules: 18 `.verified.txt`, none moved.**
+
+**DependencyModules: 17 `.verified.txt`, 10 moved** (each failing on both `net8.0` and `net10.0`,
+which is the 20 in §9.1).
+
+*Nine `ModuleGenerationSnapshotTests` snapshots.* Every changed line is one of three things:
+
+```diff
+-using System.Diagnostics.CodeAnalysis;          # a stray using, 9x — and three more per file
+-using DependencyModules.Runtime.Helpers;        # in TestModule.Module.g.cs
+-    [ExcludeFromCodeCoverage]
++    [global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+-                ServiceLifetime.Singleton
++                global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton
+```
+
+The removed directives are the ones nothing used. The qualified attribute is the *same* attribute:
+in `TypeOutputMode.Global` a type reference is written qualified, and there is no way to get the
+short spelling back except by writing the attribute name as a raw string — the thing shape B exists
+to remove. The `ServiceLifetime` line is the shape B fix itself. The generated code still compiles
+and still behaves identically: `SutProject.Tests` (135 × 2 TFMs) and `SutProject.NUnitTests`
+(34 × 2) compile and execute this output and are green.
+
+*One `PublicApiTests.SourceGeneratorApi` snapshot,* **+731 / −9 lines.** This snapshot does not pin
+DependencyModules' API. It pins the public surface of the *assembly*, and because CSharpAuthor is
+source-included, every `public` top-level type in CSharpAuthor is public in the consumer's assembly
+too. So:
+
+- **+731 lines / 47 new public types** — 32 from `CSharpAuthor.Profiles`, 12 from
+  `CSharpAuthor.Expressions`, 3 from `CSharpAuthor`, plus `CSharpAuthor.Collections`. 2.0's
+  `#if CSHARPAUTHOR_PUBLIC_SYNTAX` mechanism keeps the ~250 `Syntax` nodes internal under source
+  inclusion; it is **not** applied to `Profiles`, `Expressions` or `Collections`, so those do leak.
+  If that is not intended, the same `#if` is the fix, and it belongs in 2.0 rather than in a
+  consumer patch.
+- **−9 lines, of which only 2 are real removals**: `IOutputContext.AddImportNamespace(ITypeDefinition)`
+  and `AddImportNamespaces(IEnumerable<ITypeDefinition>)`. The other seven are `MakeArray()`,
+  `Equals` and `GetHashCode` moving onto `BaseTypeDefinition` as `MakeArray(int rank)` became the
+  abstract member — source-compatible, and still present.
+
+A consumer with a snapshot of this kind has to review and accept the new baseline once. It cannot be
+patched away.
+
+## 9.7 2.0 is missing API that 1.2.0 published
+
+**`ClassKeyword.Union` and `ClassDefinition.AddUnionCase(ITypeDefinition)` — C# 15 union support —
+exist in CSharpAuthor 1.2.0 on nuget.org and did not exist on the 2.0 branch.** Verified by
+downloading `csharpauthor.1.2.0.nupkg` from `api.nuget.org` and reading its `src/`. The 2.0 branch
+was cut before that release, and nothing in the repository's history contains `AddUnionCase`.
+
+Hardened.Framework pins **1.2.0**, not 1.1.1010, and uses both, in
+`src/SourceGenerators/Hardened.Idl.Emit/Emitters/UnionResponseEmitter.cs`:
+
+```
+UnionResponseEmitter.cs(179,45): error CS0117: 'ClassKeyword' does not contain a definition for 'Union'
+UnionResponseEmitter.cs(182,22): error CS1061: 'ClassDefinition' does not contain a definition for 'AddUnionCase'
+```
+
+**There is no consumer-side fix.** `ClassDefinition` has no seam for a fifth keyword, and hand-rolling
+the declaration means giving up the `ClassDefinition` the emitter returns to its caller. Shipping 2.0
+without this regresses the library against what is already published.
+
+It is a small, self-contained restoration — an enum member, a ~20-line `AddUnionCase`, a
+`TerminateWithSemicolon` side effect on the setter, one keyword string, and one branch in
+`WritePrimaryConstructorParameters` that writes the case types bare. In 2.0 that branch goes through
+`Write(ITypeDefinition)` rather than 1.2.0's `AddImportNamespace`, which is invariant 1 applied to
+the same code.
+
+**This is now fixed on the branch, by `51386a0` "Bring 1.2.0's union support forward into V2".** That
+commit adds the same members and additionally gates a union on `LanguageFeature.Unions`
+(C# 15, category `Impossible`, no downlevel) — which is stricter than 1.2.0, where a union carried no
+capability requirement at all. Measured here: it trips nothing in Hardened.Framework.
+**Every Hardened.Framework number in §9.1 was measured against `feature/v2` at `4c7dc35`, with union
+support present**; without it, `Hardened.Idl.Emit` does not compile at all and eleven test assemblies
+are unreachable.
+
+The lesson generalises past this one API: **the version a consumer pins is the version to diff
+against.** Hardened.Framework pins 1.2.0; DependencyModules and ValidationModules pin 1.1.1010.
+Checking 2.0 only against the older of the two would have missed this entirely, and it was found by
+`error CS0117: 'ClassKeyword' does not contain a definition for 'Union'` on a repository nobody
+expected to break in that way.
+
+Other than this, a full name-level comparison of 1.2.0's public surface against 2.0 found nothing
+else missing.
+
+## 9.8 What each repository actually needed
+
+Patches: `docs/consumer-patches/{dependencymodules,validationmodules,hardened}-v2.patch`. Each is a
+`git diff` against the commit in the table above, carries a prose header `git apply` ignores, and
+applies cleanly to a pristine clone (`git apply --check`, verified). Each also carries the §9.3
+version bump, with the `NU1102` caveat that comes with it.
+
+### DependencyModules — 5 source files (18 lines added, 7 changed), plus the version bump in 2 csproj
+
+| File | Change |
+|---|---|
+| `DependencyFileWriter.cs` | 1 × shape A `AddUsingNamespace`; 6 × shape B `ServiceLifetime.X` |
+| `DecoratorFileWriter.cs` | 1 × shape A |
+| `InterceptorRegistrationWriter.cs` | 1 × shape A |
+| `KnownTypes.cs` | the `ServiceLifetime` `ITypeDefinition` shape B needs |
+| `Models/AttributeModel.cs` | 1 × shape C |
+| `DependencyModules.SourceGenerator{,.Impl}.csproj` | the §9.3 version bump |
+
+Every hunk was verified necessary by reverting it alone: without the decorator and interceptor
+`AddUsingNamespace` lines the build produces 512 CS1061; without the `AttributeModel` line
+`AttributeModelOutputTests.GetArguments_WritesStringArraysAsACollection` fails on `["\"a\"", …]`.
+
+### ValidationModules — nothing but the version bump
+
+Never tested against 2.0 before this run, and the one that needed the least. **8 assemblies, 1,092
+passed, 0 failed, identical to its 1.x baseline, with no source change whatsoever.** The reason is
+worth knowing, because it is the cheapest possible migration and it is cheap for a structural reason:
+
+- **ValidationModules names no CSharpAuthor type anywhere.** Not one `using CSharpAuthor`, not one
+  identifier, in `src/`, `tests/` or `integ-tests/`. Its emitters (`ValidatorEmitter`,
+  `RegistrationEmitter`, `PredicateEmitter`) build output with a `StringBuilder` and write their own
+  `using global::…` lines.
+- It sets `PackageCSharpAuthorIncludeSource=true` **only** to satisfy the DependencyModules generator
+  internals it imports (63 files, from the published `DependencyModules.SourceGenerator.Impl` 1.0.0),
+  which do use CSharpAuthor.
+- Those DM sources contain the unfixed 1.x writers — and they are **dead code here**. The DM Impl
+  package ships no `[Generator]`; ValidationModules' only generator is its own
+  `ValidationSourceGenerator`, and nothing in the repository calls `DependencyFileWriter`,
+  `DecoratorFileWriter` or `InterceptorRegistrationWriter`. They are compiled and never run.
+- Which also demonstrates that **2.0 is source-compatible with 1.x generator code**: those 63
+  unmodified 1.x-era files compile against 2.0 with zero errors. What changes is the *output*, not
+  the API.
+- Its `PublicApiTests` pin `ValidationModules.Runtime` and `ValidationModules.AspNetCore` — assemblies
+  that do not source-include CSharpAuthor — so it does not have DependencyModules' §9.6 problem.
+
+Nothing about it was unique in a way that needed new technique. The one thing to know is the
+ordering: when DependencyModules ships a 2.0-compatible `Impl` package, ValidationModules picks it
+up on its next bump and still needs no change, because it never called into it.
+
+### Hardened.Framework — 15 files, ~62 lines
+
+| Group | Files | Change |
+|---|---|---|
+| Wiring | `CSharpAuthor.props` | §9.5: exclude `Roslyn/**`, add the `PackageCSharpAuthorIncludeRoslyn`-gated item; and the §9.3 version bump, here from `1.2.0` |
+| Shape A | `SpecRoutingTableGenerator`, `ConfigurationEntryPointGenerator`, `ServiceProviderFileGenerator`, `FunctionIncrementalGenerator`, `Hardened.Validation`'s `RegistrationWriter` | 1 × `AddUsingNamespace` each (`AddSingleton`, `AddTransient`, `AddLogging`, `BuildServiceProvider`) |
+| Shape A | `BindRequestParametersMethodGenerator` | `AddUsingNamespace` on the header/cookie `Get` call only — `PathTokens` and `QueryString` carry their own `Get`, headers and cookies reach an extension |
+| Shape B | `HandlerInfoCodeGenerator` | `new ExecutionRequestHandlerInfo(…)` string → `CodeOutputComponent.FromParts` |
+| Shape B | `ApplicationRootImplementation` | `throw new Exception` → `AddCode("… {arg1} …", typeof(Exception))` |
+| Test harness | `ApplicationRootEmitTests` | the derived writer in the test needs the same shape A line as the real ones |
+| Expectations | 6 test files, 13 assertions | see below |
+
+All eight generator-side hunks were verified necessary: reverting four of them costs 209 failures
+and three assemblies.
+
+The 13 moved assertions are inline `Assert.Contains` on generated text, not snapshot files. They
+divide into:
+
+- **9 that are the same invariant-1 change as DependencyModules':** `[ExcludeFromCodeCoverage]` →
+  `[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]`, `[DynamicDependency(…)]`,
+  `[property: Required]` → `[property: global::ValidationModules.Constraints.Required]`,
+  `new ExecutionRequestHandlerInfo(…, typeof(HealthController), …)` →
+  fully qualified, `throw new Exception` → `throw new global::System.Exception`.
+- **2 that are 2.0 fixing 1.x output:** `public readonly static X` → `public static readonly X`
+  (the conventional order, which 1.x wrote backwards), and `global::System.Single` → `float`
+  (1.x's keyword table had `double` but not `float`, so the one type whose keyword was missing came
+  out under its reflection name).
+- **1 that is a test harness change**, not an expectation: `ADerivedWriterAddsItsOwnConstructorLogicAndDomainMethods`
+  compiles the code it generates, and the writer defined inside the test needs the shape A line.
+
+## 9.9 Order of operations for a fourth repository
+
+1. Bump the package reference; build the solution and **count assemblies, not just tests**.
+2. If you glob a checkout rather than using the package, exclude `Roslyn/**` first — it will
+   otherwise bury everything else (§9.5).
+3. Fix CS1061/CS0308 with `AddUsingNamespace` per generated file (shape A).
+4. Fix CS0246/CS0103/CS0117 by handing types over instead of naming them (shape B).
+5. Search for pre-quoted strings handed to something that quotes (shape C).
+6. Expect snapshots of generated output to lose stray `using` lines and gain `global::` on
+   attributes. Review the diff; do not run the updater.
+7. Expect a snapshot of your *own assembly's* public API to grow by CSharpAuthor's new public types,
+   if you source-include (§9.6).
