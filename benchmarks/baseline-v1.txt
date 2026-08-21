@@ -20,6 +20,13 @@ load      : 1-minute load average 3.7 - 7.7 across the runs; other agents were b
 
   V1 tree, taken together: 0.0125 ms/file, range 0.0123 - 0.0126 (2.4%), 77.4 KB/file
 
+A 6th run taken while the box was at load 13.2 - another agent had started a heavy build -
+gave 0.0135 ms/file for the same unchanged code (+8%), with the mean at 0.0780 and the
+StringBuilder row's spread at 99%. Allocation did not move at all: still 77.430 KB.
+The median holds up far better than the mean, but it does move with load. That is the whole
+argument for measuring V1 and V2 in ONE invocation rather than comparing a fresh V2 number
+against a number recorded in this file.
+
 Roslyn reference point, one run with --with-roslyn:
 
   roslyn         0.5837 ms/file                      544.042 KB/file

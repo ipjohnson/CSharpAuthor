@@ -105,11 +105,11 @@ RESULTS="${WORKDIR}/results.tsv"
 
 copy_tree() {
     # $1 source dir, $2 destination dir. Never touches the source.
+    mkdir -p "$2"
     if command -v rsync >/dev/null 2>&1; then
-        rsync -a --exclude 'bin/' --exclude 'obj/' "$1/" "$2/"
+        rsync -a --exclude '.git/' --exclude 'bin/' --exclude 'obj/' "$1/" "$2/"
     else
-        mkdir -p "$2"
-        (cd "$1" && tar -cf - --exclude bin --exclude obj .) | (cd "$2" && tar -xf -)
+        (cd "$1" && tar -cf - --exclude .git --exclude bin --exclude obj .) | (cd "$2" && tar -xf -)
     fi
 }
 
@@ -141,16 +141,15 @@ for index in "${!TARGETS[@]}"; do
     stage="${WORKDIR}/${label}"
     mkdir -p "${stage}"
 
-    # Mirror the repo layout so any root-level MSBuild file applies exactly as it would in place.
-    copy_tree "${target}/CSharpAuthor" "${stage}/CSharpAuthor"
-    copy_tree "${HARNESS_SOURCE}" "${stage}/benchmarks/CSharpAuthor.Benchmark"
+    # The whole checkout is copied, not just CSharpAuthor/: any root-level MSBuild file, and any
+    # project the library comes to reference, then applies exactly as it would in place. The
+    # original is only ever read.
+    copy_tree "${target}" "${stage}"
 
-    for rootfile in Directory.Build.props Directory.Build.targets Directory.Packages.props \
-                    global.json NuGet.config nuget.config; do
-        if [[ -f "${target}/${rootfile}" ]]; then
-            cp "${target}/${rootfile}" "${stage}/${rootfile}"
-        fi
-    done
+    # The harness always comes from THIS repository, overwriting any copy the target carries -
+    # that is what makes the payload identical across targets.
+    rm -rf "${stage}/benchmarks/CSharpAuthor.Benchmark"
+    copy_tree "${HARNESS_SOURCE}" "${stage}/benchmarks/CSharpAuthor.Benchmark"
 
     # Stop MSBuild walking above the staging directory looking for one.
     if [[ ! -f "${stage}/Directory.Build.props" ]]; then
