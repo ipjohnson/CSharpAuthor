@@ -103,22 +103,15 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
                  Get.StatementCount == 0 &&
                  Set is { StatementCount: 0 })
         {
-            if (Set.IsInit)
+            var setterKeyword = Set.IsInit ? "init" : "set";
+            var setterAccess = Set.Modifiers.GetAccessorAccessibilityKeywords();
+
+            if (!string.IsNullOrEmpty(setterAccess))
             {
-                outputContext.Write(" { get; init; }");
+                setterAccess += " ";
             }
-            else if ((Set.Modifiers & ComponentModifier.Private) == ComponentModifier.Private)
-            {
-                outputContext.Write(" { get; private set; }");
-            }
-            else if ((Set.Modifiers & ComponentModifier.Protected) == ComponentModifier.Protected)
-            {
-                outputContext.Write(" { get; protected set; }");
-            }
-            else
-            {
-                outputContext.Write(" { get; set; }");
-            }
+
+            outputContext.Write(" { get; " + setterAccess + setterKeyword + "; }");
 
             if (DefaultValue != null)
             {
@@ -141,15 +134,16 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
         if (Set != null)
         {
             outputContext.WriteIndent();
-            if ((Set.Modifiers & ComponentModifier.Private) == ComponentModifier.Private)
+
+            var setterAccess = Set.Modifiers.GetAccessorAccessibilityKeywords();
+
+            if (!string.IsNullOrEmpty(setterAccess))
             {
-                outputContext.Write("private ");
+                outputContext.Write(setterAccess);
+                outputContext.WriteSpace();
             }
-            else if ((Set.Modifiers & ComponentModifier.Protected) == ComponentModifier.Protected)
-            {
-                outputContext.Write("protected ");
-            }
-            outputContext.Write("set");
+
+            outputContext.Write(Set.IsInit ? "init" : "set");
             Set.WriteOutput(outputContext);
         }
 

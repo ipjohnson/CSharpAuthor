@@ -146,33 +146,20 @@ public abstract class BaseOutputComponent : IOutputComponent
         return "";
     }
 
+    /// <summary>
+    /// The accessibility keywords for <see cref="Modifiers"/>, or <paramref name="defaultString"/>
+    /// when none was asked for.
+    /// </summary>
+    /// <remarks>
+    /// The two-keyword levels are tested first, and they have to be: <see cref="ComponentModifier"/>
+    /// is a flags enum, so <c>private protected</c> is <c>Private | Protected</c> and matches both
+    /// single-flag tests below. Reading one flag at a time returned <c>protected</c> for it, which
+    /// is a wider accessibility than the caller declared - and <c>internal</c> for
+    /// <c>protected internal</c>, which is narrower in one direction and wider in the other. Both
+    /// compiled.
+    /// </remarks>
     protected string GetAccessModifier(string defaultString)
     {
-        if ((Modifiers & ComponentModifier.NoAccessibility) == ComponentModifier.NoAccessibility)
-        {
-            return "";
-        }
-        
-        if ((Modifiers & ComponentModifier.Internal) == ComponentModifier.Internal)
-        {
-            return KeyWords.Internal;
-        }
-        
-        if ((Modifiers & ComponentModifier.Public) == ComponentModifier.Public)
-        {
-            return KeyWords.Public;
-        }
-
-        if ((Modifiers & ComponentModifier.Protected) == ComponentModifier.Protected)
-        {
-            return KeyWords.Protected;
-        }
-
-        if ((Modifiers & ComponentModifier.Private) == ComponentModifier.Private)
-        {
-            return KeyWords.Private;
-        }
-
-        return defaultString;
+        return Modifiers.GetAccessibilityKeywords(defaultString);
     }
 }
