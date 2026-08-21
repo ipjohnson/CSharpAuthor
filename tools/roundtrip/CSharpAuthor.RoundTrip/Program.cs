@@ -16,9 +16,12 @@ using CSharpAuthor;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
-// CSharpAuthor grew its own LanguageVersion (4's EmitProfile), which collides with
-// Roslyn's for any file that has both usings - CS0104. Alias rather than drop a using: a
-// source generator normally needs both namespaces, so this is the shape consumers will hit.
+// CSharpAuthor grew its own LanguageVersion (4's EmitProfile), which collided with Roslyn's for
+// any file that had both usings - CS0104, and a source generator normally needs both namespaces.
+// This file was where that was first worked around with an alias; DependencyModules' benchmark
+// harness then hit it for real, three times. The enum moved to CSharpAuthor.Profiles, so
+// `using CSharpAuthor;` no longer brings a second LanguageVersion into scope and the collision is
+// gone at the source. The alias stays: naming which one is meant is worth a line either way.
 using RoslynLanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace RoundTrip;

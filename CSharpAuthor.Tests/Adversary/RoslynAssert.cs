@@ -8,9 +8,12 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
-// CSharpAuthor gained its own LanguageVersion (the profiles capability enum). This file sits in
-// a namespace nested inside CSharpAuthor, and enclosing-namespace members beat using-aliases, so
-// a plain `using LanguageVersion = ...` cannot win. A distinct name is unambiguous.
+// CSharpAuthor has its own LanguageVersion (the profiles capability enum). It used to sit in the
+// bare CSharpAuthor namespace, and this file sits in a namespace nested inside that one, where
+// enclosing-namespace members beat using-aliases - so no alias could win and the distinct name was
+// the only way out. The enum now lives in CSharpAuthor.Profiles, which this file does not import,
+// so the shadowing is gone; the alias is kept because naming which LanguageVersion is meant reads
+// better in a file that is entirely about Roslyn's.
 using RoslynLangVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace CSharpAuthor.Tests.Adversary;

@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// Reads one .editorconfig option. Shaped to match Roslyn's

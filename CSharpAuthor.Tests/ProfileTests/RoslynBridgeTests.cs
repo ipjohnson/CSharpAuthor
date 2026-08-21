@@ -1,9 +1,11 @@
 using System.Collections.Generic;
+using CSharpAuthor.Profiles;
 using CSharpAuthor.Roslyn;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Xunit;
+using EmitLanguageVersion = CSharpAuthor.Profiles.LanguageVersion;
 using RoslynLanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace CSharpAuthor.Tests.ProfileTests;
@@ -43,14 +45,14 @@ public class RoslynBridgeTests
     }
 
     [Theory]
-    [InlineData(RoslynLanguageVersion.CSharp8, LanguageVersion.CSharp8)]
-    [InlineData(RoslynLanguageVersion.CSharp9, LanguageVersion.CSharp9)]
-    [InlineData(RoslynLanguageVersion.CSharp10, LanguageVersion.CSharp10)]
-    [InlineData(RoslynLanguageVersion.CSharp11, LanguageVersion.CSharp11)]
-    [InlineData(RoslynLanguageVersion.CSharp12, LanguageVersion.CSharp12)]
-    [InlineData(RoslynLanguageVersion.CSharp13, LanguageVersion.CSharp13)]
-    [InlineData(RoslynLanguageVersion.CSharp7_3, LanguageVersion.CSharp7_3)]
-    public void TheVersionComesFromTheParseOptions(RoslynLanguageVersion parsed, LanguageVersion expected)
+    [InlineData(RoslynLanguageVersion.CSharp8, EmitLanguageVersion.CSharp8)]
+    [InlineData(RoslynLanguageVersion.CSharp9, EmitLanguageVersion.CSharp9)]
+    [InlineData(RoslynLanguageVersion.CSharp10, EmitLanguageVersion.CSharp10)]
+    [InlineData(RoslynLanguageVersion.CSharp11, EmitLanguageVersion.CSharp11)]
+    [InlineData(RoslynLanguageVersion.CSharp12, EmitLanguageVersion.CSharp12)]
+    [InlineData(RoslynLanguageVersion.CSharp13, EmitLanguageVersion.CSharp13)]
+    [InlineData(RoslynLanguageVersion.CSharp7_3, EmitLanguageVersion.CSharp7_3)]
+    public void TheVersionComesFromTheParseOptions(RoslynLanguageVersion parsed, EmitLanguageVersion expected)
     {
         var profile = EmitProfile.Default.WithTargetFrom(new CSharpParseOptions(parsed));
 
@@ -63,7 +65,7 @@ public class RoslynBridgeTests
         // Not carried through as a sentinel: a profile that says "latest" cannot be compared
         // against a minimum version, and comparing is the whole job.
         Assert.Equal(
-            LanguageVersion.CSharp13,
+            EmitLanguageVersion.CSharp13,
             EmitProfile.Default.WithTargetFrom(new CSharpParseOptions(RoslynLanguageVersion.Latest)).Target);
 
         Assert.Equal(
@@ -78,16 +80,16 @@ public class RoslynBridgeTests
         // number is measured from the package this test compiles against, not asserted from the
         // SDK installed on the machine - and if it ever changes, the claim in the profile
         // documentation has to change with it.
-        Assert.Equal(LanguageVersion.CSharp13, EmitProfileRoslynExtensions.LatestSupported());
-        Assert.Equal(LanguageVersion.CSharp13, EmitProfileRoslynExtensions.LatestSupportedProfile().Target);
+        Assert.Equal(EmitLanguageVersion.CSharp13, EmitProfileRoslynExtensions.LatestSupported());
+        Assert.Equal(EmitLanguageVersion.CSharp13, EmitProfileRoslynExtensions.LatestSupportedProfile().Target);
     }
 
     [Fact]
     public void AnythingThatIsNotCSharpParseOptionsLeavesTheTargetAlone()
     {
-        var profile = EmitProfile.Default.With(p => p.Target = LanguageVersion.CSharp9);
+        var profile = EmitProfile.Default.With(p => p.Target = EmitLanguageVersion.CSharp9);
 
-        Assert.Equal(LanguageVersion.CSharp9, profile.WithTargetFrom(null).Target);
+        Assert.Equal(EmitLanguageVersion.CSharp9, profile.WithTargetFrom(null).Target);
     }
 
     [Fact]
@@ -98,7 +100,7 @@ public class RoslynBridgeTests
             new CSharpParseOptions(RoslynLanguageVersion.CSharp9));
 
         Assert.Equal(2, profile.IndentWidth);
-        Assert.Equal(LanguageVersion.CSharp9, profile.Target);
+        Assert.Equal(EmitLanguageVersion.CSharp9, profile.Target);
     }
 
     [Fact]

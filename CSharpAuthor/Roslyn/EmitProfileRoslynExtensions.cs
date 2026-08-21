@@ -1,8 +1,16 @@
 using System;
+using CSharpAuthor.Profiles;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using EmitLanguageVersion = CSharpAuthor.LanguageVersion;
+
+// Both names are spelled through an alias, deliberately. `using CSharpAuthor.Profiles;` and
+// `using Microsoft.CodeAnalysis.CSharp;` both contribute a `LanguageVersion`, so a bare mention of
+// it here is CS0104 - and this file is the one place in the library that legitimately needs both.
+// This is the same collision the profile enum was moved out of the bare `CSharpAuthor` namespace to
+// spare consumers: down here an alias fixes it, because `CSharpAuthor.Roslyn` is not nested under
+// `CSharpAuthor.Profiles` and neither name arrives as an enclosing-namespace member.
+using EmitLanguageVersion = CSharpAuthor.Profiles.LanguageVersion;
 using RoslynLanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace CSharpAuthor.Roslyn;

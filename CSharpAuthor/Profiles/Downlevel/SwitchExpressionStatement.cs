@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// A value chosen from a set of tests: <c>x switch { 1 =&gt; "one", _ =&gt; null }</c> on C# 8, and

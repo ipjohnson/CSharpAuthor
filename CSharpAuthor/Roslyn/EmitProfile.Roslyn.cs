@@ -2,7 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using CSharpAuthor.Roslyn;
 
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// The two entry points from §4 that name Roslyn types, kept out of the core so that

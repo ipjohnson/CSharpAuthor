@@ -1,11 +1,20 @@
 using System;
 using System.Collections.Generic;
 
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// The text one tree produced for one profile, and everything the writer decided to produce it.
 /// </summary>
+/// <remarks>
+/// The second reason this namespace is not the bare <c>CSharpAuthor</c>: <c>EmitResult</c> is also
+/// the name Roslyn gives what <c>Compilation.Emit</c> returns
+/// (<c>Microsoft.CodeAnalysis.Emit.EmitResult</c>). A generator's test harness imports that
+/// namespace routinely - DependencyModules' <c>GeneratedAssembly.cs</c> does - and in the bare
+/// namespace this name would collide there the moment the file also said
+/// <c>using CSharpAuthor;</c>. See the note above the namespace declaration in
+/// <c>Profiles/LanguageVersion.cs</c>.
+/// </remarks>
 public sealed class EmitResult
 {
     internal EmitResult(string code, EmitSession session)

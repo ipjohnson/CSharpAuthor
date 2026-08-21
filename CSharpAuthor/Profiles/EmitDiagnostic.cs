@@ -1,6 +1,6 @@
 using System;
 
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// How much a diagnostic matters. Only <see cref="Error"/> stops anything.

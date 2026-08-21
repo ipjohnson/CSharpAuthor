@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// One rendering of one tree: the profile in force, plus everything the writer decided or could

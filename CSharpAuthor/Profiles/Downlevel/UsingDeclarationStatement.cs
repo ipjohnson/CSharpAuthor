@@ -1,6 +1,6 @@
 using System;
 
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// A disposable held for the rest of a scope: <c>using var x = ...;</c> on C# 8, and the braced

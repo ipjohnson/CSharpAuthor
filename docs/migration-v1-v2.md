@@ -190,17 +190,51 @@ package reference, so a third generator project would be picked up without editi
 
 Net effect: `git status` in both scratch clones stays empty across any number of runs.
 
-### If V2 adds a second source root
+### The second source root — what actually landed, and the prediction that was wrong
 
 §3 of the handoff says the Roslyn bridge ships as a second source folder in the same package,
-gated on `PackageCSharpAuthorIncludeRoslyn`. Anything that lives outside
-`<root>/CSharpAuthor/` will **not** be compiled by either route above. When that lands, three
-files have to learn about it together:
+gated on `PackageCSharpAuthorIncludeRoslyn`. This section used to say that when it landed,
+three files would have to learn about it together — and then reasoned that the hazard was
+contained because *"anything that lives outside `<root>/CSharpAuthor/` will not be compiled by
+either route above."*
 
-- `CSharpAuthor/Package/CSharpAuthor.targets` (the package)
-- `Hardened.Framework/src/SourceGenerators/CSharpAuthor.props` (a real change to a consumer
-  repo, needing its own PR there)
-- `scripts/local-csharpauthor.targets` (this repository)
+**That reasoning did not hold, because the bridge did not land outside `<root>/CSharpAuthor/`.**
+It landed *inside* it, at `CSharpAuthor/Roslyn/` — 13 files, right in the middle of the glob
+every local-checkout route uses. Two of the three files were updated and the third was not:
+
+| File | Excludes `Roslyn/**` | |
+|---|---|---|
+| `CSharpAuthor/CSharpAuthor.csproj` | yes | from the compile *and* from the `src/CSharpAuthor\` pack path |
+| `scripts/local-csharpauthor.targets` | yes | |
+| `Hardened.Framework/src/SourceGenerators/CSharpAuthor.props` | **no — this was the miss** | the consumer's own documented local-checkout mode |
+
+The consequence, measured: the bridge was compiled into every Hardened project that uses
+CSharpAuthor, including three that have no `Microsoft.CodeAnalysis.CSharp` reference at all —
+
+```
+CSharpAuthor/Roslyn/EmitProfileRoslynExtensions.cs(6,54): error CS0234:
+  The type or namespace name 'CSharp' does not exist in the namespace 'Microsoft.CodeAnalysis'
+  [Hardened.OpenApi.BuildTask.csproj::TargetFramework=net472]
+```
+
+`Hardened.Idl.BuildTask`, `Hardened.OpenApi.BuildTask` and `Hardened.Smithy.BuildTask` failed to
+build on **net472 and net8.0 alike**, which took **six test assemblies** down with them:
+`Hardened.OpenApi.BuildTask.Tests`, `Hardened.Smithy.BuildTask.Tests`,
+`Hardened.Web.SourceGenerator.Tests`, and the OpenApi, Smithy and Benchmark integration SUT
+suites. V1 has no `CSharpAuthor/Roslyn/` directory, so this is V2-caused, not pre-existing. It
+does not show up as a red suite either — `dotnet test` on the solution simply never produces
+those assemblies, so the runner's count silently drops from 35 to 29.
+
+**Fixed** in `docs/consumer-patches/hardened-v2.patch`: `CSharpAuthor.props` now excludes
+`$(CSharpAuthorRoot)/CSharpAuthor/Roslyn/**/*.cs` from the unconditional glob, which makes the
+local-checkout glob equal the package's `src/CSharpAuthor/` folder again, and adds the opt-in
+half — a second `Compile` item gated on `PackageCSharpAuthorIncludeRoslyn`, mirroring
+`build/CSharpAuthor.targets` — so local-checkout mode can reach the bridge at all.
+
+The rule the original prediction should have carried: **a second source root inside
+`<root>/CSharpAuthor/` is picked up by every recursive glob that points at that directory, and
+every one of them has to exclude it.** There are three, and `scripts/verify-roslyn-packaging.sh`
+covers only the package's own two.
 
 ---
 
@@ -240,6 +274,7 @@ change from an expensive one. Counts are call sites outside `obj/` and `bin/`.
 | A3 | `EmitProfile` is a writer argument, never stored on the tree (§4). | predicted | None if the existing `Output()` overloads stay. **Do not** replace `TypeOutputMode` parameters with a required `EmitProfile`: DM has 8 and HF 18 call sites passing `TypeOutputMode.*` positionally. Add profile-taking overloads instead. |
 | A4 | `EquatableArray<T>` added beside `ITypeDefinition` (§7). | **watch** | Hardened's generators already source-include an `EquatableArray<T>` from `ValidationModules.SourceGenerator.Impl` (used in `Hardened.SourceGenerator/Validation/HandlerValidationFrontEnd.cs:96,181`). Today no file imports both namespaces, so there is no collision — but a `CSharpAuthor.EquatableArray<T>` puts one `using CSharpAuthor;` away from CS0104 in that assembly. Prefer a nested namespace or a distinct name; if it ships as `CSharpAuthor.EquatableArray<T>`, say so here and the consumer fix is `using EquatableArray = ValidationModules.SourceGenerator.Impl.EquatableArray;`. DM's `ServiceModelComparer` (`src/DependencyModules.SourceGenerator.Impl/Models/ServiceModel.cs:93`, 4 call sites) is the 60-line comparer §7 says this deletes — that deletion is a DM PR, not a V2 change. |
 | A5 | `LangVersion` of the consuming generator projects. | measured | V2 source is compiled *into* the consumer, so it must build at **their** language version, not its own: `DependencyModules.SourceGenerator.Impl` pins `LangVersion 10`, `DependencyModules.SourceGenerator` pins `11`, and both set `Nullable=enable` and `EnforceExtendedAnalyzerRules=true` on `netstandard2.0`. V1's own csproj is `LangVersion 10`. **A V2 file using C# 12 syntax will not compile in DependencyModules** even though CSharpAuthor's own build is fine. Fix: keep library source at C# 10, or raise `LangVersion` in the consumer (a real PR there). This is the single most likely way to break gate 4 without breaking gate 1. |
+| A6 | **Every profile type is in `CSharpAuthor.Profiles`, not `CSharpAuthor`** — `EmitProfile`, `EmitSession`, `EmitDiagnostic`, `EmitResult`, `ProfileEmitter`, `ProfiledOutputContext`, `OutputContextProfileExtensions`, `LanguageVersion`, `LanguageFeature`, `Polyfill` and the eight downlevel statements. | measured | **Mechanical fix: add `using CSharpAuthor.Profiles;` to any file that names one.** No V1 code is affected — every one of these types is new in 2.0. The move exists because two of the names collide with Roslyn's: `CSharpAuthor.LanguageVersion` vs `Microsoft.CodeAnalysis.CSharp.LanguageVersion` broke DM's benchmark harness at three sites (`benchmarks/DependencyModules.Benchmarks/Program.cs:172,196,224`, all `new CSharpParseOptions(LanguageVersion.Latest)`), and `CSharpAuthor.EmitResult` shadows `Microsoft.CodeAnalysis.Emit.EmitResult`, which `DependencyModules/tests/DependencyModules.Tests/Infrastructure/GeneratedAssembly.cs:90` uses. A `using X = …` alias does **not** rescue a consumer whose own namespace is nested under `CSharpAuthor`: enclosing-namespace members outrank using-aliases, so such a file had to fully qualify every mention. `BraceStyle` and `LanguageFeature` were checked against every public type name in `Microsoft.CodeAnalysis.CSharp` 4.10.0 and 4.14.0 and collide with nothing; `BraceStyle` stays in `CSharpAuthor` because `OutputContextOptions.BraceStyle` is core surface. Full rationale in `docs/v2-open-questions.md`, profiles §16. |
 
 ### 4.2 Emitted-output changes
 
@@ -513,22 +548,33 @@ it. What moved:
 ### Hardened.Framework — expected text updated in the patch, not re-baselined
 
 Hardened has no `.verified.txt` mechanism for generated code; it pins expected output with
-`Assert.Contains` literals in the test bodies. Thirteen of them recorded V1's unqualified
-output. The patch updates them **in source, visibly**, which is a different act from letting a
-snapshot rewrite its own baseline — there is no `UPDATE_SNAPSHOTS` here and nothing was
-absorbed silently. Each one is listed so it can be vetoed individually.
+`Assert.Contains` literals in the test bodies. Sixteen of them recorded V1's output. The patch
+updates them **in source, visibly**, which is a different act from letting a snapshot rewrite
+its own baseline — there is no `UPDATE_SNAPSHOTS` here and nothing was absorbed silently. Each
+one is listed so it can be vetoed individually.
 
 | File | Before | After | Cause |
 |---|---|---|---|
+| `Hardened.OpenApi.BuildTask.Tests/JsonTypeInfoEmitterTests.cs` ×2 | `CreatePropertyInfo<global::System.Single>(`, `(global::System.Single)args[3]` | `CreatePropertyInfo<float>(`, `(float)args[3]` | B6 |
+| `Hardened.OpenApi.BuildTask.Tests/JsonTypeInfoEmitterTests.cs` ×1 | `public readonly static PetstoreJsonTypeInfoResolver Instance` | `public static readonly PetstoreJsonTypeInfoResolver Instance` | modifier order (§ "Declarations… Output changes", row 4) |
 | `Requests/GeneratedCodeRegressionTests.cs` ×3 | `new ExecutionRequestHandlerInfo("…", typeof(HealthController), …)` | `new global::Hardened.Requests.Runtime.Execution.ExecutionRequestHandlerInfo("…", typeof(global::TestApp.HealthController), …)` | B2 |
 | `Shared/ApplicationRootEmitTests.cs` ×1 | `RootServiceProvider ?? throw new Exception` | `RootServiceProvider ?? throw new global::System.Exception` | B2 |
 | `Function/FunctionHandlerProviderTests.cs` ×1 | `[DynamicDependency(nameof(FunctionHandlersDI))]` | `[global::System.Diagnostics.CodeAnalysis.DynamicDependency(nameof(FunctionHandlersDI))]` | B1 |
 | `Hardened.OpenApi.SourceGenerator.Tests/GeneratorConfigurationTests.cs` ×4 | `[ExcludeFromCodeCoverage]` | `[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]` | B1 |
 | `Hardened.OpenApi.SourceGenerator.Tests/GeneratedCodeCompilesTests.cs` ×4 | `[property: Required]`, `[property: StringLength(`, `[property: Range(`, `[property: Pattern(typeof(` | each prefixed `global::ValidationModules.Constraints.` | B1 |
 
-The last eight are **not** caused by the patch: they are B1 alone, and they were invisible
-until the patch made those suites buildable again. The first five are caused by the patch, and
-are the point of it — a type that is now a type gets written like one.
+The eight `Hardened.OpenApi.SourceGenerator.Tests` rows are **not** caused by the patch: they
+are B1 alone, and they were invisible until the patch made those suites buildable again. The
+five `Hardened.SourceGenerator.Tests` rows are caused by the patch, and are the point of it — a
+type that is now a type gets written like one.
+
+The three `Hardened.OpenApi.BuildTask.Tests` rows are a third category: they are neither, and
+nothing about them is new — V1's `_knownTypes` table listed `double` but not `float`, so the one
+primitive in that test whose keyword was missing came out as `System.Single`, and V1 wrote field
+modifiers as `readonly static`. **Nobody had ever seen these two tests run against V2**, because
+that assembly was one of the six the `CSharpAuthor.props` defect above stopped building at all.
+Both are B6/§"Output changes" behaviours that were already documented as intended; the
+assertions simply still recorded V1's answer. Verdict: `improvement` on both.
 
 If any of these is rejected, the corresponding writer change has to be rejected with it, and
 that file's generated code goes back to not compiling.

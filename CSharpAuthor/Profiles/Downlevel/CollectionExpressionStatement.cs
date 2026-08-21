@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// A sequence of values: <c>[1, 2, 3]</c> on C# 12, <c>new int[] { 1, 2, 3 }</c> before it.

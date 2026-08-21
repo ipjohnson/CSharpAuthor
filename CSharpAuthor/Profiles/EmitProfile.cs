@@ -1,6 +1,6 @@
 using System;
 
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// Everything a writer needs to decide how a version-agnostic tree becomes text: formatting,

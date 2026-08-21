@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using CSharpAuthor.Profiles;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
+using EmitLanguageVersion = CSharpAuthor.Profiles.LanguageVersion;
 using RoslynLanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace CSharpAuthor.Tests.ProfileTests;
@@ -105,7 +107,7 @@ public class DownlevelDemoTests
         // library will happily render for C# 15; nothing in this repository can validate it, and
         // saying so is the honest version of a conformance claim.
         Assert.Equal(
-            LanguageVersion.CSharp13,
+            EmitLanguageVersion.CSharp13,
             CSharpAuthor.Roslyn.EmitProfileRoslynExtensions.LatestSupported());
 
         var labelled = ProfileEmitter.Emit(Widget(), EmitProfile.Latest).Code;
@@ -135,7 +137,7 @@ public class DownlevelDemoTests
             file,
             EmitProfile.Default.With(p =>
             {
-                p.Target = LanguageVersion.CSharp11;
+                p.Target = EmitLanguageVersion.CSharp11;
                 p.Polyfills = PolyfillMode.Always;
             }));
 
@@ -148,12 +150,12 @@ public class DownlevelDemoTests
     {
         var versions = new[]
         {
-            (LanguageVersion.CSharp8, RoslynLanguageVersion.CSharp8),
-            (LanguageVersion.CSharp9, RoslynLanguageVersion.CSharp9),
-            (LanguageVersion.CSharp10, RoslynLanguageVersion.CSharp10),
-            (LanguageVersion.CSharp11, RoslynLanguageVersion.CSharp11),
-            (LanguageVersion.CSharp12, RoslynLanguageVersion.CSharp12),
-            (LanguageVersion.CSharp13, RoslynLanguageVersion.CSharp13)
+            (EmitLanguageVersion.CSharp8, RoslynLanguageVersion.CSharp8),
+            (EmitLanguageVersion.CSharp9, RoslynLanguageVersion.CSharp9),
+            (EmitLanguageVersion.CSharp10, RoslynLanguageVersion.CSharp10),
+            (EmitLanguageVersion.CSharp11, RoslynLanguageVersion.CSharp11),
+            (EmitLanguageVersion.CSharp12, RoslynLanguageVersion.CSharp12),
+            (EmitLanguageVersion.CSharp13, RoslynLanguageVersion.CSharp13)
         };
 
         var tree = Widget();
