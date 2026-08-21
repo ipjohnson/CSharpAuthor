@@ -495,8 +495,8 @@ w('')
 
 stats = {
     'nodes': 0, 'value_tokens': 0, 'nodes_with_value_token': 0,
-    'fixed_tokens': 0, 'lists': 0, 'type_slots': 0, 'skipped_bool': 0,
-    'optional_tokens': 0,
+    'fixed_tokens': 0, 'lists': 0, 'separated_lists': 0, 'type_slots': 0,
+    'skipped_bool': 0, 'optional_tokens': 0,
 }
 experimental = []
 
@@ -577,7 +577,14 @@ for name in sorted(concrete):
             style = list_style(element, separated, cat, braced)
             elem_iface = iface_for(element)
             stats['lists'] += 1
-            props.append(f'    public List<{elem_iface}> {fname} {{ get; }} = new();  // {style}')
+            if separated:
+                stats['separated_lists'] += 1
+            # R12a: a NodeList is a List that can also say the source ended with a separator.
+            # `{ 1, 2, }` is legal C# and Roslyn keeps the extra comma as a token, so a list that
+            # cannot carry the fact is a list that silently drops it. Every list gets the type -
+            # one type for one concept - and only a SeparatedSyntaxList is ever asked to set it.
+            note = f'{style}, separated' if separated else str(style)
+            props.append(f'    public NodeList<{elem_iface}> {fname} {{ get; }} = new();  // {note}')
             body.append(f'        writer.List({fname}, ListStyle.{style});')
             continue
 
@@ -707,7 +714,7 @@ print(f'interfaces emitted : {len(emitted_ifaces) + 3}', file=sys.stderr)
 print(f'fixed tokens       : {stats["fixed_tokens"]}', file=sys.stderr)
 print(f'value tokens       : {stats["value_tokens"]} across {stats["nodes_with_value_token"]} nodes', file=sys.stderr)
 print(f'optional tokens    : {stats["optional_tokens"]}', file=sys.stderr)
-print(f'grammar lists      : {stats["lists"]}', file=sys.stderr)
+print(f'grammar lists      : {stats["lists"]} ({stats["separated_lists"]} separated, each able to carry a trailing separator)', file=sys.stderr)
 print(f'type slots         : {stats["type_slots"]}', file=sys.stderr)
 print(f'bool fields skipped: {stats["skipped_bool"]}', file=sys.stderr)
 print(f'experimental nodes : {len(experimental)} ({", ".join(experimental)})', file=sys.stderr)
