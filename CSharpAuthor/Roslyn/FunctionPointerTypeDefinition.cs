@@ -19,6 +19,7 @@ public sealed class FunctionPointerTypeDefinition : ITypeDefinition
 {
     private readonly IReadOnlyList<ITypeDefinition> _parameterTypes;
     private int? _hashCode;
+    private string? _key;
 
     public FunctionPointerTypeDefinition(
         IReadOnlyList<ITypeDefinition> parameterTypes,
@@ -119,32 +120,23 @@ public sealed class FunctionPointerTypeDefinition : ITypeDefinition
         return new ArrayTypeDefinition(this, rank);
     }
 
+    /// <inheritdoc cref="BaseTypeDefinition.TypeKey" />
+    private string TypeKey => _key ??= TypeDefinitionIdentity.KeyOf(this);
+
     public int CompareTo(ITypeDefinition? other)
     {
-        if (ReferenceEquals(other, null))
-        {
-            return 1;
-        }
-
-        if (other is not FunctionPointerTypeDefinition functionPointer)
-        {
-            var otherCompare = string.Compare(ToString(), other.ToString(), StringComparison.Ordinal);
-
-            return otherCompare != 0 ? otherCompare : -1;
-        }
-
-        return string.Compare(ToString(), functionPointer.ToString(), StringComparison.Ordinal);
+        return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }
 
     public override bool Equals(object? obj)
     {
-        return obj is FunctionPointerTypeDefinition functionPointer && CompareTo(functionPointer) == 0;
+        return TypeDefinitionIdentity.KeyEquals(TypeKey, obj);
     }
 
     public override int GetHashCode()
     {
         // ReSharper disable once NonReadonlyMemberInGetHashCode
-        return _hashCode ??= ToString().GetHashCode();
+        return _hashCode ??= TypeKey.GetHashCode();
     }
 
     public override string ToString()

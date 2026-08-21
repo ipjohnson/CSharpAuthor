@@ -27,6 +27,7 @@ namespace CSharpAuthor.Roslyn;
 public sealed class ArrayTypeDefinition : ITypeDefinition
 {
     private int? _hashCode;
+    private string? _key;
 
     /// <param name="elementType">The immediate element type. May itself be an array.</param>
     /// <param name="rank">Dimensions of this array. 1 for <c>T[]</c>, 2 for <c>T[,]</c>.</param>
@@ -189,42 +190,23 @@ public sealed class ArrayTypeDefinition : ITypeDefinition
     /// </summary>
     public ITypeDefinition? ContainingType => null;
 
+    /// <inheritdoc cref="BaseTypeDefinition.TypeKey" />
+    private string TypeKey => _key ??= TypeDefinitionIdentity.KeyOf(this);
+
     public int CompareTo(ITypeDefinition? other)
     {
-        if (ReferenceEquals(other, null))
-        {
-            return 1;
-        }
-
-        if (other is not ArrayTypeDefinition arrayType)
-        {
-            var nameCompare = string.Compare(ToString(), other.ToString(), StringComparison.Ordinal);
-
-            return nameCompare != 0 ? nameCompare : -1;
-        }
-
-        if (Rank != arrayType.Rank)
-        {
-            return Rank - arrayType.Rank;
-        }
-
-        if (IsNullable != arrayType.IsNullable)
-        {
-            return IsNullable ? 1 : -1;
-        }
-
-        return ElementType.CompareTo(arrayType.ElementType);
+        return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }
 
     public override bool Equals(object? obj)
     {
-        return obj is ArrayTypeDefinition arrayType && CompareTo(arrayType) == 0;
+        return TypeDefinitionIdentity.KeyEquals(TypeKey, obj);
     }
 
     public override int GetHashCode()
     {
         // ReSharper disable once NonReadonlyMemberInGetHashCode
-        return _hashCode ??= ToString().GetHashCode();
+        return _hashCode ??= TypeKey.GetHashCode();
     }
 
     public override string ToString()

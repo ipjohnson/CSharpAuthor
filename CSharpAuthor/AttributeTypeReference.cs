@@ -25,6 +25,9 @@ public sealed class AttributeTypeReference : ITypeDefinition
 
     private readonly ITypeDefinition _attributeType;
 
+    private int? _hashCode;
+    private string? _key;
+
     public AttributeTypeReference(ITypeDefinition attributeType)
     {
         _attributeType = attributeType ?? throw new ArgumentNullException(nameof(attributeType));
@@ -119,27 +122,47 @@ public sealed class AttributeTypeReference : ITypeDefinition
 
     public ITypeDefinition MakeArray(int rank) => _attributeType.MakeArray(rank);
 
+    /// <summary>
+    /// The identity of the reference, which is deliberately not the identity of the type it stands
+    /// for.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The two are not interchangeable. This one writes <c>Obsolete</c> and the type it wraps writes
+    /// <c>ObsoleteAttribute</c>, and the name plan - a dictionary keyed on type definitions - has to
+    /// be able to give them different answers: they compete for different short names, and an alias
+    /// decided for one is not the alias the other needs. Equality that merged them would hand one
+    /// entry to both.
+    /// </para>
+    /// <para>
+    /// The rendering already separates them, so the marker is not what does that work. It is there
+    /// for the case the rendering does not separate: <c>Ns.FooAttribute</c> written as an attribute
+    /// and a real type called <c>Ns.Foo</c> both write <c>Ns.Foo</c>, and both of those types can
+    /// exist in the same file. C# has a rule for that ambiguity; equality should not quietly decide
+    /// it.
+    /// </para>
+    /// <para>
+    /// Two references to the same attribute type are equal to each other, which is what a caller
+    /// asking whether an attribute is already on a member is asking.
+    /// </para>
+    /// </remarks>
+    internal string TypeKey => _key ??= TypeDefinitionIdentity.BuildAttributeReference(_attributeType);
+
     public int CompareTo(ITypeDefinition other)
     {
-        if (other is not AttributeTypeReference attributeType)
-        {
-            return -1;
-        }
-
-        return _attributeType.CompareTo(attributeType._attributeType);
+        return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }
 
+    /// <inheritdoc cref="TypeKey" />
     public override bool Equals(object obj)
     {
-        return obj is AttributeTypeReference other && _attributeType.Equals(other._attributeType);
+        return TypeDefinitionIdentity.KeyEquals(TypeKey, obj);
     }
 
     public override int GetHashCode()
     {
-        unchecked
-        {
-            return _attributeType.GetHashCode() * 31 + 17;
-        }
+        // ReSharper disable once NonReadonlyMemberInGetHashCode
+        return _hashCode ??= TypeKey.GetHashCode();
     }
 
     public override string ToString() => _attributeType.ToString();

@@ -11,6 +11,7 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     private static readonly IReadOnlyList<int> _oneDimensional = new ReadOnlyCollection<int>(new[] { 1 });
 
     private int? _hashCode;
+    private string? _key;
 
     protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray, bool isNullable)
         : this(typeDefinitionEnum, ns, name, isArray ? _oneDimensional : _notAnArray, isNullable, null)
@@ -74,85 +75,54 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     public abstract int CompareTo(ITypeDefinition other);
 
     /// <summary>
-    /// Two type definitions are equal when they are the same kind of definition and name the same
-    /// type - the same container, the same generic arguments, the same array shape.
+    /// The type's identity: what makes it the same type as another definition of it, whichever class
+    /// that one happens to be. See <see cref="TypeDefinitionIdentity"/>.
     /// </summary>
+    /// <remarks>
+    /// Built once and kept. The definition is immutable in every way the key reads - the array ranks
+    /// are copied behind a read-only view at construction for exactly this reason - so the answer
+    /// cannot go stale.
+    /// </remarks>
+    internal string TypeKey => _key ??= TypeDefinitionIdentity.Build(this);
+
+    /// <summary>
+    /// Two type definitions are equal when they denote the same type: the same kind, the same fully
+    /// qualified name, the same container, generic arguments and array shape.
+    /// </summary>
+    /// <remarks>
+    /// Not "the same class as this one". <see cref="ITypeDefinition"/> is an interface, and the
+    /// bridge implements it several more times over for the shapes this class cannot hold - a
+    /// nullable value type, a ranked array, a nested type whose containers are generic. A bridged
+    /// <c>int?</c> and <c>TypeDefinition.Get(typeof(int)).MakeNullable()</c> are the same type, and a
+    /// generator matching a parameter against a registration is comparing exactly those two.
+    /// </remarks>
     public override bool Equals(object? obj)
     {
-        return obj is ITypeDefinition other && obj.GetType() == GetType() && CompareTo(other) == 0;
+        return TypeDefinitionIdentity.KeyEquals(TypeKey, obj);
     }
 
     public override int GetHashCode()
     {
         // ReSharper disable once NonReadonlyMemberInGetHashCode
-        return _hashCode ??= HashKey().GetHashCode();
+        return _hashCode ??= TypeKey.GetHashCode();
     }
 
     /// <summary>
-    /// A string that separates every type this model can now tell apart: the fully qualified C# name,
-    /// containers, generic arguments and array shape included.
+    /// Orders this type against another, zero exactly when <see cref="Equals(object)"/> says they are
+    /// the same type.
     /// </summary>
     /// <remarks>
-    /// Deliberately not <see cref="object.ToString"/>. That stays in its 1.x form, which a consumer
-    /// asserts on directly, and which cannot tell <c>int</c> from <c>int[]</c> or one nested
-    /// <c>Inner</c> from another - fine for equal values, which always agree on it, but it would put
-    /// every one of those newly distinguishable types in the same bucket.
+    /// This used to compare the properties one at a time and stop, which is why it was not safe to
+    /// remove the class check from <see cref="Equals(object)"/>. Name, namespace, container, ranks
+    /// and nullability are shared by <c>int</c> and <c>int*</c>, by <c>Ns.List</c> and
+    /// <c>Ns.List&lt;int&gt;</c>, and by <c>System.ValueTuple</c> and <c>(int a, string b)</c>: it
+    /// reported each of those pairs equal, while the other side of the pair reported them different
+    /// and hashed them differently. A subclass calling this still gets a comparison that stops at
+    /// what it renders, and is free to break a remaining tie on anything it does not.
     /// </remarks>
-    private string HashKey()
-    {
-        var builder = new StringBuilder();
-
-        WriteTypeName(builder, TypeOutputMode.FullName);
-
-        return builder.ToString();
-    }
-
     protected int BaseCompareTo(ITypeDefinition other)
     {
-        if (ReferenceEquals(null, other))
-        {
-            return 1;
-        }
-
-        if (TypeDefinitionEnum != other.TypeDefinitionEnum)
-        {
-            return TypeDefinitionEnum - other.TypeDefinitionEnum;
-        }
-
-        var nameCompare = string.Compare(Name, other.Name, StringComparison.Ordinal);
-
-        if (nameCompare != 0)
-        {
-            return nameCompare;
-        }
-
-        var namespaceCompare = string.Compare(Namespace, other.Namespace, StringComparison.Ordinal);
-
-        if (namespaceCompare != 0)
-        {
-            return namespaceCompare;
-        }
-
-        var containerCompare = CompareContainingTypes(other);
-
-        if (containerCompare != 0)
-        {
-            return containerCompare;
-        }
-
-        var rankCompare = CompareArrayRanks(other);
-
-        if (rankCompare != 0)
-        {
-            return rankCompare;
-        }
-
-        if (IsNullable != other.IsNullable)
-        {
-            return IsNullable ? 1 : -1;
-        }
-
-        return 0;
+        return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }
 
     /// <summary>
@@ -246,45 +216,6 @@ public abstract class BaseTypeDefinition : ITypeDefinition
         }
 
         return new ReadOnlyCollection<int>(result);
-    }
-
-    private int CompareContainingTypes(ITypeDefinition other)
-    {
-        var container = ContainingType;
-        var otherContainer = other.ContainingType;
-
-        if (container == null)
-        {
-            return otherContainer == null ? 0 : -1;
-        }
-
-        if (otherContainer == null)
-        {
-            return 1;
-        }
-
-        return container.CompareTo(otherContainer);
-    }
-
-    private int CompareArrayRanks(ITypeDefinition other)
-    {
-        var ranks = ArrayRanks;
-        var otherRanks = other.ArrayRanks;
-
-        if (ranks.Count != otherRanks.Count)
-        {
-            return ranks.Count - otherRanks.Count;
-        }
-
-        for (var i = 0; i < ranks.Count; i++)
-        {
-            if (ranks[i] != otherRanks[i])
-            {
-                return ranks[i] - otherRanks[i];
-            }
-        }
-
-        return 0;
     }
 
     /// <summary>

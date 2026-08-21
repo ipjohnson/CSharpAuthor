@@ -45,6 +45,7 @@ public sealed class NestedTypeDefinition : ITypeDefinition
 {
     private readonly IReadOnlyList<NestedTypeSegment> _segments;
     private int? _hashCode;
+    private string? _key;
 
     public NestedTypeDefinition(
         TypeDefinitionEnum typeDefinitionEnum,
@@ -221,39 +222,23 @@ public sealed class NestedTypeDefinition : ITypeDefinition
         }
     }
 
+    /// <inheritdoc cref="BaseTypeDefinition.TypeKey" />
+    private string TypeKey => _key ??= TypeDefinitionIdentity.KeyOf(this);
+
     public int CompareTo(ITypeDefinition? other)
     {
-        if (ReferenceEquals(other, null))
-        {
-            return 1;
-        }
-
-        if (other is not NestedTypeDefinition nested)
-        {
-            var otherCompare = string.Compare(ToString(), other.ToString(), StringComparison.Ordinal);
-
-            return otherCompare != 0 ? otherCompare : -1;
-        }
-
-        var compare = string.Compare(ToString(), nested.ToString(), StringComparison.Ordinal);
-
-        if (compare != 0)
-        {
-            return compare;
-        }
-
-        return TypeDefinitionEnum - nested.TypeDefinitionEnum;
+        return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }
 
     public override bool Equals(object? obj)
     {
-        return obj is NestedTypeDefinition nested && CompareTo(nested) == 0;
+        return TypeDefinitionIdentity.KeyEquals(TypeKey, obj);
     }
 
     public override int GetHashCode()
     {
         // ReSharper disable once NonReadonlyMemberInGetHashCode
-        return _hashCode ??= ToString().GetHashCode();
+        return _hashCode ??= TypeKey.GetHashCode();
     }
 
     public override string ToString()

@@ -13,6 +13,7 @@ namespace CSharpAuthor.Roslyn;
 public sealed class PointerTypeDefinition : ITypeDefinition
 {
     private int? _hashCode;
+    private string? _key;
 
     public PointerTypeDefinition(ITypeDefinition pointedAtType)
     {
@@ -71,32 +72,23 @@ public sealed class PointerTypeDefinition : ITypeDefinition
         return new ArrayTypeDefinition(this, rank);
     }
 
+    /// <inheritdoc cref="BaseTypeDefinition.TypeKey" />
+    private string TypeKey => _key ??= TypeDefinitionIdentity.KeyOf(this);
+
     public int CompareTo(ITypeDefinition? other)
     {
-        if (ReferenceEquals(other, null))
-        {
-            return 1;
-        }
-
-        if (other is not PointerTypeDefinition pointer)
-        {
-            var otherCompare = string.Compare(ToString(), other.ToString(), StringComparison.Ordinal);
-
-            return otherCompare != 0 ? otherCompare : -1;
-        }
-
-        return PointedAtType.CompareTo(pointer.PointedAtType);
+        return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }
 
     public override bool Equals(object? obj)
     {
-        return obj is PointerTypeDefinition pointer && CompareTo(pointer) == 0;
+        return TypeDefinitionIdentity.KeyEquals(TypeKey, obj);
     }
 
     public override int GetHashCode()
     {
         // ReSharper disable once NonReadonlyMemberInGetHashCode
-        return _hashCode ??= ToString().GetHashCode();
+        return _hashCode ??= TypeKey.GetHashCode();
     }
 
     public override string ToString()

@@ -80,34 +80,11 @@ public sealed class NullableValueTypeDefinition : TypeDefinition
         return new ArrayTypeDefinition(this, rank);
     }
 
-    public override int CompareTo(ITypeDefinition other)
-    {
-        if (ReferenceEquals(other, null))
-        {
-            return 1;
-        }
-
-        var baseCompare = base.CompareTo(other);
-
-        if (baseCompare != 0)
-        {
-            return baseCompare;
-        }
-
-        if (other is NullableValueTypeDefinition nullableValue)
-        {
-            return UnderlyingType.CompareTo(nullableValue.UnderlyingType);
-        }
-
-        // The base compared name, namespace and nullability, which settles it for a type that is not
-        // generic — that is the case where a hand-built nullable has to keep matching. Two closings
-        // of the same generic get that far and are not the same type, so they are separated by the
-        // arguments the base never saw.
-        if (other.TypeArguments.Count == 0 && UnderlyingType.TypeArguments.Count == 0)
-        {
-            return 0;
-        }
-
-        return string.Compare(ToString(), other.ToString(), StringComparison.Ordinal);
-    }
+    // CompareTo, Equals and GetHashCode are the base's. It compares the name a type writes, and this
+    // one writes `int?` exactly as a hand-built TypeDefinition.Get(typeof(int)).MakeNullable() does,
+    // so the two match in both directions without anything here. The override that used to sit here
+    // could not: it fell back to comparing ToString(), which on this type is the base's 1.x form -
+    // namespace and name, with the arguments and the `?` missing - so two different closings of one
+    // nullable generic compared equal to each other and a nullable generic compared unequal to its
+    // hand-built self.
 }

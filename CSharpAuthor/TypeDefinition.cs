@@ -69,7 +69,7 @@ public class TypeDefinition : BaseTypeDefinition
 
     public override int CompareTo(ITypeDefinition other)
     {
-        return BaseCompareTo(other);
+        return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }
 
     /// <summary>
