@@ -30,9 +30,10 @@ a type that does not exist. It now writes `Outer.Inner` and `global::Ns.Outer.In
 `Name` and `Namespace` are unchanged (`Inner` and `Ns`, matching reflection); the container is a new
 `ContainingType` on `ITypeDefinition`. Two consequences:
 
-- `ToString()`, `Equals` and `GetHashCode` include the container. Two nested types that differ only in
-  their container used to compare **equal**; they no longer do. If you keyed a dictionary on a type
-  definition and relied on that collision, you were relying on a bug.
+- `Equals` and `GetHashCode` include the container. Two nested types that differ only in their
+  container used to compare **equal**; they no longer do. If you keyed a dictionary on a type
+  definition and relied on that collision, you were relying on a bug. `ToString()` is unchanged — it
+  is still namespace-and-name, with no container in it (see `docs/v2-open-questions.md`).
 - Rebuilding a type from its parts — `TypeDefinition.Get(t.TypeDefinitionEnum, t.Namespace, t.Name, t.IsArray)`
   — drops the container and the array ranks, exactly as it always dropped generic arguments.
   **Fix:** use the type definition you already have, or the new

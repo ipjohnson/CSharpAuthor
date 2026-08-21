@@ -72,6 +72,20 @@ public class TypeDefinition : BaseTypeDefinition
         return BaseCompareTo(other);
     }
 
+    /// <summary>
+    /// The 1.x form, unchanged: namespace and name, with nothing else in it.
+    /// </summary>
+    /// <remarks>
+    /// It is not the C# name - it says <c>System.Void</c> where C# says <c>void</c>, and it says the
+    /// same thing for <c>int</c> and <c>int[]</c> - but it is a value consumers read and assert on,
+    /// so it keeps its shape. Hashing uses a fuller key; <see cref="WriteTypeName"/> is what produces
+    /// C#.
+    /// </remarks>
+    public override string ToString()
+    {
+        return $"{Namespace}.{Name}";
+    }
+
     public static ITypeDefinition IOptions(object typeObject)
     {
         var types = new List<ITypeDefinition>();

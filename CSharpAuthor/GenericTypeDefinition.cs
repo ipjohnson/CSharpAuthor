@@ -29,6 +29,44 @@ public class GenericTypeDefinition : BaseTypeDefinition
         _closingTypes = closingTypes;
     }
 
+    /// <inheritdoc cref="TypeDefinition.ToString" />
+    public override string ToString()
+    {
+        var stringBuilder = new StringBuilder();
+
+        stringBuilder.Append(Namespace);
+        stringBuilder.Append('.');
+        stringBuilder.Append(Name);
+        stringBuilder.Append('<');
+
+        var comma = false;
+
+        foreach (var closingType in _closingTypes)
+        {
+            if (comma)
+            {
+                stringBuilder.Append(',');
+            }
+            else
+            {
+                comma = true;
+            }
+
+            stringBuilder.Append(closingType);
+        }
+
+        stringBuilder.Append('>');
+
+        WriteArrayRanks(stringBuilder);
+
+        if (IsNullable)
+        {
+            stringBuilder.Append('?');
+        }
+
+        return stringBuilder.ToString();
+    }
+
     public override int CompareTo(ITypeDefinition other)
     {
         var baseCompare = BaseCompareTo(other);

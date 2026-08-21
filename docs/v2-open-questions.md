@@ -59,13 +59,19 @@ downstream could read it. Verified: neither `DependencyModules` nor `Hardened.Fr
 `ITypeDefinition`; both only construct through `TypeDefinition.Get` and `new GenericTypeDefinition`,
 whose existing signatures are untouched.
 
-### `ToString()` on a type definition is now the C# type name
+### `ToString()` on a type definition keeps its 1.x shape
 
-It was `$"{Namespace}.{Name}"`, which hashed `int` and `int[]` — and `Ns.Outer.Inner` and
-`Ns.Other.Inner` — to the same value, because `GetHashCode` is `ToString().GetHashCode()`. It now
-renders the fully-qualified C# name including containers, generic arguments, array ranks and
-nullability.
+`$"{Namespace}.{Name}"` hashes `int` and `int[]` — and `Ns.Outer.Inner` and `Ns.Other.Inner` — to the
+same value, because `GetHashCode` was `ToString().GetHashCode()`. The first attempt made `ToString()`
+the fully qualified C# name; **`Hardened.SourceGenerator.Tests` caught it**.
+`HardenedMethodDefinition` builds its own `ToString()` and its cache key out of the return type's, and
+asserts the result is `"System.Void Configure()"` — where C# says `void`.
 
-**Taken:** make it the full name. Nothing in the library or either consumer parses `ToString()`; the
-old value was ambiguous by construction, and a hash that collides across distinct types is what
-`Dictionary<ITypeDefinition, …>` in `ConventionMatcher` is keyed on.
+**Taken:** `ToString()` reverted to the 1.x shape exactly, and hashing moved to a private key that is
+the fully qualified C# name with containers, generic arguments and array shape in it. Equal values
+always agree on either form, so the equality contract holds under both; the private key just stops
+every newly distinguishable type landing in one bucket. `WriteTypeName` remains the only thing that
+produces C#.
+
+This is worth a human's attention: **`ToString()` on a type definition is public API that a consumer
+asserts on**, so it is not a debugger convenience and cannot be improved silently.

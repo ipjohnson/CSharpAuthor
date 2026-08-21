@@ -94,6 +94,40 @@ public class V1CallShapeTests
         Assert.Equal("List<string>", TypeDefinition.List(TypeDefinition.Get(typeof(string))).GetShortName());
     }
 
+    /// <summary>
+    /// <c>ToString()</c> is a value consumers read, not just a debugger convenience:
+    /// <c>Hardened.SourceGenerator</c>'s <c>HardenedMethodDefinition</c> builds its own
+    /// <c>ToString()</c> and its cache key out of it, and asserts on the result. It keeps its 1.x
+    /// shape - namespace and name, and <c>System.Void</c> rather than the <c>void</c> that
+    /// <see cref="ITypeDefinition.WriteTypeName"/> writes.
+    /// </summary>
+    [Fact]
+    public void ToStringKeepsItsV1Shape()
+    {
+        Assert.Equal("System.Void", TypeDefinition.Get("System", "Void").ToString());
+        Assert.Equal("System.Void", TypeDefinition.Get(typeof(void)).ToString());
+        Assert.Equal("System.Int32", TypeDefinition.Get("System", "Int32").ToString());
+        Assert.Equal("Ns.Name", TypeDefinition.Get("Ns", "Name").ToString());
+
+        Assert.Equal(
+            "System.Threading.Tasks.Task<.string>",
+            TypeDefinition.Get(typeof(Task<string>)).ToString());
+    }
+
+    /// <summary>
+    /// That shape cannot tell an array from its element type, so hashing uses a fuller key rather
+    /// than putting every newly distinguishable type in one bucket.
+    /// </summary>
+    [Fact]
+    public void HashingDoesNotUseThatShape()
+    {
+        var element = TypeDefinition.Get(typeof(int));
+
+        Assert.Equal(element.ToString(), element.MakeArray().ToString());
+        Assert.NotEqual(element.GetHashCode(), element.MakeArray().GetHashCode());
+        Assert.NotEqual(element.MakeArray().GetHashCode(), element.MakeArray().MakeArray().GetHashCode());
+    }
+
     [Fact]
     public void MakeOpenTypeStillOpens()
     {

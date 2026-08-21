@@ -67,19 +67,6 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     public abstract int CompareTo(ITypeDefinition other);
 
     /// <summary>
-    /// The fully qualified C# name of the type, which is what makes it a usable dictionary key: it
-    /// tells <c>int</c> from <c>int[]</c> and one nested type from another.
-    /// </summary>
-    public override string ToString()
-    {
-        var builder = new StringBuilder();
-
-        WriteTypeName(builder, TypeOutputMode.FullName);
-
-        return builder.ToString();
-    }
-
-    /// <summary>
     /// Two type definitions are equal when they are the same kind of definition and name the same
     /// type - the same container, the same generic arguments, the same array shape.
     /// </summary>
@@ -91,7 +78,26 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     public override int GetHashCode()
     {
         // ReSharper disable once NonReadonlyMemberInGetHashCode
-        return _hashCode ??= ToString().GetHashCode();
+        return _hashCode ??= HashKey().GetHashCode();
+    }
+
+    /// <summary>
+    /// A string that separates every type this model can now tell apart: the fully qualified C# name,
+    /// containers, generic arguments and array shape included.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately not <see cref="object.ToString"/>. That stays in its 1.x form, which a consumer
+    /// asserts on directly, and which cannot tell <c>int</c> from <c>int[]</c> or one nested
+    /// <c>Inner</c> from another - fine for equal values, which always agree on it, but it would put
+    /// every one of those newly distinguishable types in the same bucket.
+    /// </remarks>
+    private string HashKey()
+    {
+        var builder = new StringBuilder();
+
+        WriteTypeName(builder, TypeOutputMode.FullName);
+
+        return builder.ToString();
     }
 
     protected int BaseCompareTo(ITypeDefinition other)
