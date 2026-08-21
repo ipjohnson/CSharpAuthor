@@ -6,6 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--
+      Adversary suite only. The adversary's assertion is "the emitted string compiles", which needs
+      a compiler. This is the TEST project; CSharpAuthor.csproj takes no new dependency (handoff §3).
+    -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="SimpleFixture.NSubstitute" Version="4.0.0-RC190" />
     <PackageReference Include="SimpleFixture.xUnit" Version="4.0.0-RC190" />
