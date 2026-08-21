@@ -146,9 +146,12 @@ internal static class RoslynAssert
         string source, LanguageVersion languageVersion, bool allowUnsafe,
         string[]? warningsAsErrors = null)
     {
+        // DocumentationMode.Diagnose is what makes CS1570 - "XML comment has badly formed XML" -
+        // appear at all. Without it a malformed documentation comment is parsed as ordinary trivia
+        // and no test could ever see the defect.
         var tree = CSharpSyntaxTree.ParseText(
             source,
-            new CSharpParseOptions(languageVersion));
+            new CSharpParseOptions(languageVersion, DocumentationMode.Diagnose));
 
         var options = new CSharpCompilationOptions(
             OutputKind.DynamicallyLinkedLibrary,
