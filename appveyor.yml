@@ -1,6 +1,9 @@
+# The build label only. It used to set the package version too, through Version below, and that
+# override outlived the move to tag-based releases - so this CI packed 1.1.1010 while every other
+# path packed the csproj's 1.2.0. The package version comes from VersionPrefix in the csproj, or
+# from the release tag when release.yaml passes -p:Version.
 environment:
-  build_version: 1.1.1010
-  Version: $(build_version)
+  build_version: 1.2.0
 version: $(build_version)-{build}
 configuration: Release
 assembly_info:
