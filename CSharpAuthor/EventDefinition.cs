@@ -53,7 +53,7 @@ public class EventDefinition : BaseOutputComponent, INamedComponent
         outputContext.Write("event ");
         outputContext.Write(HandlerType);
         outputContext.WriteSpace();
-        outputContext.Write(Name);
+        outputContext.Write(CSharpIdentifier.Escape(Name));
 
         // Without a body on either accessor this is a field-like event, which is the shape almost
         // every event is declared in.

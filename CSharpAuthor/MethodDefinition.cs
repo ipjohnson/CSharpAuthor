@@ -204,7 +204,7 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
             outputContext.Write(".");
         }
 
-        outputContext.Write(Name);
+        outputContext.Write(CSharpIdentifier.Escape(Name));
 
         if (_genericParameters.Count > 0)
         {

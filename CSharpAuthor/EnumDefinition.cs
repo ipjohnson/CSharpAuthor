@@ -70,7 +70,7 @@ public class EnumDefinition : BaseOutputComponent, INamedComponent
         var modifier =  GetAccessModifier("public");
 
         outputContext.WriteIndent();
-        outputContext.Write($"{modifier} enum {_enumName}");
+        outputContext.Write($"{modifier} enum {CSharpIdentifier.Escape(_enumName)}");
 
         if (BaseType != null)
         {

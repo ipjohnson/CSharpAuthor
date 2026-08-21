@@ -499,7 +499,7 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         outputContext.Write(GetTypeKeywordString());
         outputContext.WriteSpace();
 
-        outputContext.Write(Name);
+        outputContext.Write(CSharpIdentifier.Escape(Name));
 
         if (_genericParameters.Count > 0)
         {

@@ -105,7 +105,7 @@ public class InterfaceDefinition : BaseOutputComponent, INamedComponent
         outputContext.Write(KeyWords.Interface);
         outputContext.WriteSpace();
 
-        outputContext.Write(Name);
+        outputContext.Write(CSharpIdentifier.Escape(Name));
 
         if (BaseTypes.Count > 0)
         {

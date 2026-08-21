@@ -27,7 +27,7 @@ public class EnumValueDefinition : BaseOutputComponent
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
         outputContext.WriteIndent();
-        outputContext.Write(_enumValueName);
+        outputContext.Write(CSharpIdentifier.Escape(_enumValueName));
 
         if (Value != null)
         {

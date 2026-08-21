@@ -29,7 +29,7 @@ public class FieldDefinition : BaseOutputComponent, INamedComponent
 
         outputContext.WriteIndent($"{accessModifier} {modifiers}");
         outputContext.Write(TypeDefinition);
-        outputContext.Write($" {Name}");
+        outputContext.Write(" " + CSharpIdentifier.Escape(Name));
 
         if (InitializeValue != null)
         {
