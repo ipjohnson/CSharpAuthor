@@ -1,0 +1,99 @@
+name: Documentation
+
+# Builds the DocFX site and publishes it to GitHub Pages.
+#
+# Pushes to main publish. Pull requests and manual runs build without publishing, which is what
+# catches a broken code-include reference or a sample that stopped compiling before it is merged.
+#
+# One-time setup in the repository: Settings -> Pages -> Source: "GitHub Actions".
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docfx/**'
+      - 'docs/**'
+      - 'CSharpAuthor/**'
+      - '.config/dotnet-tools.json'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docfx/**'
+      - 'docs/**'
+      - 'CSharpAuthor/**'
+      - '.config/dotnet-tools.json'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time. Do not cancel an in-flight one: a half-finished Pages deployment is
+# worse than a stale site.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restore tools
+        run: dotnet tool restore
+
+      # The samples are the site's C# blocks and its "produces" blocks. Checking them here is what
+      # makes the claim that nothing on the site is hand-typed worth anything.
+      - name: Check the documentation samples
+        run: dotnet run --project docfx/samples/CSharpAuthor.Docs.Samples
+
+      # Also builds the generator project, which source-includes the library exactly as the
+      # package's targets do - so this step fails if source inclusion breaks.
+      - name: Check the generator sample, and that its output compiles
+        run: dotnet run --project docfx/samples/CSharpAuthor.Docs.Samples.Generator.Runner
+
+      # DocFX's metadata phase builds CSharpAuthor.csproj itself and reads the XML documentation
+      # file it produces.
+      - name: Build the site
+        run: dotnet docfx docfx/docfx.json
+
+      - name: Configure Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docfx/_site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
