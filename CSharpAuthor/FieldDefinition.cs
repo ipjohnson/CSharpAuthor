@@ -25,7 +25,11 @@ public class FieldDefinition : BaseOutputComponent, INamedComponent
         var modifiers = Modifiers.GetModifierKeywords(
             ComponentModifier.Static | ComponentModifier.Readonly);
 
-        outputContext.WriteIndent($"{accessModifier} {modifiers}");
+        // The space belongs to the keyword, not to the position. Written unconditionally it left a
+        // member declared without accessibility indented one column too far - `     int f;` - which
+        // compiles and shows up in the diff of every snapshot it appears in.
+        outputContext.WriteIndent(
+            accessModifier.Length > 0 ? accessModifier + " " + modifiers : modifiers);
         outputContext.Write(TypeDefinition);
         outputContext.Write(" " + CSharpIdentifier.Escape(Name));
 

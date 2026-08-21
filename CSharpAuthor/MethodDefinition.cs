@@ -163,6 +163,12 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
     /// time, so the result compiled as an ordinary empty method and the abstraction quietly
     /// disappeared instead.
     /// </remarks>
+    /// <remarks>
+    /// A <c>partial</c> method with no statements is NOT bodyless here, though the defining half of
+    /// one has to be: <c>ModifierTests.ModifierMatrixTests.APartialMethodStillWritesItsBodyByDefault</c>
+    /// pins the opposite, so <see cref="OmitBody"/> stays the way a caller says which half this is.
+    /// That leaves adversary #50 open. See docs/migration-v1-v2.md.
+    /// </remarks>
     private bool IsBodyless =>
         OmitBody || (Modifiers & ComponentModifier.Abstract) == ComponentModifier.Abstract;
 

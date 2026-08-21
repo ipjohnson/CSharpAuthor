@@ -95,6 +95,19 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
     }
     
 
+    /// <summary>
+    /// A documentation comment on the namespace declaration.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="BaseOutputComponent.Comment"/> is settable on every component, and this was one
+    /// of the two that never read it - so a comment set on a namespace compiled, read as documented,
+    /// and emitted nothing.
+    /// </remarks>
+    protected override void WriteComment(IOutputContext outputContext)
+    {
+        DocumentationComment.WriteSummary(outputContext.WriteIndentedLine, Comment);
+    }
+
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
         if (!string.IsNullOrEmpty(_namespace))

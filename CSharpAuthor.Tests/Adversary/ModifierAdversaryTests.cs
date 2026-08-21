@@ -36,7 +36,7 @@ public class ModifierAdversaryTests
         Assert.StartsWith("private protected void", Emit.Component(method));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: Internal is tested before Public, so a component carrying both emits internal - narrowing, silently")]
+    [Fact]
     public void PublicAndInternalTogether()
     {
         var classDefinition = new ClassDefinition("Host")
@@ -167,7 +167,7 @@ public class ModifierAdversaryTests
     /// without accessibility carries a stray one. It compiles, and it is in the diff of every
     /// snapshot such a member appears in.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: NoAccessibility writes an empty string and then a space, so the member is indented one column too far - '     int f;' with five spaces")]
+    [Fact]
     public void NoAccessibilityDoesNotLeaveAStraySpace()
     {
         var classDefinition = new ClassDefinition("Host");
@@ -177,7 +177,7 @@ public class ModifierAdversaryTests
         Assert.Contains("\n    int f;", Emit.Component(classDefinition));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: the same stray space on a property written without accessibility")]
+    [Fact]
     public void NoAccessibilityOnAPropertyDoesNotLeaveAStraySpace()
     {
         var classDefinition = new ClassDefinition("Host");

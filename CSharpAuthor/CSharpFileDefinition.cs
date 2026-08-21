@@ -52,6 +52,19 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
     /// </summary>
     public string Namespace => _namespaceDefinition.Namespace;
 
+    /// <summary>
+    /// A file-level documentation comment, written above the using directives.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="BaseOutputComponent.Comment"/> is settable on every component and was read by
+    /// most of them; this one and <see cref="NamespaceDefinition"/> never read it, so a comment set
+    /// on a file compiled, read as documented and emitted nothing at all.
+    /// </remarks>
+    protected override void WriteComment(IOutputContext outputContext)
+    {
+        DocumentationComment.WriteSummary(outputContext.WriteIndentedLine, Comment);
+    }
+
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
         // The file's own namespace is in scope for everything in it, so a using naming it back is
@@ -59,6 +72,10 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
         if (outputContext is OutputContext context)
         {
             context.DeclareContainingNamespace(_namespaceDefinition.Namespace);
+
+            // Anything written before this point - a leading trait, the file's own comment - is the
+            // header, and the generated using directives go after it rather than above it.
+            context.MarkEndOfFileHeader();
         }
 
         _namespaceDefinition.WriteOutput(outputContext);
