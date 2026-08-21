@@ -5,7 +5,10 @@ namespace CSharpAuthor.Profiles;
 /// <summary>
 /// <c>nameof(x)</c>, or the string it would have produced on a target that predates it.
 /// </summary>
-public class NameOfStatement : BaseOutputComponent
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+class NameOfStatement : BaseOutputComponent
 {
     private readonly string _symbol;
 

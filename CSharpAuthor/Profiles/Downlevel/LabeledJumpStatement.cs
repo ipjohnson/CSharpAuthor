@@ -3,7 +3,10 @@ using System;
 namespace CSharpAuthor.Profiles;
 
 /// <summary>Which loop keyword a labeled jump is.</summary>
-public enum LabeledJumpKind
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+enum LabeledJumpKind
 {
     /// <summary>Leaves the labeled loop.</summary>
     Break,
@@ -21,7 +24,10 @@ public enum LabeledJumpKind
 /// <see cref="LabeledLoopStatement"/> it names, which only declares the ones something actually
 /// jumps to - so this records the use rather than assuming it.
 /// </remarks>
-public class LabeledJumpStatement : BaseOutputComponent
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+class LabeledJumpStatement : BaseOutputComponent
 {
     private readonly LabeledJumpKind _kind;
     private readonly string _label;

@@ -27,7 +27,10 @@ namespace CSharpAuthor.Expressions;
 /// <c>AddImportNamespace</c>; namespaces are derived from what was written.
 /// </para>
 /// </remarks>
-public sealed partial class Ex : IExpressionNode
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed partial class Ex : IExpressionNode
 {
     private readonly Action<IOutputContext> _write;
 

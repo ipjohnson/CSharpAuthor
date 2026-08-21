@@ -14,7 +14,10 @@ namespace CSharpAuthor.Profiles;
 /// every call site that happened to remember - <c>"he said "hi""</c> is a verified V1 defect and
 /// it is a defect of the second kind.
 /// </remarks>
-public class StringLiteralStatement : BaseOutputComponent
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+class StringLiteralStatement : BaseOutputComponent
 {
     private readonly string _value;
 

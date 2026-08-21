@@ -54,7 +54,10 @@ namespace CSharpAuthor.Collections;
 /// CS0104.
 /// </para>
 /// </remarks>
-public readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IReadOnlyList<T>
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IReadOnlyList<T>
 {
     private readonly T[]? _items;
 

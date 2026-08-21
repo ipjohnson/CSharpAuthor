@@ -15,7 +15,10 @@ namespace CSharpAuthor.Profiles;
 /// <c>using CSharpAuthor;</c>. See the note above the namespace declaration in
 /// <c>Profiles/LanguageVersion.cs</c>.
 /// </remarks>
-public sealed class EmitResult
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class EmitResult
 {
     internal EmitResult(string code, EmitSession session)
     {
@@ -53,7 +56,10 @@ public sealed class EmitResult
 /// <c>ProfileTests/DownlevelDemoTests</c> is where it is checked against a real compiler at two
 /// language versions.
 /// </remarks>
-public static class ProfileEmitter
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+static class ProfileEmitter
 {
     /// <summary>
     /// Renders a file.

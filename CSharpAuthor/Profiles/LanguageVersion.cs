@@ -35,7 +35,10 @@ namespace CSharpAuthor.Profiles;
 /// green test run as a conformance claim for them.
 /// </para>
 /// </remarks>
-public enum LanguageVersion
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+enum LanguageVersion
 {
     /// <summary>
     /// Unspecified. Resolved to <see cref="EmitProfile.DefaultTarget"/> by
@@ -91,7 +94,10 @@ public enum LanguageVersion
 /// <summary>
 /// Display helpers for <see cref="LanguageVersion"/>.
 /// </summary>
-public static class LanguageVersionExtensions
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+static class LanguageVersionExtensions
 {
     /// <summary>
     /// The form used in a <c>// DOWNLEVEL:</c> comment - <c>C#9</c>, <c>C#7.3</c>, <c>preview</c>.

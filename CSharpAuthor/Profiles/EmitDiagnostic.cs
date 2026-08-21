@@ -5,7 +5,10 @@ namespace CSharpAuthor.Profiles;
 /// <summary>
 /// How much a diagnostic matters. Only <see cref="Error"/> stops anything.
 /// </summary>
-public enum EmitSeverity
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+enum EmitSeverity
 {
     /// <summary>A rendering choice was taken. Nothing changed meaning.</summary>
     Info,
@@ -26,7 +29,10 @@ public enum EmitSeverity
 /// output that looked fine and did not compile, or compiled and meant something else. Either the
 /// caller finds out by exception, or the compiler finds out by <c>#error</c>.
 /// </remarks>
-public enum CapabilityViolationBehavior
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+enum CapabilityViolationBehavior
 {
     /// <summary>Throw <see cref="EmitCapabilityException"/> at the point of the violation.</summary>
     Throw,
@@ -41,7 +47,10 @@ public enum CapabilityViolationBehavior
 /// <summary>
 /// Where a <c>// DOWNLEVEL:</c> comment goes.
 /// </summary>
-public enum DownlevelCommentPlacement
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+enum DownlevelCommentPlacement
 {
     /// <summary>Nowhere. The diagnostics are still recorded on the session.</summary>
     None,
@@ -62,7 +71,10 @@ public enum DownlevelCommentPlacement
 /// profile only knows the language version. <see cref="Auto"/> is therefore a proxy, not an
 /// answer: a netstandard2.0 generator emitting C# 12 needs <see cref="Always"/>.
 /// </remarks>
-public enum PolyfillMode
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+enum PolyfillMode
 {
     /// <summary>Never. The consumer is expected to have the types.</summary>
     None,
@@ -80,7 +92,10 @@ public enum PolyfillMode
 /// <summary>
 /// Something the writer decided, or could not do, while rendering a tree for a target version.
 /// </summary>
-public sealed class EmitDiagnostic
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class EmitDiagnostic
 {
     /// <summary>A free downlevel was taken: a different rendering, the same meaning.</summary>
     public const string PreferenceResolvedId = "CSA0001";
@@ -150,7 +165,10 @@ public sealed class EmitDiagnostic
 /// <see cref="EmitProfile.OnCapabilityViolation"/> to
 /// <see cref="CapabilityViolationBehavior.EmitErrorDirective"/> where throwing is not an option.
 /// </remarks>
-public sealed class EmitCapabilityException : InvalidOperationException
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class EmitCapabilityException : InvalidOperationException
 {
     internal EmitCapabilityException(EmitDiagnostic diagnostic)
         : base(diagnostic.ToString())

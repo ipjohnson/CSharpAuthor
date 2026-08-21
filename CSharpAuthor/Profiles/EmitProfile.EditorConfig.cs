@@ -13,7 +13,10 @@ namespace CSharpAuthor.Profiles;
 /// </summary>
 public delegate bool EditorConfigOptionLookup(string key, out string? value);
 
-public sealed partial class EmitProfile
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed partial class EmitProfile
 {
     /// <summary>
     /// A profile that formats the way the host project's .editorconfig says to.

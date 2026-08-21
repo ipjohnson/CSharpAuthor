@@ -14,7 +14,10 @@ namespace CSharpAuthor.Profiles;
 /// cannot check it, so it asks rather than assumes; assuming is how a switch on types becomes a
 /// chain of reference comparisons that compiles and is wrong.
 /// </remarks>
-public class SwitchExpressionStatement : BaseOutputComponent
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+class SwitchExpressionStatement : BaseOutputComponent
 {
     private readonly IOutputComponent _input;
     private readonly List<KeyValuePair<IOutputComponent, IOutputComponent>> _arms =

@@ -33,7 +33,10 @@ namespace CSharpAuthor.Profiles;
 /// A session is not thread-safe; one belongs to one write.
 /// </para>
 /// </remarks>
-public sealed class EmitSession
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class EmitSession
 {
     private readonly List<EmitDiagnostic> _diagnostics = new List<EmitDiagnostic>();
     private readonly List<string> _notes = new List<string>();

@@ -18,7 +18,10 @@ namespace CSharpAuthor.Profiles;
 /// that compiles and that nobody would have written by hand.
 /// </para>
 /// </remarks>
-public class LabeledLoopStatement : BaseBlockDefinition
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+class LabeledLoopStatement : BaseBlockDefinition
 {
     private readonly string _label;
     private readonly IOutputComponent _header;

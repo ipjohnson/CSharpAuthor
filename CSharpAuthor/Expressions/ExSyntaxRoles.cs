@@ -10,19 +10,28 @@ namespace CSharpAuthor.Expressions;
 /// Every type here is <c>partial</c>, so the generated interfaces can be attached at
 /// integration time without editing this file.
 /// </remarks>
-public interface IExpressionNode : IOutputComponent
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+interface IExpressionNode : IOutputComponent
 {
     /// <summary>Where this expression sits on <see cref="ExPrecedence"/>'s ladder.</summary>
     int Precedence { get; }
 }
 
 /// <summary>Marker for anything that can stand where C# expects a statement.</summary>
-public interface IStatementNode : IOutputComponent
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+interface IStatementNode : IOutputComponent
 {
 }
 
 /// <summary>Marker for anything that can stand where C# expects a pattern.</summary>
-public interface IPatternNode : IOutputComponent
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+interface IPatternNode : IOutputComponent
 {
     /// <summary>Where this pattern sits on <see cref="PatPrecedence"/>'s ladder.</summary>
     int PatternPrecedence { get; }
@@ -32,7 +41,10 @@ public interface IPatternNode : IOutputComponent
 /// Pattern combinators have their own, much shorter, ladder:
 /// <c>or</c> is looser than <c>and</c>, which is looser than <c>not</c>.
 /// </summary>
-public static class PatPrecedence
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+static class PatPrecedence
 {
     /// <summary>Unknown shape. Always parenthesised.</summary>
     public const int Lowest = 0;

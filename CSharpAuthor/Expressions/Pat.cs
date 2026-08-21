@@ -13,7 +13,10 @@ namespace CSharpAuthor.Expressions;
 /// <c>(a or b) and c</c> has to say so with brackets or it silently becomes a different
 /// test. Both combinators are left-associative.
 /// </remarks>
-public sealed partial class Pat : IPatternNode
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed partial class Pat : IPatternNode
 {
     private readonly Action<IOutputContext> _write;
 

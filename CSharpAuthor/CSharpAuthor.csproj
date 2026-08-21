@@ -33,7 +33,20 @@
 			moment anyone wired the source in by hand, which is exactly how it is wired in
 			practice.
 		-->
-		<DefineConstants>$(DefineConstants);CSHARPAUTHOR_PUBLIC_SYNTAX</DefineConstants>
+		<!--
+			CSHARPAUTHOR_PUBLIC_API does for the hand-written Profiles, Expressions and Collections
+			namespaces what CSHARPAUTHOR_PUBLIC_SYNTAX does for the generated nodes: they are public
+			in this assembly, and internal in a consumer that source-includes the library.
+
+			Without it a consumer takes 47 CSharpAuthor types into its OWN published API surface and
+			has to support them forever. Internal costs that consumer nothing - under source inclusion
+			internal means internal to their assembly, so their code still uses EmitProfile and Ex
+			freely; it only stops those types leaking outward.
+
+			The core CSharpAuthor namespace is deliberately NOT guarded: 1.x already published it
+			into every source-including consumer, and hiding it now would be the breaking change.
+		-->
+		<DefineConstants>$(DefineConstants);CSHARPAUTHOR_PUBLIC_SYNTAX;CSHARPAUTHOR_PUBLIC_API</DefineConstants>
 
 		<!--
 			The XML documentation file is the input to the generated API reference on the

@@ -3,7 +3,10 @@ using System.Collections.Generic;
 
 namespace CSharpAuthor.Expressions;
 
-public sealed partial class Ex
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed partial class Ex
 {
     // ---------------------------------------------------------------------------------
     // Literals. Explicit, always — a bare string is an identifier, and that asymmetry is

@@ -10,7 +10,10 @@ namespace CSharpAuthor.Expressions;
 /// every one escapes, because <c>1,5</c> on de-DE and <c>"he said "hi""</c> are the two
 /// cheapest ways to emit code that does not compile.
 /// </summary>
-public static class CSharpText
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+static class CSharpText
 {
     private static readonly HashSet<string> ReservedKeywords = new HashSet<string>(StringComparer.Ordinal)
     {

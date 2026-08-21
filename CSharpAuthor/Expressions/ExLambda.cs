@@ -12,7 +12,10 @@ namespace CSharpAuthor.Expressions;
 /// why <c>(x =&gt; x)(3)</c> needs its brackets and why a lambda passed as an argument
 /// does not.
 /// </remarks>
-public sealed class ExLambda
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class ExLambda
 {
     private readonly List<KeyValuePair<ITypeDefinition?, string>> _parameters =
         new List<KeyValuePair<ITypeDefinition?, string>>();

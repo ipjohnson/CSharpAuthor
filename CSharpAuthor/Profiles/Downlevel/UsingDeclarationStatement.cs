@@ -11,7 +11,10 @@ namespace CSharpAuthor.Profiles;
 /// to this node rather than to whatever contains it. A writer that emitted only the header would
 /// have nothing to put inside the braces when it had to downlevel.
 /// </remarks>
-public class UsingDeclarationStatement : BaseBlockDefinition
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+class UsingDeclarationStatement : BaseBlockDefinition
 {
     private readonly IOutputComponent _declaration;
 

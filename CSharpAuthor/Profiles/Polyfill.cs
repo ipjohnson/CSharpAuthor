@@ -7,7 +7,10 @@ namespace CSharpAuthor.Profiles;
 /// A support type the compiler needs in order to accept a feature, which an older target
 /// framework may not ship.
 /// </summary>
-public enum PolyfillType
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+enum PolyfillType
 {
     /// <summary>Required by <c>init</c> accessors.</summary>
     IsExternalInit,
@@ -32,7 +35,10 @@ public enum PolyfillType
 /// forbids sharing a file with any other namespace declaration. <see cref="ProfileEmitter"/>
 /// falls back to a block namespace for the whole file when a polyfill has to be emitted into it.
 /// </remarks>
-public static class Polyfill
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+static class Polyfill
 {
     /// <summary>The feature a polyfill supports.</summary>
     public static IEnumerable<PolyfillType> For(LanguageFeature feature)

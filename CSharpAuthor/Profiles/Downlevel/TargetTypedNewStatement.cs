@@ -12,7 +12,10 @@ namespace CSharpAuthor.Profiles;
 /// rendering had nothing to write, which is exactly the trap that makes text impossible to
 /// downlevel and a tree easy.
 /// </remarks>
-public class TargetTypedNewStatement : BaseOutputComponent
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+class TargetTypedNewStatement : BaseOutputComponent
 {
     private readonly ITypeDefinition _typeDefinition;
     private readonly IReadOnlyList<IOutputComponent> _arguments;

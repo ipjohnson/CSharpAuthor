@@ -10,7 +10,10 @@ namespace CSharpAuthor.Profiles;
 /// once it lands, without <see cref="IOutputContext"/> itself changing shape and breaking every
 /// consumer that implements it.
 /// </remarks>
-public interface IProfiledOutputContext : IOutputContext
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+interface IProfiledOutputContext : IOutputContext
 {
     /// <summary>The profile in force, and everything this write has decided so far.</summary>
     EmitSession Session { get; }
@@ -24,7 +27,10 @@ public interface IProfiledOutputContext : IOutputContext
 /// version-appropriate output; components that do not are unaffected, which is what makes
 /// adopting profiles incremental rather than a rewrite.
 /// </remarks>
-public class ProfiledOutputContext : OutputContext, IProfiledOutputContext
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+class ProfiledOutputContext : OutputContext, IProfiledOutputContext
 {
     /// <summary>Starts a write under a profile.</summary>
     public ProfiledOutputContext(EmitProfile? profile = null)
@@ -54,7 +60,10 @@ public class ProfiledOutputContext : OutputContext, IProfiledOutputContext
 /// <summary>
 /// Reaching the profile from inside a writer.
 /// </summary>
-public static class OutputContextProfileExtensions
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+static class OutputContextProfileExtensions
 {
     /// <summary>
     /// The session for this write, or <see cref="EmitSession.Discarding"/> when the context

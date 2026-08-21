@@ -3,7 +3,10 @@ using System.Collections.Generic;
 
 namespace CSharpAuthor.Expressions;
 
-public sealed partial class Ex
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed partial class Ex
 {
     // ---------------------------------------------------------------------------------
     // Lambdas
@@ -133,7 +136,10 @@ public sealed partial class Ex
 }
 
 /// <summary>One arm of a switch expression.</summary>
-public sealed class ExSwitchArm : IOutputComponent
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class ExSwitchArm : IOutputComponent
 {
     private readonly Pat _pattern;
     private readonly Ex? _guard;

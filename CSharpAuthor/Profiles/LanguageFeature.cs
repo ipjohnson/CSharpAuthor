@@ -7,7 +7,10 @@ namespace CSharpAuthor.Profiles;
 /// The tree is version-agnostic: a node describes what it means, then asks the profile what it may
 /// emit. This enum is that question's vocabulary.
 /// </remarks>
-public enum LanguageFeature
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+enum LanguageFeature
 {
     // ---- free: a downlevel rendering exists that means the same thing --------------------------
 
@@ -105,7 +108,10 @@ public enum LanguageFeature
 /// <summary>
 /// What happens to a feature when the target does not have it.
 /// </summary>
-public enum FeatureCategory
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+enum FeatureCategory
 {
     /// <summary>
     /// A different rendering means the same thing. The downlevel is silent - it is a rendering
@@ -135,7 +141,10 @@ public enum FeatureCategory
 /// diagnostics, but no component in this library writes the alternative form yet - the writer that
 /// owns that construct has to.
 /// </remarks>
-public enum DownlevelSupport
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+enum DownlevelSupport
 {
     /// <summary>No alternative form exists (every <see cref="FeatureCategory.Impossible"/> feature).</summary>
     None,
@@ -150,7 +159,10 @@ public enum DownlevelSupport
 /// <summary>
 /// One row of the capability table.
 /// </summary>
-public sealed class FeatureInfo
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class FeatureInfo
 {
     internal FeatureInfo(
         LanguageFeature feature,
@@ -200,7 +212,10 @@ public sealed class FeatureInfo
 /// One table, consulted by every node. Versions are the release the syntax shipped in, not the
 /// release it was previewed in.
 /// </remarks>
-public static class LanguageFeatures
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+static class LanguageFeatures
 {
     private static readonly FeatureInfo[] Table =
     {

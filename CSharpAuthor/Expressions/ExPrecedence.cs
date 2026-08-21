@@ -28,7 +28,10 @@ namespace CSharpAuthor.Expressions;
 /// null-conditional chain instead of silently extending it.
 /// </para>
 /// </remarks>
-public static class ExPrecedence
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+static class ExPrecedence
 {
     /// <summary>Unknown shape. Always parenthesised in an operand position.</summary>
     public const int Lowest = 0;

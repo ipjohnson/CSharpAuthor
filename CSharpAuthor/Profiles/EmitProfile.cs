@@ -25,7 +25,10 @@ namespace CSharpAuthor.Profiles;
 /// caller's formatting. Use <see cref="Clone"/> or <see cref="With"/> to get a mutable copy.
 /// </para>
 /// </remarks>
-public sealed partial class EmitProfile
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed partial class EmitProfile
 {
     /// <summary>The version <see cref="LanguageVersion.Default"/> resolves to.</summary>
     public const LanguageVersion DefaultTarget = LanguageVersion.CSharp12;

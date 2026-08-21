@@ -5,7 +5,10 @@ using System.Text;
 
 namespace CSharpAuthor.Expressions;
 
-public sealed partial class Ex
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed partial class Ex
 {
     /// <summary>
     /// An interpolated string, <c>$"…"</c>. Strings are literal text; everything else is a
@@ -184,7 +187,10 @@ public sealed partial class Ex
 }
 
 /// <summary>A hole in an interpolated string, with an optional alignment and format.</summary>
-public sealed class ExInterpolationHole : IOutputComponent
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class ExInterpolationHole : IOutputComponent
 {
     private readonly Ex _value;
     private readonly int? _alignment;

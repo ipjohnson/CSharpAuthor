@@ -34,7 +34,10 @@ namespace CSharpAuthor.Expressions;
 /// this file being edited.
 /// </para>
 /// </remarks>
-public sealed partial class Raw : IExpressionNode, IStatementNode, IPatternNode
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed partial class Raw : IExpressionNode, IStatementNode, IPatternNode
 {
     private readonly object?[] _parts;
     private readonly int? _assertedPrecedence;

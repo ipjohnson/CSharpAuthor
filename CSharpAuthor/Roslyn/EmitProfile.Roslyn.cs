@@ -15,7 +15,10 @@ namespace CSharpAuthor.Profiles;
 /// <c>PackageCSharpAuthorIncludeSource</c> and <c>PackageCSharpAuthorIncludeRoslyn</c> are both
 /// set, and cannot be added to the shipped assembly, which does not reference Roslyn.
 /// </remarks>
-public sealed partial class EmitProfile
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed partial class EmitProfile
 {
     /// <summary>
     /// A profile that formats the way the host project's .editorconfig says to.

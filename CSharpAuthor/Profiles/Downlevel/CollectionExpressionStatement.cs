@@ -11,7 +11,10 @@ namespace CSharpAuthor.Profiles;
 /// writer's decision, taken from the profile at the moment of writing - which is why the same
 /// tree can produce both.
 /// </remarks>
-public class CollectionExpressionStatement : BaseOutputComponent
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+class CollectionExpressionStatement : BaseOutputComponent
 {
     private readonly ITypeDefinition? _elementType;
     private readonly IReadOnlyList<IOutputComponent> _values;
