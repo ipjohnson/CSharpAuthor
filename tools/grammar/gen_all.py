@@ -639,8 +639,61 @@ for name in sorted(concrete):
     w('')
     stats['nodes'] += 1
 
-os.makedirs(os.path.dirname(OUT), exist_ok=True)
-open(OUT, 'w').write('\n'.join(out) + '\n')
+if '--report' not in sys.argv:
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    open(OUT, 'w').write('\n'.join(out) + '\n')
+
+# ---------------------------------------------------------------------------
+# Coverage report - V2-HANDOFF.md 9(a). `--report` prints it and writes nothing.
+# ---------------------------------------------------------------------------
+
+if '--report' in sys.argv:
+    import collections
+
+    with open(os.path.join(HERE, 'Syntax.xml')) as handle:
+        raw = handle.read()
+    # Only the ones that exist *nowhere else*. A node can appear both live and inside
+    # a commented-out alternative spelling; that one is emitted and is not a gap.
+    commented = sorted({
+        name
+        for block in re.findall(r'<!--(.*?)-->', raw, re.S)
+        for name in re.findall(r'<Node Name="(\w+)"', block)
+    } - set(concrete))
+
+    by_category = collections.Counter(category(n) for n in concrete)
+    experimental_nodes = sorted(n for n in concrete if concrete[n].get('ExperimentalUrl'))
+    print()
+    print('C# NODE COVERAGE  (V2-HANDOFF.md 9(a))')
+    print('=' * 72)
+    print(f'concrete <Node> declarations in Syntax.xml : {len(concrete)}')
+    print(f'node classes emitted                       : {stats["nodes"]}')
+    print(f'coverage                                   : '
+          f'{100.0 * stats["nodes"] / len(concrete):.1f}%')
+    print(f'declared only inside an XML comment         : {len(commented)}'
+          + (f'  ({", ".join(commented)})' if commented else ''))
+    print()
+    print('by category:')
+    for cat_name, count in sorted(by_category.items(), key=lambda kv: -kv[1]):
+        print(f'  {cat_name:14} {count:4}')
+    print()
+    print(f'nodes taking a caller-supplied token value : {stats["nodes_with_value_token"]}'
+          f'  ({stats["value_tokens"]} such tokens)')
+    print('  (an identifier, a literal, or an operator - the grammar names the slot')
+    print('   but gives no spelling, so the caller supplies one)')
+    print()
+    print(f'experimental, emitted but not parseable by a shipping compiler: '
+          f'{len(experimental_nodes)}')
+    for n in experimental_nodes:
+        print(f'  {n}  {concrete[n].get("ExperimentalUrl")}')
+    print()
+    print('NOT expressible as a node, by construction:')
+    print('  //  and  /* */  comments - trivia in Roslyn, no <Node> exists for them.')
+    print('     Reachable through Raw, and through DocumentationCommentTrivia for /// docs.')
+    print('  #if / #endif spans - the directive nodes emit, but a region wraps an')
+    print('     arbitrary span of other nodes rather than containing them, so the tree')
+    print('     cannot nest one. Reachable through Raw.')
+    print('=' * 72)
+    sys.exit(0)
 
 print(f'nodes in grammar   : {len(concrete)}', file=sys.stderr)
 print(f'nodes emitted      : {stats["nodes"]}', file=sys.stderr)

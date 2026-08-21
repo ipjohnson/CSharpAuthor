@@ -56,6 +56,28 @@ readonly struct TypeRef
     public static implicit operator TypeRef(string? name) =>
         string.IsNullOrEmpty(name) ? default : new TypeRef(new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", name!, false), null);
 
+    // C# forbids a user-defined conversion from an interface, so IType cannot have one.
+    // The concrete type nodes a caller actually writes get one each, which is what keeps
+    // `new MethodDeclaration(new PredefinedType("void"), ...)` from needing a wrapper.
+
+    public static implicit operator TypeRef(PredefinedType? node) => Of(node);
+
+    public static implicit operator TypeRef(ArrayType? node) => Of(node);
+
+    public static implicit operator TypeRef(NullableType? node) => Of(node);
+
+    public static implicit operator TypeRef(PointerType? node) => Of(node);
+
+    public static implicit operator TypeRef(TupleType? node) => Of(node);
+
+    public static implicit operator TypeRef(IdentifierName? node) => Of(node);
+
+    public static implicit operator TypeRef(GenericName? node) => Of(node);
+
+    public static implicit operator TypeRef(QualifiedName? node) => Of(node);
+
+    public static implicit operator TypeRef(AliasQualifiedName? node) => Of(node);
+
     /// <summary>Wrap an <see cref="ITypeDefinition"/>. Cannot be an implicit operator - it is an interface.</summary>
     public static TypeRef Of(ITypeDefinition? definition) =>
         definition == null ? default : new TypeRef(definition, null);
