@@ -31,8 +31,8 @@ HARNESS_DIR="${TOOL_DIR}/CSharpAuthor.RoundTrip"
 GEN_DIR="${HARNESS_DIR}/Generated"
 
 CORPUS="own"
-LAYER="proto,rt"
-TYPES="model"
+LAYER=""
+TYPES="auto"
 RT_SPACING="gen_all"
 OUT=""
 EMIT_DIR=""
@@ -51,12 +51,20 @@ usage: run-roundtrip.sh <path-to-csharpauthor-checkout> [options]
                      own      the checkout's own CSharpAuthor/**/*.cs
                      dm       consumers/DependencyModules
                      hardened consumers/Hardened.Framework
-  --layer LIST       proto | rt | proto,rt   (default proto,rt)
-                     proto  the node layer as committed - THE HEADLINE NUMBER
-                     rt     a complete layer generated from the same Syntax.xml with
-                            absent optional tokens representable - the diagnostic ceiling
-  --types MODE       model | verbatim   (default model)
-                     model     TypeSyntax must fit ITypeDefinition; what it cannot hold fails
+  --layer LIST       syntax | proto | rt, comma-separated
+                     (default: syntax when the checkout has CSharpAuthor/Syntax/Nodes.g.cs,
+                      otherwise proto)
+                     syntax the shipping node layer, CSharpAuthor.Syntax - THE HEADLINE
+                     proto  proto/grammar/Nodes.cs, superseded by syntax; kept so the
+                            harness still runs against a pre-grammar checkout
+                     rt     a standalone layer this harness generates from the same
+                            Syntax.xml; was the diagnostic ceiling before syntax landed
+  --types MODE       auto | model | verbatim   (default auto)
+                     auto      ITypeDefinition when the type model can hold the shape, a
+                               grammar type node when it cannot - the layer as designed,
+                               and the headline
+                     model     ITypeDefinition only; what it cannot hold is a failure. This
+                               measures the type model and the 1 deferral on their own
                      verbatim  carry the type's text through, to separate emitter failures
                                from type-model failures
   --rt-spacing P     gen_all | identifier-aware   (default gen_all)
@@ -118,8 +126,9 @@ WORKDIR="${WORKDIR:-${TMPDIR:-/tmp}/csharpauthor-roundtrip}"
 STAGE="${WORKDIR}/stage"
 rm -rf "${STAGE}"
 mkdir -p "${STAGE}"
-for d in CSharpAuthor proto; do
+for d in CSharpAuthor proto tools/grammar; do
     [[ -d "${TARGET}/${d}" ]] || continue
+    mkdir -p "${STAGE}/$(dirname "${d}")"
     (cd "${TARGET}" && tar cf - --exclude=obj --exclude=bin --exclude=.git "${d}") \
         | (cd "${STAGE}" && tar xf -)
 done
@@ -175,6 +184,11 @@ rm -f /tmp/roundtrip-build.$$
 # ---------------------------------------------------------------------------
 # 4. Run.
 # ---------------------------------------------------------------------------
+if [[ -z "${LAYER}" ]]; then
+    if [[ -f "${TARGET}/CSharpAuthor/Syntax/Nodes.g.cs" ]]; then LAYER="syntax"; else LAYER="proto"; fi
+fi
+echo "layer                      : ${LAYER}   types: ${TYPES}"
+
 RUN_ARGS=(--repo "${TARGET}" --corpus "${CORPUS}" --layer "${LAYER}" --types "${TYPES}")
 [[ -n "${CONSUMERS}" ]] && RUN_ARGS+=(--consumers "${CONSUMERS}")
 [[ -n "${EMIT_DIR}"  ]] && RUN_ARGS+=(--emit-dir "${EMIT_DIR}")

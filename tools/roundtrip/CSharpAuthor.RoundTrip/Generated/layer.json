@@ -51,6 +51,8 @@
     "ContinueStatementSyntax.Name",
     "IgnoredDirectiveTriviaSyntax.Content"
   ],
+  "shippingLayer": true,
+  "shippingImporterCases": 245,
   "typeModelMultiRankArrays": true,
   "rtSpacing": "gen_all",
   "rtDelta": [
