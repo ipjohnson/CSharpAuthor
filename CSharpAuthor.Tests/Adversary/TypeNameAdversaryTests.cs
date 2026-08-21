@@ -23,7 +23,7 @@ namespace Probe
     /// non-null strings. They are different types, both compile, and the library can only write the
     /// second - so a caller asking for the first is given the other one with no indication.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: MakeNullable().MakeArray() emits string[]? - the ? and the [] are written in a fixed order, so an array OF a nullable element cannot be expressed and silently becomes a nullable array instead")]
+    [Fact]
     public void NullableElementArray_WritesQuestionBeforeBrackets()
     {
         var type = TypeDefinition.Get(typeof(string)).MakeNullable().MakeArray();
@@ -35,7 +35,7 @@ namespace Probe
     /// The same defect asked as a compile question rather than a string question, so it cannot be
     /// satisfied by agreeing with the current output.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: emits string[]? so assigning null to an element is CS8625 - the nullability landed on the array, not on the element")]
+    [Fact]
     public void NullableElementArray_AcceptsNullElement()
     {
         var type = TypeDefinition.Get(typeof(string)).MakeNullable().MakeArray();
@@ -53,7 +53,7 @@ namespace Probe
         Assert.Equal("T?[]", Emit.TypeName(type));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: same fixed ? / [] order on a generic type - List<int>?[] is written as List<int>[]?")]
+    [Fact]
     public void NullableElementArray_OnGenericType()
     {
         var type = new GenericTypeDefinition(
