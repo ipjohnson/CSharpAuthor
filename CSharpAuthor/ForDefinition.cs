@@ -17,10 +17,19 @@ namespace CSharpAuthor;
 /// </remarks>
 public class ForDefinition : BaseBlockDefinition
 {
+    /// <summary>
+    /// A loop with no clauses set - <c>for(; ; )</c> until
+    /// <see cref="Initializer"/>, <see cref="Condition"/> and <see cref="Increment"/> are assigned.
+    /// </summary>
     public ForDefinition()
     {
     }
 
+    /// <summary>
+    /// A loop with all three clauses given. Any of them may be null, because C# allows each to be
+    /// empty. Prefer <see cref="BaseBlockDefinition.For(IOutputComponent, IOutputComponent, IOutputComponent)"/>,
+    /// which builds one and attaches it to a block.
+    /// </summary>
     public ForDefinition(
         IOutputComponent? initializer, IOutputComponent? condition, IOutputComponent? increment)
     {

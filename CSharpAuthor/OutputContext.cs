@@ -5,25 +5,171 @@ using System.Text;
 
 namespace CSharpAuthor;
 
+/// <summary>
+/// How a type reference is written, and therefore whether the file needs <c>using</c> directives at
+/// all.
+/// </summary>
+/// <remarks>
+/// <para>
+/// This is the single most consequential option in the library, because it decides whether the
+/// generated file can be broken by code it does not contain. Take one file with two <c>Result</c>
+/// types in it, from <c>Sample.Models</c> and <c>Other.Models</c>:
+/// </para>
+/// <example>
+/// <see cref="Global"/>:
+/// <code>
+/// namespace Sample
+/// {
+///     public class Greeter
+///     {
+///         public global::Sample.Models.Result A { get; set; }
+///
+///         public global::Other.Models.Result B { get; set; }
+///     }
+/// }
+/// </code>
+/// <see cref="ShortName"/>:
+/// <code>
+/// using Sample.Models;
+/// using ModelsResult = Other.Models.Result;
+///
+/// namespace Sample
+/// {
+///     public class Greeter
+///     {
+///         public Result A { get; set; }
+///
+///         public ModelsResult B { get; set; }
+///     }
+/// }
+/// </code>
+/// </example>
+/// <para>
+/// <strong><see cref="Global"/> is the safer default for a generator, and is what this library's
+/// maintainer uses.</strong> A fully qualified name cannot be captured by a type someone adds to
+/// the consuming project later, cannot be shadowed by a type parameter, and cannot become ambiguous
+/// because two <c>using</c> directives brought in the same short name. None of those failures are
+/// in the generated file, which is why they are the ones that survive review.
+/// </para>
+/// <para>
+/// <see cref="ShortName"/> is for output a person is meant to read - a scaffolded file that is
+/// committed and then edited by hand. It is safe against the collisions the file itself contains,
+/// because <see cref="OutputContextOptions.AliasCollisions"/> gives the loser of a contested name a
+/// <c>using X = Ns.X;</c> alias rather than emitting a reference that is ambiguous. It cannot be
+/// safe against a name the file has never seen.
+/// </para>
+/// </remarks>
 public enum TypeOutputMode
 {
+    /// <summary>
+    /// <c>global::Sample.Models.Result</c>. Qualifies every type and emits no derived
+    /// <c>using</c> directives, because the qualification already says everything one would.
+    /// </summary>
+    /// <remarks>
+    /// The mode that cannot be broken from outside the file: <c>global::</c> is resolved from the
+    /// root alias, so it is immune even to a namespace that shadows the one being named. Namespaces
+    /// asked for by name through <see cref="BaseOutputComponent.AddUsingNamespace"/> are still
+    /// written - an extension method is reached through a directive and no other way - unless
+    /// <see cref="OutputContextOptions.EmitExplicitUsings"/> is off.
+    /// </remarks>
     Global,
+
+    /// <summary>
+    /// <c>Sample.Models.Result</c>. Fully qualified, but without the <c>global::</c> prefix, and no
+    /// derived <c>using</c> directives.
+    /// </summary>
+    /// <remarks>
+    /// Reads better than <see cref="Global"/> and is weaker: an ordinary qualified name is still
+    /// resolved relative to the enclosing namespaces, so a nested namespace of the right name
+    /// captures it. Choose it when the output is read by people and <c>global::</c> is noise, not
+    /// when correctness is the reason for qualifying.
+    /// </remarks>
     FullName,
+
+    /// <summary>
+    /// <c>Result</c>, with <c>using Sample.Models;</c> derived from the types the file actually
+    /// wrote, and an alias for any short name two namespaces both claim.
+    /// </summary>
+    /// <remarks>
+    /// The default, and the mode a hand-written file uses. The <c>using</c> list is derived rather
+    /// than declared, so a type cannot reach the output without its namespace reaching the header.
+    /// See <see cref="OutputContextOptions.AliasCollisions"/> for what happens when two types
+    /// contest a name.
+    /// </remarks>
     ShortName,
 }
 
+/// <summary>
+/// Everything about a generated file that is decided when it is serialized rather than when it is
+/// written: layout, and how type names are spelled.
+/// </summary>
+/// <remarks>
+/// None of this reaches the tree. The same <see cref="CSharpFileDefinition"/> written into two
+/// contexts with different options produces two different files, so a generator can offer a style
+/// switch without threading it through every writer.
+/// </remarks>
 public class OutputContextOptions
 {
+    /// <summary>
+    /// The character one indent level is made of. A space by default; set it to <c>'\t'</c> for
+    /// tabs, with <see cref="IndentCharCount"/> at 1.
+    /// </summary>
     public char IndentChar { get; set; } = ' ';
 
+    /// <summary>
+    /// How many <see cref="IndentChar"/> make one indent level. Four by default.
+    /// </summary>
     public int IndentCharCount { get; set; } = 4;
 
+    /// <summary>
+    /// The line separator. <c>"\n"</c> by default, on every platform.
+    /// </summary>
+    /// <remarks>
+    /// Fixed rather than taken from <see cref="Environment.NewLine"/>, so a generator produces the
+    /// same bytes on every machine and a snapshot test of its output is not a test of what CI runs
+    /// on.
+    /// </remarks>
     public string NewLine { get; set; } = "\n";
 
+    /// <summary>
+    /// Whether a call with several arguments is broken across lines, one argument each.
+    /// </summary>
+    /// <remarks>
+    /// <example>
+    /// On:
+    /// <code>
+    /// Api.Register(
+    ///     "a",
+    ///     "b",
+    ///     "c"
+    /// );
+    /// </code>
+    /// Off, the same call is one line.
+    /// </example>
+    /// </remarks>
     public bool BreakInvokeLines { get; set; } = true;
 
+    /// <summary>
+    /// Whether <see cref="BaseOutputComponent.Comment"/> is written as a <c>///</c> documentation
+    /// comment.
+    /// </summary>
+    /// <remarks>
+    /// Turning it off drops every comment in the file, including the <c>&lt;param&gt;</c> and
+    /// <c>&lt;returns&gt;</c> elements. For generated code nobody reads it is smaller output;
+    /// for a public API it is documentation a consumer's IDE will not show.
+    /// </remarks>
     public bool GenerateDocumentation { get; set; } = true;
 
+    /// <summary>
+    /// How type names are spelled, and therefore whether the file carries derived <c>using</c>
+    /// directives. See <see cref="CSharpAuthor.TypeOutputMode"/> - it is the option worth reading
+    /// about before choosing.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="TypeOutputMode.ShortName"/> by default, because that is what version 1 did.
+    /// <see cref="TypeOutputMode.Global"/> is the safer choice for a generator: it cannot be broken
+    /// by a type someone adds to the consuming project later.
+    /// </remarks>
     public TypeOutputMode TypeOutputMode { get; set; } = TypeOutputMode.ShortName;
 
     /// <summary>
@@ -37,9 +183,28 @@ public class OutputContextOptions
     /// second one a <c>using X = Ns.X;</c> alias instead of emitting a reference that is ambiguous.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Without this the file emits both names bare and the compiler reports CS0104. The collision is
     /// only visible once the whole file has been written, which is why nothing is committed to text
     /// before then.
+    /// </para>
+    /// <example>
+    /// Two <c>Result</c> types, from <c>Sample.Models</c> and <c>Other.Models</c>:
+    /// <code>
+    /// using Sample.Models;
+    /// using ModelsResult = Other.Models.Result;
+    /// ...
+    ///     public Result A { get; set; }
+    ///
+    ///     public ModelsResult B { get; set; }
+    /// </code>
+    /// The alias name is derived from the losing type's namespace, so it is stable across runs
+    /// rather than a counter that shifts when an unrelated type is added.
+    /// </example>
+    /// <para>
+    /// Only meaningful in <see cref="TypeOutputMode.ShortName"/>; the qualifying modes have no
+    /// collisions to resolve.
+    /// </para>
     /// </remarks>
     public bool AliasCollisions { get; set; } = true;
 
@@ -343,13 +508,31 @@ public class OutputContext : IOutputContext
     private int _indentCacheWidth = -1;
     private int _indentCacheDepth;
 
+    /// <summary>
+    /// The layout and naming decisions for this file. Read by everything that writes into the
+    /// context, and read again in <see cref="Output"/>.
+    /// </summary>
+    /// <remarks>
+    /// Settable up to the moment <see cref="Output"/> is called: the file is recorded as segments,
+    /// so changing the brace style or the output mode after everything has been written still
+    /// changes the text that comes out.
+    /// </remarks>
     public OutputContextOptions Options { get; }
 
+    /// <summary>
+    /// A context to write one file into. Defaults to
+    /// <see cref="TypeOutputMode.ShortName"/> with four-space Allman formatting.
+    /// </summary>
+    /// <remarks>
+    /// One context per file. Writing two <see cref="CSharpFileDefinition"/> into one produces a
+    /// single text with both namespaces in it, which is legal C# and almost never what was meant.
+    /// </remarks>
     public OutputContext(OutputContextOptions? options = null)
     {
         Options = options ?? new OutputContextOptions();
     }
 
+    /// <inheritdoc />
     public string SingleIndent
     {
         get
@@ -363,6 +546,7 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <inheritdoc />
     public string IndentString
     {
         get
@@ -394,16 +578,19 @@ public class OutputContext : IOutputContext
     /// <summary>The current indent depth, in indents rather than characters.</summary>
     public int IndentDepth => _indentIndex;
 
+    /// <inheritdoc />
     public void IncrementIndent()
     {
         _indentIndex++;
     }
 
+    /// <inheritdoc />
     public void DecrementIndent()
     {
         _indentIndex--;
     }
 
+    /// <inheritdoc />
     public void Write(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -574,11 +761,13 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <inheritdoc />
     public void WriteLine()
     {
         EmitNewLine();
     }
 
+    /// <inheritdoc />
     public void WriteLine(string text)
     {
         Write(text);
@@ -586,6 +775,7 @@ public class OutputContext : IOutputContext
         EmitNewLine();
     }
 
+    /// <inheritdoc />
     public void WriteSpace()
     {
         if (Streaming)
@@ -600,6 +790,7 @@ public class OutputContext : IOutputContext
         RecordValue(SegmentKind.Text, " ");
     }
 
+    /// <inheritdoc />
     public void WriteIndent(string text = "")
     {
         EmitIndent(_indentIndex);
@@ -607,6 +798,7 @@ public class OutputContext : IOutputContext
         Write(text);
     }
 
+    /// <inheritdoc />
     public void WriteIndentedLine(string text)
     {
         EmitIndent(_indentIndex);
@@ -616,6 +808,7 @@ public class OutputContext : IOutputContext
         EmitNewLine();
     }
 
+    /// <inheritdoc />
     public void OpenScope()
     {
         EmitScope(SegmentKind.ScopeOpen, _indentIndex);
@@ -623,6 +816,7 @@ public class OutputContext : IOutputContext
         _indentIndex++;
     }
 
+    /// <inheritdoc />
     public void CloseScope()
     {
         _indentIndex--;
@@ -1079,6 +1273,7 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <inheritdoc />
     public void AddImportNamespaces(IEnumerable<string> namespaces)
     {
         if (namespaces == null)
@@ -1105,6 +1300,7 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <inheritdoc />
     public void GenerateUsingStatements()
     {
         _generateUsings = true;
@@ -1147,6 +1343,7 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <inheritdoc />
     public char? LastCharacter
     {
         get
@@ -1249,6 +1446,37 @@ public class OutputContext : IOutputContext
     // using list can be derived rather than declared, and the only reason a collision can be seen.
     // -----------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// The generated C#, as text. This is where the file is actually produced.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Everything before this point recorded segments; nothing chose a name or a brace. Two things
+    /// follow, and neither is possible if text is committed as it is written.
+    /// </para>
+    /// <para>
+    /// The <c>using</c> directives are derived from the types the file actually wrote, so a type
+    /// cannot reach the output without its namespace reaching the header - a missing using is not a
+    /// bug that can happen. And a name is only chosen once the whole file is known, so two types
+    /// with the same short name can be told apart: the second gets an alias rather than an
+    /// ambiguous reference.
+    /// </para>
+    /// <example>
+    /// <code>
+    /// var file = new CSharpFileDefinition("Sample");
+    /// file.AddClass("Greeter");
+    ///
+    /// var context = new OutputContext();
+    /// file.WriteOutput(context);
+    /// return context.Output();
+    /// </code>
+    /// </example>
+    /// <para>
+    /// Calling it more than once is fine and gives the same text each time - it does not consume
+    /// the recording. Changing <see cref="Options"/> between two calls changes the second answer,
+    /// which is how one tree becomes both a qualified file and a short-name one.
+    /// </para>
+    /// </remarks>
     public string Output()
     {
         if (_path == PathStream)

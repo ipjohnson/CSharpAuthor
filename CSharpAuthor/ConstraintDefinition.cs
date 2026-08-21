@@ -37,6 +37,14 @@ public class ConstraintDefinition
     private string? _primary;
     private bool _defaultConstructor;
 
+    /// <summary>
+    /// Constraints for the parameter named <paramref name="typeParameter"/>. Prefer
+    /// <see cref="ClassDefinition.AddConstraint"/> or <see cref="MethodDefinition.AddConstraint"/>,
+    /// which build one, attach it, and return the existing one if the parameter is already
+    /// constrained - a second <c>where</c> for one parameter does not compile.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="typeParameter"/> is null or
+    /// blank.</exception>
     public ConstraintDefinition(string typeParameter)
     {
         if (string.IsNullOrWhiteSpace(typeParameter))

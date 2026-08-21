@@ -4,15 +4,28 @@ using System.Text;
 
 namespace CSharpAuthor;
 
+/// <summary>
+/// One member of an <see cref="EnumDefinition"/>.
+/// </summary>
 public class EnumValueDefinition : BaseOutputComponent
 {
     private readonly string _enumValueName;
 
+    /// <summary>
+    /// A member named <paramref name="enumValueName"/>. Prefer
+    /// <see cref="EnumDefinition.AddValue(string)"/>, which builds one and attaches it.
+    /// </summary>
     public EnumValueDefinition(string enumValueName)
     {
         _enumValueName = enumValueName;
     }
 
+    /// <summary>
+    /// The explicit value, or null to let the compiler number it.
+    /// </summary>
+    /// <remarks>
+    /// Null means "no <c>= n</c>", not the value zero - a member that should be zero has to say so.
+    /// </remarks>
     public object? Value { get; set; }
 
     /// <summary>

@@ -6,14 +6,54 @@ using CSharpAuthor.Profiles;
 
 namespace CSharpAuthor;
 
+/// <summary>
+/// Which of the four type declarations a <see cref="ClassDefinition"/> writes.
+/// </summary>
+/// <remarks>
+/// One class covers all four because they differ in a keyword and in what the language allows
+/// inside them, not in how they are built. Everything but <see cref="Class"/> has a minimum
+/// language version, and none of them has a downlevel: a record written as a class is a type with
+/// different equality, which compiles.
+/// </remarks>
 public enum ClassKeyword
 {
+    /// <summary><c>class</c>.</summary>
     Class,
+
+    /// <summary><c>record</c>. C# 9.</summary>
     Record,
+
+    /// <summary><c>struct</c>.</summary>
     Struct,
+
+    /// <summary><c>record struct</c>. C# 10.</summary>
     RecordStruct
 }
 
+/// <summary>
+/// A class, struct, record or record struct, and everything declared in it.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The workhorse of the library. Members are added through the <c>Add*</c> methods, each of which
+/// returns the member so it can be configured further:
+/// </para>
+/// <example>
+/// <code>
+/// var greeter = file.AddClass("Greeter");
+/// greeter.AddField(typeof(string), "_name").Modifiers =
+///     ComponentModifier.Private | ComponentModifier.Readonly;
+/// greeter.AddProperty(typeof(string), "Name").Set = null;
+/// greeter.AddMethod("Greet").Return("_name");
+/// </code>
+/// </example>
+/// <para>
+/// Members are written grouped by kind rather than in the order they were added - fields,
+/// constructors, properties, events, methods, then nested types - so a generator that discovers
+/// members in whatever order its input arrives in still emits a file that reads like one a person
+/// wrote.
+/// </para>
+/// </remarks>
 public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedComponent
 {
     private readonly List<BaseTypeReference> _baseTypes = new();
@@ -27,13 +67,32 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
     private readonly List<EventDefinition> _events = new();
     private readonly List<ConstraintDefinition> _constraints = new();
 
+    /// <summary>
+    /// A type declaration named <paramref name="name"/>. Prefer
+    /// <see cref="CSharpFileDefinition.AddClass"/>, which builds one and attaches it to a file.
+    /// </summary>
+    /// <remarks>
+    /// Constructing one directly is for a component that will be attached with
+    /// <see cref="AddComponent"/> or <see cref="CSharpFileDefinition.AddComponent"/> - a type built
+    /// by a helper that does not know what file it will land in.
+    /// </remarks>
     public ClassDefinition(string name)
     {
         Name = name;
     }
 
+    /// <summary>
+    /// The declared name, escaped with <c>@</c> if it is a keyword.
+    /// </summary>
     public string Name { get; }
 
+    /// <summary>
+    /// Which of <c>class</c>, <c>struct</c>, <c>record</c> and <c>record struct</c> this declares.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="CSharpFileDefinition.AddRecord"/> sets this to <see cref="ClassKeyword.Record"/>;
+    /// everything else arrives as a class and is changed here.
+    /// </remarks>
     public ClassKeyword TypeKeyword { get; set; } = ClassKeyword.Class;
 
     /// <summary>
@@ -103,6 +162,14 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         return constraint;
     }
 
+    /// <summary>
+    /// A type parameter given as a type - for a parameter that carries variance or that another
+    /// part of the generator already built.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="AddGenericParameter(string)"/> is the one to reach for; this is the same call
+    /// with the <see cref="TypeParameterDefinition"/> made by hand.
+    /// </remarks>
     public ClassDefinition AddGenericParameter(ITypeDefinition typeDefinition)
     {
         _genericParameters.Add(typeDefinition);
@@ -113,21 +180,50 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
     /// <summary>
     /// Adds a type parameter by name, for the common case of an unbound one.
     /// </summary>
+    /// <remarks>
+    /// <example>
+    /// <code>
+    /// var box = file.AddClass("Box");
+    /// box.AddGenericParameter("T");
+    /// box.AddConstraint("T").DefaultConstructor();
+    /// </code>
+    /// which is <c>public class Box&lt;T&gt; where T : new()</c>.
+    /// </example>
+    /// The name is what the members refer to, so a method returning <c>T</c> asks for
+    /// <c>new TypeParameterDefinition("T")</c> rather than for a real type.
+    /// </remarks>
     public ClassDefinition AddGenericParameter(string name)
     {
         return AddGenericParameter(new TypeParameterDefinition(name));
     }
 
+    /// <summary>
+    /// How many fields have been added, for a caller deciding whether a constructor is worth
+    /// writing.
+    /// </summary>
     public int FieldCount => _fields.Count;
 
+    /// <summary>The constructors declared on this type, in the order they were added.</summary>
     public IReadOnlyList<ConstructorDefinition> Constructors => _constructors;
 
+    /// <summary>The methods declared on this type, in the order they were added.</summary>
     public IReadOnlyList<MethodDefinition> Methods => _methods;
 
+    /// <summary>The properties declared on this type, in the order they were added.</summary>
     public IReadOnlyList<PropertyDefinition> Properties => _properties;
 
+    /// <summary>The fields declared on this type, in the order they were added.</summary>
     public IReadOnlyList<FieldDefinition> Fields => _fields;
 
+    /// <summary>
+    /// Adds an already-built member, sorting it into the same list the matching <c>Add*</c> method
+    /// would have put it in.
+    /// </summary>
+    /// <remarks>
+    /// For a member built somewhere else - by a helper that composes a property and its backing
+    /// field together, say. Anything this does not recognise is kept as-is and written last, after
+    /// the nested types.
+    /// </remarks>
     public void AddComponent(IOutputComponent outputComponent)
     {
         switch (outputComponent)
@@ -156,6 +252,14 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         }
     }
 
+    /// <summary>
+    /// Every member of this type that has a name, in the order they are written.
+    /// </summary>
+    /// <remarks>
+    /// For inspecting a type built elsewhere - checking whether a member already exists before
+    /// adding one, say. Unnamed components added through <see cref="AddComponent"/> are left out,
+    /// because there is nothing to identify them by.
+    /// </remarks>
     public IEnumerable<IOutputComponent> GetAllNamedComponents()
     {
         if (_fields.Count > 0)
@@ -210,6 +314,20 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         }
     }
 
+    /// <summary>
+    /// A type nested in this one: <c>public class Outer { public class Inner { } }</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Nested types are written after every other member, which is where a reader expects them.
+    /// </para>
+    /// <para>
+    /// This declares the nesting; it does not make the nested type <em>nameable</em> from
+    /// elsewhere. A reference to it from another file has to be built with
+    /// <see cref="TypeDefinition.GetNested"/>, which is what keeps it written as <c>Outer.Inner</c>
+    /// rather than as a bare <c>Inner</c> that resolves to something else or to nothing.
+    /// </para>
+    /// </remarks>
     public ClassDefinition AddClass(string name)
     {
         var classDefinition = new ClassDefinition(name);
@@ -219,15 +337,25 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         return classDefinition;
     }
 
+    /// <summary>
+    /// An interface nested in this type.
+    /// </summary>
+    /// <remarks>
+    /// Written after the nested classes, with the other components this class has no list of its
+    /// own for.
+    /// </remarks>
     public InterfaceDefinition AddInterface(string name)
     {
         var interfaceDefinition = new InterfaceDefinition(name);
-        
+
         _otherComponents.Add(interfaceDefinition);
-        
+
         return interfaceDefinition;
     }
 
+    /// <summary>
+    /// An enum nested in this type - for one that is meaningless outside it.
+    /// </summary>
     public EnumDefinition AddEnum(string name)
     {
         var enumDefinition = new EnumDefinition(name);
@@ -235,16 +363,41 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         return enumDefinition;
     }
 
+    /// <inheritdoc cref="AddProperty(ITypeDefinition, string)" />
+    /// <remarks>
+    /// <para>
+    /// The overload for a type this generator can name at compile time - <c>typeof(string)</c>,
+    /// <c>typeof(List&lt;int&gt;)</c>. It is <see cref="TypeDefinition.Get(Type)"/> applied for you,
+    /// so it cannot express anything the other overload cannot.
+    /// </para>
+    /// <para>
+    /// Reach for <see cref="AddProperty(ITypeDefinition, string)"/> when the type does not exist as
+    /// a <see cref="Type"/>: a type this generator is also emitting, a type read out of a Roslyn
+    /// symbol, or one that needed <see cref="ITypeDefinition.MakeNullable"/> or
+    /// <see cref="ITypeDefinition.MakeArray()"/> applied to it - none of which a
+    /// <see cref="Type"/> can carry through to the emitter.
+    /// </para>
+    /// </remarks>
     public PropertyDefinition AddProperty(Type type, string fieldName)
     {
         return AddProperty(TypeDefinition.Get(type), fieldName);
     }
 
+    /// <inheritdoc cref="AddEvent(ITypeDefinition, string)" />
     public EventDefinition AddEvent(Type handlerType, string name)
     {
         return AddEvent(TypeDefinition.Get(handlerType), name);
     }
 
+    /// <summary>
+    /// An event: <c>public event Action&lt;string&gt; Greeted;</c>.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="handlerType"/> is the delegate type, which is usually
+    /// <see cref="TypeDefinition.Action"/> or an <c>EventHandler</c>. Field-like only - there is no
+    /// <c>add</c>/<c>remove</c> accessor form here; a type that needs one declares it through
+    /// <see cref="AddComponent"/>.
+    /// </remarks>
     public EventDefinition AddEvent(ITypeDefinition handlerType, string name)
     {
         var eventDefinition = new EventDefinition(handlerType, name);
@@ -254,6 +407,29 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         return eventDefinition;
     }
 
+    /// <summary>
+    /// A property. An auto-property unless the accessors are given statements:
+    /// <c>public string Name { get; set; }</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Returns the property, which is where its shape is decided -
+    /// <see cref="PropertyDefinition.Set"/> set to null for a get-only property,
+    /// <see cref="PropertyMethodDefinition.IsInit"/> for <c>init</c>,
+    /// <see cref="PropertyDefinition.DefaultValue"/> for an initialiser, statements on
+    /// <see cref="PropertyDefinition.Get"/> for a full body.
+    /// </para>
+    /// <para>
+    /// <strong>A property named <c>this</c> with an index is an indexer</strong>, and it is the one
+    /// name this library treats as a keyword rather than as an identifier. See
+    /// <see cref="PropertyDefinition"/>.
+    /// </para>
+    /// <para>
+    /// Unlike <see cref="AddField(ITypeDefinition, string)"/>, a name already in use is not
+    /// rejected: adding <c>Name</c> twice writes the declaration twice, and the compiler reports
+    /// CS0102 in the generated file rather than this reporting it here.
+    /// </para>
+    /// </remarks>
     public PropertyDefinition AddProperty(ITypeDefinition type, string fieldName)
     {
         var propertyDefinition = new PropertyDefinition(type, fieldName);
@@ -263,11 +439,39 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         return propertyDefinition;
     }
 
+    /// <inheritdoc cref="AddField(ITypeDefinition, string)" />
     public FieldDefinition AddField(Type type, string fieldName)
     {
         return AddField(TypeDefinition.Get(type), fieldName);
     }
 
+    /// <summary>
+    /// A field: <c>private readonly string _name;</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A field is the one declaration in this library that defaults to <c>private</c> rather than
+    /// <c>public</c>, because that is what a field almost always is. Add
+    /// <see cref="ComponentModifier.Readonly"/> and <see cref="ComponentModifier.Static"/> through
+    /// <see cref="BaseOutputComponent.Modifiers"/>; they are written in that order whichever order
+    /// the flags were set in.
+    /// </para>
+    /// <example>
+    /// <code>
+    /// var items = greeter.AddField(TypeDefinition.List(typeof(string)), "_items");
+    /// items.Modifiers = ComponentModifier.Private | ComponentModifier.Readonly;
+    /// items.InitializeValue = SyntaxHelpers.New(TypeDefinition.List(typeof(string)));
+    /// </code>
+    /// which is <c>private readonly List&lt;string&gt; _items = new List&lt;string&gt;();</c>.
+    /// </example>
+    /// <para>
+    /// Throws <see cref="ArgumentException"/> if a field of that name is already declared. This is
+    /// the only <c>Add*</c> that checks, and it checks because a duplicate field is usually a
+    /// generator visiting the same input twice - a mistake worth failing on rather than emitting.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentException">A field named <paramref name="fieldName"/> already
+    /// exists on this type.</exception>
     public FieldDefinition AddField(ITypeDefinition typeDefinition, string fieldName)
     {
         if (_fields.Any(f => f.Name == fieldName))
@@ -282,6 +486,36 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         return definition;
     }
 
+    /// <summary>
+    /// A method. <c>public void</c> with an empty body until it is told otherwise.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Everything about the method is set on what this returns: the return type through
+    /// <see cref="MethodDefinition.SetReturnType(Type)"/>, parameters through
+    /// <see cref="MethodDefinition.AddParameter(Type, string)"/>, and the body through the
+    /// statement methods it inherits from <see cref="BaseBlockDefinition"/>.
+    /// </para>
+    /// <example>
+    /// <code>
+    /// var greet = greeter.AddMethod("Greet");
+    /// greet.SetReturnType(typeof(string));
+    /// greet.AddParameter(typeof(string), "name");
+    /// greet.Return("name");
+    /// </code>
+    /// which is
+    /// <code>
+    /// public string Greet(string name)
+    /// {
+    ///     return name;
+    /// }
+    /// </code>
+    /// </example>
+    /// <para>
+    /// Overloads are ordinary: add two methods of the same name with different parameters. Nothing
+    /// checks that they differ, the same way nothing else here validates what it is handed.
+    /// </para>
+    /// </remarks>
     public MethodDefinition AddMethod(string method)
     {
         var definition = new MethodDefinition(method);
@@ -291,6 +525,27 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         return definition;
     }
 
+    /// <summary>
+    /// A base type or an implemented interface: <c>public class Greeter : IDisposable</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// C# writes the base class first and the interfaces after it, and that is the caller's to get
+    /// right - these are written in the order they were added. There is no <see cref="Type"/>
+    /// overload: pass <c>TypeDefinition.Get(typeof(IDisposable))</c>, or the definition of a type
+    /// this generator is emitting.
+    /// </para>
+    /// <para>
+    /// Returns the class rather than the base type, so calls chain:
+    /// <c>definition.AddBaseType(a).AddBaseType(b)</c>.
+    /// </para>
+    /// <para>
+    /// The same type added twice is added once. That is deduplication on the type alone, so it also
+    /// discards a later call carrying constructor arguments - see
+    /// <see cref="AddBaseType(ITypeDefinition, IOutputComponent[])"/>, which is the overload that
+    /// has them.
+    /// </para>
+    /// </remarks>
     public ClassDefinition AddBaseType(ITypeDefinition typeDefinition)
     {
         return AddBaseType(typeDefinition, Array.Empty<IOutputComponent>());
@@ -309,6 +564,23 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
     /// <para>
     /// C# allows the arguments on the base class only, and it has to come first in the list. That
     /// is the caller's to get right - this writes the arguments wherever they were attached.
+    /// </para>
+    /// <example>
+    /// <code>
+    /// var dog = file.AddRecord("Dog");
+    /// dog.TerminateWithSemicolon = true;
+    /// var ctor = dog.AddConstructor();
+    /// ctor.IsPrimary = true;
+    /// ctor.AddParameter(typeof(string), "Id");
+    /// ctor.AddParameter(typeof(string), "Breed");
+    /// dog.AddBaseType(petType, new CodeOutputComponent("Id") { Indented = false });
+    /// </code>
+    /// which is <c>public record Dog(string Id, string Breed) : Pet(Id);</c>.
+    /// </example>
+    /// <para>
+    /// Attach the arguments on the <em>first</em> call for a given base type. A second call naming a
+    /// type already in the list is discarded whatever it carries, so
+    /// <c>AddBaseType(pet); AddBaseType(pet, id);</c> writes <c>: Pet</c> with no arguments at all.
     /// </para>
     /// </remarks>
     public ClassDefinition AddBaseType(ITypeDefinition typeDefinition, params IOutputComponent[] arguments)
@@ -330,6 +602,38 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         return this;
     }
 
+    /// <summary>
+    /// A constructor, named after the type. Optionally with a <c>: base(...)</c> or
+    /// <c>: this(...)</c> initialiser.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A <see cref="ConstructorDefinition"/> is a <see cref="MethodDefinition"/> with no return
+    /// type, so parameters and a body are added the same way.
+    /// </para>
+    /// <example>
+    /// <code>
+    /// var ctor = greeter.AddConstructor(SyntaxHelpers.Base("name"));
+    /// ctor.AddParameter(typeof(string), "name");
+    /// </code>
+    /// which is
+    /// <code>
+    /// public Greeter(string name)
+    ///      : base(name)
+    /// {
+    /// }
+    /// </code>
+    /// </example>
+    /// <para>
+    /// Set <see cref="ConstructorDefinition.IsPrimary"/> on what this returns to move the parameter
+    /// list into the type header instead - the <c>record Pet(string Id)</c> form. A type has at most
+    /// one of those, and the primary constructor writes no member of its own.
+    /// </para>
+    /// <para>
+    /// <see cref="ComponentModifier.Static"/> writes a static constructor, which takes no
+    /// accessibility keyword and no parameters.
+    /// </para>
+    /// </remarks>
     public ConstructorDefinition AddConstructor(IOutputComponent? baseComponent = null)
     {
         var definition = new ConstructorDefinition(Name, baseComponent);

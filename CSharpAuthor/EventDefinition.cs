@@ -13,6 +13,11 @@ namespace CSharpAuthor;
 /// </remarks>
 public class EventDefinition : BaseOutputComponent, INamedComponent
 {
+    /// <summary>
+    /// An event of <paramref name="handlerType"/> named <paramref name="name"/>. Prefer
+    /// <see cref="ClassDefinition.AddEvent(ITypeDefinition, string)"/>, which builds one and
+    /// attaches it.
+    /// </summary>
     public EventDefinition(ITypeDefinition handlerType, string name)
     {
         HandlerType = handlerType;
@@ -22,6 +27,7 @@ public class EventDefinition : BaseOutputComponent, INamedComponent
         Remove = new PropertyMethodDefinition();
     }
 
+    /// <summary>The declared name, escaped with <c>@</c> if it is a keyword.</summary>
     public string Name { get; }
 
     /// <summary>
@@ -29,8 +35,16 @@ public class EventDefinition : BaseOutputComponent, INamedComponent
     /// </summary>
     public ITypeDefinition HandlerType { get; }
 
+    /// <summary>
+    /// The <c>add</c> accessor. Giving it statements is what turns the field-like declaration into
+    /// an accessor pair.
+    /// </summary>
     public PropertyMethodDefinition Add { get; }
 
+    /// <summary>
+    /// The <c>remove</c> accessor. C# requires both accessors or neither, so giving statements to
+    /// one means giving them to the other.
+    /// </summary>
     public PropertyMethodDefinition Remove { get; }
 
     protected override void WriteComponentOutput(IOutputContext outputContext)

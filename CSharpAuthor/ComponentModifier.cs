@@ -3,35 +3,98 @@ using System.Text;
 
 namespace CSharpAuthor;
 
+/// <summary>
+/// The keywords in front of a declaration: its accessibility, and the modifiers that go with it.
+/// </summary>
+/// <remarks>
+/// <para>
+/// A <see cref="FlagsAttribute"/> enum, because C# spells two of its five accessibility levels with
+/// two keywords - see <see cref="ProtectedInternal"/> and <see cref="PrivateProtected"/>.
+/// </para>
+/// <para>
+/// Only the modifiers that make sense for the declaration are written, so
+/// <see cref="Async"/> on a class is ignored rather than being an error. Whichever order the flags
+/// were set in, they are written in the order this repository's .editorconfig prefers -
+/// <c>static readonly</c>, not <c>readonly static</c>.
+/// </para>
+/// </remarks>
 [Flags]
 public enum ComponentModifier
 {
+    /// <summary>
+    /// Nothing asked for, which means the declaration's default: <c>public</c> everywhere except a
+    /// <see cref="FieldDefinition"/>, which is <c>private</c>. Not the same request as
+    /// <see cref="NoAccessibility"/>.
+    /// </summary>
     None = 0,
 
+    /// <summary><c>public</c>.</summary>
     Public = 1,
 
+    /// <summary><c>protected</c> - reachable from a derived type in any assembly.</summary>
     Protected = 2,
 
+    /// <summary><c>private</c>.</summary>
     Private = 4,
 
+    /// <summary>
+    /// <c>readonly</c>. On a <see cref="FieldDefinition"/>, or on a struct through
+    /// <see cref="ClassDefinition.TypeKeyword"/>.
+    /// </summary>
     Readonly = 8,
 
+    /// <summary>
+    /// <c>static</c>. On a <see cref="ConstructorDefinition"/> it is what makes a static
+    /// constructor, which takes no accessibility keyword.
+    /// </summary>
     Static = 16,
 
+    /// <summary>
+    /// <c>virtual</c>.
+    /// </summary>
+    /// <remarks>
+    /// C# does not allow this together with <see cref="Override"/>, and nothing here refuses the
+    /// combination: setting both writes <c>virtual override</c>, which is CS0113 in the generated
+    /// file. That is deliberate - this library writes what it is handed and lets the compiler
+    /// report what does not compile.
+    /// </remarks>
     Virtual = 32,
 
+    /// <summary><c>override</c>.</summary>
     Override = 64,
 
+    /// <summary>
+    /// <c>abstract</c>. On a method it also removes the body, so
+    /// <see cref="MethodDefinition.OmitBody"/> does not need setting as well - writing
+    /// <c>{ }</c> after an abstract member is CS0500.
+    /// </summary>
     Abstract = 128,
 
+    /// <summary>
+    /// <c>async</c>. The return type is still the caller's to set - <c>Task</c> or
+    /// <c>Task&lt;T&gt;</c> - and it is the one modifier an explicit interface implementation
+    /// keeps.
+    /// </summary>
     Async = 256,
 
+    /// <summary>
+    /// <c>partial</c>. Written last of the modifiers, immediately before the return type or the
+    /// type keyword, which is where C# requires it. On a method, pair it with
+    /// <see cref="MethodDefinition.OmitBody"/> for the defining half.
+    /// </summary>
     Partial = 512,
     
+    /// <summary><c>internal</c>.</summary>
     Internal = 1024,
     
+    /// <summary>
+    /// No accessibility keyword at all, for a position where C# does not allow one or where the
+    /// default is wanted explicitly. Distinct from <see cref="None"/>, which asks for the
+    /// declaration's default keyword.
+    /// </summary>
     NoAccessibility = 2048,
 
+    /// <summary><c>sealed</c>.</summary>
     Sealed = 4096,
 
     /// <summary>

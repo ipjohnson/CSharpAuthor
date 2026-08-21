@@ -5,8 +5,29 @@ using CSharpAuthor.Profiles;
 
 namespace CSharpAuthor;
 
+/// <summary>
+/// A method declared on an interface: the signature, terminated with <c>;</c> unless it is given
+/// statements.
+/// </summary>
+/// <remarks>
+/// <para>
+/// A <see cref="MethodDefinition"/> in every other respect - <c>AddParameter</c>,
+/// <c>SetReturnType</c>, <c>AddConstraint</c> and the statement methods all read the same. The two
+/// differences are that it takes no accessibility keyword, because the interface decides that, and
+/// that the presence of statements decides whether it has a body.
+/// </para>
+/// <para>
+/// Statements make it a default interface member, which requires C# 8. That is demanded of the emit
+/// profile rather than quietly dropped: an interface member that loses its body is a different
+/// interface, and every implementer of it stops compiling.
+/// </para>
+/// </remarks>
 public class InterfaceMethodDefinition : MethodDefinition
 {
+    /// <summary>
+    /// A method named <paramref name="name"/>. Prefer
+    /// <see cref="InterfaceDefinition.AddMethod"/>, which builds one and attaches it.
+    /// </summary>
     public InterfaceMethodDefinition(string name) : base(name)
     {
 
