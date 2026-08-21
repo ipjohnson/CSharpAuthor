@@ -7,7 +7,6 @@ namespace CSharpAuthor;
 
 public class GenericTypeDefinition : BaseTypeDefinition
 {
-    private int? _hashCode;
     private readonly IReadOnlyList<ITypeDefinition> _closingTypes;
 
     public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray = false,
@@ -23,22 +22,14 @@ public class GenericTypeDefinition : BaseTypeDefinition
         _closingTypes = closingTypes;
     }
 
-    public override bool Equals(object obj)
+    public GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
+        IReadOnlyList<int>? arrayRanks, bool isNullable = false, ITypeDefinition? containingType = null)
+        : base(classType, ns, name, arrayRanks, isNullable, containingType)
     {
-        if (obj is GenericTypeDefinition genericTypeDefinition)
-        {
-            return CompareTo(genericTypeDefinition) == 0;
-        }
-
-        return false;
+        _closingTypes = closingTypes;
     }
 
-    public override int GetHashCode()
-    {
-        // ReSharper disable once NonReadonlyMemberInGetHashCode
-        return _hashCode ??= ToString().GetHashCode(); 
-    }
-
+    /// <inheritdoc cref="TypeDefinition.ToString" />
     public override string ToString()
     {
         var stringBuilder = new StringBuilder();
@@ -47,6 +38,7 @@ public class GenericTypeDefinition : BaseTypeDefinition
         stringBuilder.Append('.');
         stringBuilder.Append(Name);
         stringBuilder.Append('<');
+
         var comma = false;
 
         foreach (var closingType in _closingTypes)
@@ -59,15 +51,13 @@ public class GenericTypeDefinition : BaseTypeDefinition
             {
                 comma = true;
             }
+
             stringBuilder.Append(closingType);
         }
 
         stringBuilder.Append('>');
 
-        if (IsArray)
-        {
-            stringBuilder.Append("[]");
-        }
+        WriteArrayRanks(stringBuilder);
 
         if (IsNullable)
         {
@@ -121,27 +111,21 @@ public class GenericTypeDefinition : BaseTypeDefinition
                 }
             }
 
+            if (ContainingType != null)
+            {
+                foreach (var knownNamespace in ContainingType.KnownNamespaces)
+                {
+                    yield return knownNamespace;
+                }
+            }
+
             yield return Namespace;
         }
     }
-    
+
     public override void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
-        if (!string.IsNullOrEmpty(Namespace))
-        {
-            if (typeOutputMode == TypeOutputMode.Global)
-            {
-                builder.Append("global::");
-                builder.Append(Namespace);
-                builder.Append('.');
-
-            }
-            else if (typeOutputMode == TypeOutputMode.FullName)
-            {
-                builder.Append(Namespace);
-                builder.Append('.');
-            }
-        }
+        WriteQualifier(builder, typeOutputMode);
 
         builder.Append(Name);
         builder.Append('<');
@@ -164,32 +148,29 @@ public class GenericTypeDefinition : BaseTypeDefinition
 
         builder.Append('>');
 
-        if (IsArray)
-        {
-            builder.Append("[]");
-        }
+        WriteArrayRanks(builder);
 
         if (IsNullable)
         {
             builder.Append("?");
-        }   
+        }
     }
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, IsArray, nullable);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, nullable, ContainingType);
     }
 
-    public override ITypeDefinition MakeArray()
+    public override ITypeDefinition MakeArray(int rank)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, true, IsNullable);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanksWithOuterRank(rank), IsNullable, ContainingType);
     }
 
     public ITypeDefinition MakeOpenType()
     {
         var emptyTypes = _closingTypes.Select(_ => TypeDefinition.Get("", "")).ToArray();
 
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, IsArray, IsNullable);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, ArrayRanks, IsNullable, ContainingType);
     }
         
     public override IReadOnlyList<ITypeDefinition> TypeArguments => _closingTypes;

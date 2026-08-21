@@ -128,17 +128,23 @@ public static class SyntaxHelpers
         );
     }
 
+    /// <summary>
+    /// <c>value is SomeType</c>.
+    /// </summary>
+    /// <remarks>
+    /// The type is written through <see cref="IOutputContext.Write(ITypeDefinition)"/> rather than
+    /// flattened to its <see cref="ITypeDefinition.Name"/> here. Taking the name at build time drops
+    /// everything the name is not - the generic arguments, the array shape, the containing type - and
+    /// pins the test to short-name output, so a file emitted in <see cref="TypeOutputMode.Global"/>
+    /// got an unqualified name propped up by a using it also had no reason to hold.
+    /// </remarks>
     public static IOutputComponent Is(IOutputComponent testComponent, ITypeDefinition typeDefinition)
     {
-        var statement = new WrapStatement(
+        return new WrapStatement(
             CodeOutputComponent.Get(" is "),
             testComponent,
-            CodeOutputComponent.Get(typeDefinition.Name)
+            new TypeStatement(typeDefinition)
         );
-        
-        statement.AddUsingNamespace(typeDefinition.Namespace);
-        
-        return statement;
     }
     
     public static StaticPropertyStatement Property(ITypeDefinition typeDefinition, string propertyName)

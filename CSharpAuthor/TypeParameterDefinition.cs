@@ -16,10 +16,19 @@ namespace CSharpAuthor;
 public class TypeParameterDefinition : ITypeDefinition
 {
     public TypeParameterDefinition(string name, bool isNullable = false, bool isArray = false)
+        : this(name, isNullable, isArray ? new[] { 1 } : null)
+    {
+    }
+
+    /// <remarks>
+    /// Internal: an array shape is reached through <see cref="MakeArray(int)"/>, which is the part
+    /// of this the model needs. Widening it later is not a breaking change.
+    /// </remarks>
+    internal TypeParameterDefinition(string name, bool isNullable, IReadOnlyList<int>? arrayRanks)
     {
         Name = name;
         IsNullable = isNullable;
-        IsArray = isArray;
+        ArrayRanks = BaseTypeDefinition.NormalizeRanks(arrayRanks);
     }
 
     public string Name { get; }
@@ -30,7 +39,14 @@ public class TypeParameterDefinition : ITypeDefinition
 
     public bool IsNullable { get; }
 
-    public bool IsArray { get; }
+    public bool IsArray => ArrayRanks.Count > 0;
+
+    public IReadOnlyList<int> ArrayRanks { get; }
+
+    /// <summary>
+    /// Always null: a type parameter is declared by a type or a method, never nested inside one.
+    /// </summary>
+    public ITypeDefinition? ContainingType => null;
 
     public IEnumerable<string> KnownNamespaces => Enumerable.Empty<string>();
 
@@ -40,9 +56,16 @@ public class TypeParameterDefinition : ITypeDefinition
     {
         builder.Append(Name);
 
-        if (IsArray)
+        for (var i = 0; i < ArrayRanks.Count; i++)
         {
-            builder.Append("[]");
+            builder.Append('[');
+
+            for (var dimension = 1; dimension < ArrayRanks[i]; dimension++)
+            {
+                builder.Append(',');
+            }
+
+            builder.Append(']');
         }
 
         if (IsNullable)
@@ -53,12 +76,17 @@ public class TypeParameterDefinition : ITypeDefinition
 
     public ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new TypeParameterDefinition(Name, nullable, IsArray);
+        return new TypeParameterDefinition(Name, nullable, ArrayRanks);
     }
 
     public ITypeDefinition MakeArray()
     {
-        return new TypeParameterDefinition(Name, IsNullable, true);
+        return MakeArray(1);
+    }
+
+    public ITypeDefinition MakeArray(int rank)
+    {
+        return new TypeParameterDefinition(Name, IsNullable, BaseTypeDefinition.WithOuterRank(ArrayRanks, rank));
     }
 
     public int CompareTo(ITypeDefinition other)
@@ -75,9 +103,17 @@ public class TypeParameterDefinition : ITypeDefinition
             return nameCompare;
         }
 
-        if (IsArray != typeParameter.IsArray)
+        if (ArrayRanks.Count != typeParameter.ArrayRanks.Count)
         {
-            return IsArray ? 1 : -1;
+            return ArrayRanks.Count - typeParameter.ArrayRanks.Count;
+        }
+
+        for (var i = 0; i < ArrayRanks.Count; i++)
+        {
+            if (ArrayRanks[i] != typeParameter.ArrayRanks[i])
+            {
+                return ArrayRanks[i] - typeParameter.ArrayRanks[i];
+            }
         }
 
         if (IsNullable != typeParameter.IsNullable)
@@ -104,7 +140,11 @@ public class TypeParameterDefinition : ITypeDefinition
             var hash = Name.GetHashCode();
 
             hash = hash * 31 + IsNullable.GetHashCode();
-            hash = hash * 31 + IsArray.GetHashCode();
+
+            foreach (var rank in ArrayRanks)
+            {
+                hash = hash * 31 + rank;
+            }
 
             return hash;
         }
