@@ -54,7 +54,7 @@ public class AttributeDefinition : BaseOutputComponent
     {
         var attributeName = _attributeType.Name;
 
-        if (attributeName.EndsWith(AttributePostfix))
+        if (attributeName.EndsWith(AttributePostfix, StringComparison.Ordinal))
         {
             attributeName = attributeName.Substring(0, attributeName.Length - AttributePostfix.Length);
         }

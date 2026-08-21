@@ -27,12 +27,12 @@ public class EnumValueDefinition : BaseOutputComponent
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
         outputContext.WriteIndent();
-        outputContext.Write(_enumValueName);
+        outputContext.Write(CSharpIdentifier.Escape(_enumValueName));
 
         if (Value != null)
         {
             outputContext.Write(" = ");
-            outputContext.Write(Value.ToString());
+            outputContext.Write(LiteralFormatter.Format(Value));
         }
 
         outputContext.WriteLine(",");

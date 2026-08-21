@@ -56,7 +56,10 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
         WriteAccessModifiers(outputContext);
 
         outputContext.Write(Type);
-        outputContext.Write($" {Name}");
+        // An indexer is declared as `this[...]`, where `this` is the keyword and not a name, so it
+        // is the one property whose name must not be escaped.
+        outputContext.Write(
+            " " + (IsIndexer ? Name : CSharpIdentifier.Escape(Name)));
 
         if (IndexParameters.Count > 0)
         {
@@ -79,7 +82,7 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
             outputContext.Write("[");
             outputContext.Write(IndexType);
             outputContext.Write(" ");
-            outputContext.Write(IndexName);
+            outputContext.Write(CSharpIdentifier.Escape(IndexName));
             outputContext.Write("]");
         }
 
@@ -103,22 +106,15 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
                  Get.StatementCount == 0 &&
                  Set is { StatementCount: 0 })
         {
-            if (Set.IsInit)
+            var setterKeyword = Set.IsInit ? "init" : "set";
+            var setterAccess = Set.Modifiers.GetAccessorAccessibilityKeywords();
+
+            if (!string.IsNullOrEmpty(setterAccess))
             {
-                outputContext.Write(" { get; init; }");
+                setterAccess += " ";
             }
-            else if ((Set.Modifiers & ComponentModifier.Private) == ComponentModifier.Private)
-            {
-                outputContext.Write(" { get; private set; }");
-            }
-            else if ((Set.Modifiers & ComponentModifier.Protected) == ComponentModifier.Protected)
-            {
-                outputContext.Write(" { get; protected set; }");
-            }
-            else
-            {
-                outputContext.Write(" { get; set; }");
-            }
+
+            outputContext.Write(" { get; " + setterAccess + setterKeyword + "; }");
 
             if (DefaultValue != null)
             {
@@ -141,15 +137,16 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
         if (Set != null)
         {
             outputContext.WriteIndent();
-            if ((Set.Modifiers & ComponentModifier.Private) == ComponentModifier.Private)
+
+            var setterAccess = Set.Modifiers.GetAccessorAccessibilityKeywords();
+
+            if (!string.IsNullOrEmpty(setterAccess))
             {
-                outputContext.Write("private ");
+                outputContext.Write(setterAccess);
+                outputContext.WriteSpace();
             }
-            else if ((Set.Modifiers & ComponentModifier.Protected) == ComponentModifier.Protected)
-            {
-                outputContext.Write("protected ");
-            }
-            outputContext.Write("set");
+
+            outputContext.Write(Set.IsInit ? "init" : "set");
             Set.WriteOutput(outputContext);
         }
 
@@ -169,19 +166,10 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
     protected virtual void WriteAccessModifiers(IOutputContext outputContext)
     {
         var modifier = GetAccessModifier("public");
-        var virtualKeyword = GetVirtualModifier();
 
         outputContext.WriteIndent($"{modifier} ");
 
-        if (!string.IsNullOrEmpty(virtualKeyword))
-        {
-            outputContext.Write(virtualKeyword);
-            outputContext.WriteSpace();
-        }
-        else if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
-        {
-            outputContext.Write(KeyWords.Static);
-            outputContext.WriteSpace();
-        }
+        outputContext.Write(
+            Modifiers.GetModifierKeywords(ComponentModifierExtensions.PropertyModifiers));
     }
 }

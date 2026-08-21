@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace CSharpAuthor;
 
@@ -47,26 +47,13 @@ public class EventDefinition : BaseOutputComponent, INamedComponent
             outputContext.WriteSpace();
         }
 
-        if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
-        {
-            outputContext.Write(KeyWords.Static);
-            outputContext.WriteSpace();
-        }
-        else if ((Modifiers & ComponentModifier.Virtual) == ComponentModifier.Virtual)
-        {
-            outputContext.Write(KeyWords.Virtual);
-            outputContext.WriteSpace();
-        }
-        else if ((Modifiers & ComponentModifier.Override) == ComponentModifier.Override)
-        {
-            outputContext.Write(KeyWords.Override);
-            outputContext.WriteSpace();
-        }
+        outputContext.Write(
+            Modifiers.GetModifierKeywords(ComponentModifierExtensions.PropertyModifiers));
 
         outputContext.Write("event ");
         outputContext.Write(HandlerType);
         outputContext.WriteSpace();
-        outputContext.Write(Name);
+        outputContext.Write(CSharpIdentifier.Escape(Name));
 
         // Without a body on either accessor this is a field-like event, which is the shape almost
         // every event is declared in.

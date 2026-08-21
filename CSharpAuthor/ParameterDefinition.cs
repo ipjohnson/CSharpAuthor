@@ -78,7 +78,7 @@ public class ParameterDefinition : InstanceDefinition
 
         outputContext.Write(TypeDefinition);
         outputContext.WriteSpace();
-        outputContext.Write(Name);
+        outputContext.Write(CSharpIdentifier.Escape(Name));
 
         if (DefaultValue != null)
         {
@@ -108,7 +108,9 @@ public class ParameterDefinition : InstanceDefinition
             _ => null
         };
 
-        return new CodeOutputComponent(modifier == null ? Name : modifier + " " + Name)
+        var name = CSharpIdentifier.Escape(Name);
+
+        return new CodeOutputComponent(modifier == null ? name : modifier + " " + name)
         {
             Indented = false
         };
@@ -126,8 +128,15 @@ public class ParameterDefinition : InstanceDefinition
         };
     }
 
+    /// <summary>
+    /// The parameter used as a value expression - its own name.
+    /// </summary>
+    /// <remarks>
+    /// Escaped the same way the declaration is, so a parameter named after a keyword reads back as
+    /// the identifier it was declared as.
+    /// </remarks>
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.Write(Name);
+        outputContext.Write(CSharpIdentifier.Escape(Name));
     }
 }

@@ -44,8 +44,16 @@ public class InstanceDefinition : BaseOutputComponent
         return new InstanceDefinition(Name + "." + propertyName);
     }
 
+    /// <summary>
+    /// The instance, by name.
+    /// </summary>
+    /// <remarks>
+    /// Each dotted segment is escaped, because <see cref="Property"/> builds <c>a.b.c</c> into one
+    /// name. <c>this</c> and <c>base</c> are left alone - they arrive here as expressions rather
+    /// than as names, and <c>@this</c> would not mean the same thing.
+    /// </remarks>
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.Write(Name);
+        outputContext.Write(CSharpIdentifier.EscapeReference(Name));
     }
 }

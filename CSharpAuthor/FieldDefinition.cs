@@ -21,22 +21,15 @@ public class FieldDefinition : BaseOutputComponent, INamedComponent
         outputContext.AddImportNamespace(TypeDefinition);
 
         var accessModifier = GetAccessModifier(KeyWords.Private);
-        var readonlyString = "";
-        var staticString = "";
 
-        if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
-        {
-            staticString = KeyWords.Static + " ";
-        }
+        // `static readonly`, which is the order C# convention uses. This wrote `readonly static`,
+        // which compiles and reads as a transcription error.
+        var modifiers = Modifiers.GetModifierKeywords(
+            ComponentModifier.Static | ComponentModifier.Readonly);
 
-        if ((Modifiers & ComponentModifier.Readonly) == ComponentModifier.Readonly)
-        {
-            readonlyString = KeyWords.ReadOnly + " ";
-        }
-
-        outputContext.WriteIndent($"{accessModifier} {readonlyString}{staticString}");
+        outputContext.WriteIndent($"{accessModifier} {modifiers}");
         outputContext.Write(TypeDefinition);
-        outputContext.Write($" {Name}");
+        outputContext.Write(" " + CSharpIdentifier.Escape(Name));
 
         if (InitializeValue != null)
         {

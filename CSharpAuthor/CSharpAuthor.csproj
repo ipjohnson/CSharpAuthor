@@ -15,6 +15,12 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<!-- Test-only. An MSBuild item rather than a source attribute, so it is generated into obj/
+		     and is not one of the .cs files a consumer source-includes. -->
+		<InternalsVisibleTo Include="CSharpAuthor.Tests" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Remove="Package\CSharpAuthor.*" />
 		<Content Include="Package\CSharpAuthor.*">
 			<Pack>true</Pack>

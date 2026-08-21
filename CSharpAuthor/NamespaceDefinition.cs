@@ -101,7 +101,8 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
         {
             if (FileScopedNamespace)
             {
-                outputContext.WriteIndentedLine("namespace " + _namespace + ";");
+                outputContext.WriteIndentedLine(
+                    "namespace " + CSharpIdentifier.EscapeQualified(_namespace) + ";");
                 outputContext.WriteLine();
             }
             else
@@ -134,7 +135,8 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
 
     private void WriteNamespaceOpen(IOutputContext outputContext)
     {
-        outputContext.WriteIndentedLine("namespace " + _namespace);
+        outputContext.WriteIndentedLine(
+            "namespace " + CSharpIdentifier.EscapeQualified(_namespace));
         outputContext.OpenScope();
     }
 

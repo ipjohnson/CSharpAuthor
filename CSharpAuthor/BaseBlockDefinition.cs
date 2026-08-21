@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace CSharpAuthor;
@@ -33,9 +34,10 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
             for (var index = 0; index < types.Length; index++)
             {
                 var value = types[index];
-                var typeSwapString = "{arg" + (index + 1) + "}";
+                var typeSwapString =
+                    "{arg" + (index + 1).ToString(CultureInfo.InvariantCulture) + "}";
 
-                if (statement.IndexOf(typeSwapString, StringComparison.CurrentCulture) >= 0)
+                if (statement.IndexOf(typeSwapString, StringComparison.Ordinal) >= 0)
                 {
 
                     if (value is Type typeValue)
@@ -52,11 +54,12 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
                 }
                 else
                 {
-                    var rawSwapString = $"[arg{index + 1}]";
+                    var rawSwapString =
+                        "[arg" + (index + 1).ToString(CultureInfo.InvariantCulture) + "]";
 
-                    if (statement.IndexOf(rawSwapString, StringComparison.CurrentCulture) >= 0)
+                    if (statement.IndexOf(rawSwapString, StringComparison.Ordinal) >= 0)
                     {
-                        statement = statement.Replace(rawSwapString, value.ToString());
+                        statement = statement.Replace(rawSwapString, LiteralFormatter.Format(value));
                     }
                 }
             }
@@ -83,10 +86,10 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
 
         if (value is string stringValue)
         {
-            return "\"" + stringValue + "\"";
+            return LiteralFormatter.QuoteString(stringValue);
         }
 
-        return value.ToString();
+        return LiteralFormatter.Format(value);
     }
 
     public SwitchBlockDefinition Switch(object switchValue)
@@ -136,6 +139,15 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
         AddIndentedStatement("break");
     }
 
+    /// <summary>
+    /// <c>continue;</c> - the other half of <see cref="Break"/>, which had no equivalent, so the
+    /// only way to skip an iteration was to write the statement out as text.
+    /// </summary>
+    public void Continue()
+    {
+        AddIndentedStatement("continue");
+    }
+
     public WhileDefinition While(object testStatement)
     {
         return Add(new WhileDefinition(testStatement));
@@ -144,6 +156,27 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
     public ForEachDefinition ForEach(string variable, IOutputComponent enumerableComponent)
     {
         return Add(new ForEachDefinition(variable, enumerableComponent));
+    }
+
+    /// <summary>
+    /// A counting loop, <c>for(var i = 0; i &lt; limit; i++)</c>.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ForDefinition"/> existed but wrote nothing and nothing returned one, so a
+    /// <c>for</c> loop had to be hand-written through <see cref="AddCode(string, object[])"/>.
+    /// </remarks>
+    public ForDefinition For(string variable, object startValue, object exclusiveLimit)
+    {
+        return Add(new ForDefinition(variable, startValue, exclusiveLimit));
+    }
+
+    /// <summary>
+    /// A loop with all three clauses given directly. Any of them may be null.
+    /// </summary>
+    public ForDefinition For(
+        IOutputComponent? initializer, IOutputComponent? condition, IOutputComponent? increment)
+    {
+        return Add(new ForDefinition(initializer, condition, increment));
     }
 
     public IfElseLogicBlockDefinition If(string ifStatement)

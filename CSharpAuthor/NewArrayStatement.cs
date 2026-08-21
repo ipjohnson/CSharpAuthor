@@ -29,7 +29,7 @@ public class NewArrayStatement : BaseOutputComponent
         outputContext.Write("new ");
         outputContext.Write(_typeDefinition);
         outputContext.Write("[");
-        outputContext.Write(_length?.ToString() ?? "");
+        outputContext.Write(_length.HasValue ? LiteralFormatter.FormatNumeric(_length.Value) : "");
         outputContext.Write("]");
 
         if (_components is { Length: > 0 })

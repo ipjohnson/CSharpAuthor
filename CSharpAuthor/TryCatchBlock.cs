@@ -9,9 +9,17 @@ public class TryCatchBlock : BaseBlockDefinition
     private readonly List<CatchBlock> _catchBlocks = new ();
     private FinallyBlock? _finallyBlock;
         
+    /// <summary>
+    /// A <c>catch</c> clause, optionally naming the exception and filtering it with <c>when</c>.
+    /// </summary>
+    /// <remarks>
+    /// This overload accepted a filter and then did not pass it on, so a caller who wrote one got a
+    /// clause that caught everything of that type. A filter is the difference between handling an
+    /// exception and swallowing it, and dropping it changes which handler runs.
+    /// </remarks>
     public BaseBlockDefinition Catch(Type exceptionType, string name = "", IOutputComponent? when = null)
     {
-        return Catch(TypeDefinition.Get(exceptionType), name);
+        return Catch(TypeDefinition.Get(exceptionType), name, when);
     }
 
     public BaseBlockDefinition Catch(ITypeDefinition exceptionType, string name = "", IOutputComponent? when = null)
