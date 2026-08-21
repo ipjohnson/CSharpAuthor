@@ -75,12 +75,14 @@ public class GenericTypeDefinition : BaseTypeDefinition
     }
 
     /// <summary>
-    /// The shared ordering, type arguments included - which is what the two sides used to disagree
-    /// about, because the plain definition does not know they exist.
+    /// The arguments are part of the value, and they are compared where every other part of it is -
+    /// in the name the type writes. Walking <c>_closingTypes</c> here could only ever answer for a
+    /// second <see cref="GenericTypeDefinition"/>, so a closed generic arriving from anywhere else
+    /// was reported different from an identical one built by hand.
     /// </summary>
     public override int CompareTo(ITypeDefinition other)
     {
-        return BaseCompareTo(other);
+        return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }
 
     public override IEnumerable<string> KnownNamespaces

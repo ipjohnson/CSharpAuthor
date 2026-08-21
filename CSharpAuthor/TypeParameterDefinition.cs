@@ -15,6 +15,9 @@ namespace CSharpAuthor;
 /// </remarks>
 public class TypeParameterDefinition : ITypeDefinition
 {
+    private int? _hashCode;
+    private string? _key;
+
     public TypeParameterDefinition(string name, bool isNullable = false, bool isArray = false)
         : this(name, isNullable, isArray ? new[] { 1 } : null)
     {
@@ -110,39 +113,33 @@ public class TypeParameterDefinition : ITypeDefinition
             Name, IsNullable, IsElementNullable, BaseTypeDefinition.WithOuterRank(ArrayRanks, rank));
     }
 
-    /// <summary>
-    /// The shared ordering. Answering -1 to everything that was not another type parameter made
-    /// this smaller than every type and, read the other way, larger than none of them.
-    /// </summary>
+    /// <inheritdoc cref="BaseTypeDefinition.TypeKey" />
+    internal string TypeKey => _key ??= TypeDefinitionIdentity.Build(this);
+
     public int CompareTo(ITypeDefinition other)
     {
-        return TypeDefinitionOrder.Compare(this, other);
+        return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }
 
     /// <summary>
     /// Value equality, so a model holding one compares equal across runs. A source generator caches
     /// on its models, and reference equality would miss that cache on every edit.
     /// </summary>
+    /// <remarks>
+    /// A type parameter writes itself as its name in every output mode, so what it is equal to is
+    /// anything that writes the same name - a <c>T</c> read off a symbol and a <c>T</c> a caller
+    /// built with <see cref="TypeDefinition.Get(string,string,bool,bool)"/> name the same thing in
+    /// the declaration they appear in.
+    /// </remarks>
     public override bool Equals(object obj)
     {
-        return obj is TypeParameterDefinition other && CompareTo(other) == 0;
+        return TypeDefinitionIdentity.KeyEquals(TypeKey, obj);
     }
 
     public override int GetHashCode()
     {
-        unchecked
-        {
-            var hash = Name.GetHashCode();
-
-            hash = hash * 31 + IsNullable.GetHashCode();
-
-            foreach (var rank in ArrayRanks)
-            {
-                hash = hash * 31 + rank;
-            }
-
-            return hash;
-        }
+        // ReSharper disable once NonReadonlyMemberInGetHashCode
+        return _hashCode ??= TypeKey.GetHashCode();
     }
 
     public override string ToString()
