@@ -1,8 +1,10 @@
 # V2 open questions
 
-Defaults taken under V2-HANDOFF.md §8.4 — *when the spec is silent, choose the option that
-keeps V1 source-compatible, record it, and do not stop to ask.* Each entry states what was
-chosen, why, and what it would take to choose differently.
+Defaults taken under V2-HANDOFF.md §8.4 — *when the spec is silent, choose the option
+that keeps V1 source-compatible, record it, and do not stop to ask.*
+
+One section per agent. When this file conflicts on merge, the resolution is to keep
+both sides' sections; nothing here depends on anything above it.
 
 ---
 
