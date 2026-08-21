@@ -7,12 +7,12 @@ namespace CSharpAuthor;
 public class AttributeDefinition : BaseOutputComponent
 {
     private readonly ITypeDefinition _attributeType;
-    private readonly AttributeTypeReference _writtenType;
+    private readonly AttributeTypeReference? _writtenType;
 
     public AttributeDefinition(ITypeDefinition attributeType)
     {
         _attributeType = attributeType;
-        _writtenType = new AttributeTypeReference(attributeType);
+        _writtenType = attributeType == null ? null : new AttributeTypeReference(attributeType);
     }
 
     public IList<IOutputComponent>? Arguments { get; set; }
@@ -57,7 +57,7 @@ public class AttributeDefinition : BaseOutputComponent
 
         // Written as a type rather than as its name, so the namespace it needs is derived from the
         // file rather than declared beside it - and so it is qualified when the mode qualifies.
-        outputContext.Write(_writtenType);
+        outputContext.Write(_writtenType!);
 
         WriteArguments(outputContext);
     }

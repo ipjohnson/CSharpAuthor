@@ -155,6 +155,50 @@ public class GlobalModeNoUsingsTests
         Assert.DoesNotContain("using ", context.Output());
     }
 
+    /// <summary>
+    /// The registration line the two defects were found in, written the way it is meant to be.
+    /// </summary>
+    /// <remarks>
+    /// It used to come out with <c>using Microsoft.Extensions.DependencyInjection;</c> at the top of
+    /// a file where every other name was qualified, and a bare <c>ServiceLifetime.Singleton</c> that
+    /// only compiled because of it. The directive was there because the parameter declared its
+    /// namespace by hand; the bare name was there because it was a string. Neither could be removed
+    /// on its own without breaking the file.
+    /// </remarks>
+    [Fact]
+    public void TheRegistrationLineThatShowedTheBug()
+    {
+        var serviceCollection =
+            TypeDefinition.Get("Microsoft.Extensions.DependencyInjection", "IServiceCollection");
+        var serviceDescriptor =
+            TypeDefinition.Get("Microsoft.Extensions.DependencyInjection", "ServiceDescriptor");
+        var serviceLifetime =
+            TypeDefinition.Get("Microsoft.Extensions.DependencyInjection", "ServiceLifetime");
+
+        var file = new CSharpFileDefinition("TestNamespace");
+        var classDefinition = file.AddClass("TestModule");
+
+        var method = classDefinition.AddMethod("ModuleDependencies");
+        method.AddParameter(serviceCollection, "services");
+
+        method.Add(new PostfixOutputComponent(";\n", new WrapStatement(
+            SyntaxHelpers.New(
+                serviceDescriptor,
+                SyntaxHelpers.TypeOf(TypeDefinition.Get("TestNamespace", "ITryEnumerable")),
+                SyntaxHelpers.TypeOf(TypeDefinition.Get("TestNamespace", "TryEnumerableThing")),
+                CodeOutputComponent.Get(serviceLifetime, "Singleton")),
+            "services.TryAddEnumerable(",
+            ")")));
+
+        var output = Write(file, TypeOutputMode.Global);
+
+        Assert.DoesNotContain("using Microsoft.Extensions.DependencyInjection;", output);
+        Assert.DoesNotContain("\n                ServiceLifetime.Singleton", output);
+        Assert.Contains(
+            "global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton", output);
+        Assert.Contains("typeof(global::TestNamespace.ITryEnumerable)", output);
+    }
+
     private static string Write(CSharpFileDefinition file, TypeOutputMode mode)
     {
         var context = new OutputContext(new OutputContextOptions { TypeOutputMode = mode });
