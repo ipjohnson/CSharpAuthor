@@ -187,3 +187,6 @@ $RECYCLE.BIN/
 
 # scratch probe used to verify precedence against the compiler; not part of the build
 .probe/
+# round-trip harness scratch output
+/.runs/
+__pycache__/
