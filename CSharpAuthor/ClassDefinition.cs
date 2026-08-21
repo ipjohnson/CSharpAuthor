@@ -490,27 +490,11 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
             outputContext.WriteSpace();
         }
 
-        if ((Modifiers & ComponentModifier.Sealed) == ComponentModifier.Sealed)
-        {
-            outputContext.Write(KeyWords.Sealed);
-            outputContext.WriteSpace();
-        }
-        else if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
-        {
-            outputContext.Write(KeyWords.Static);
-            outputContext.WriteSpace();
-        }
-        else if ((Modifiers & ComponentModifier.Abstract) == ComponentModifier.Abstract)
-        {
-            outputContext.Write(KeyWords.Abstract);
-            outputContext.WriteSpace();
-        }
-
-        if ((Modifiers & ComponentModifier.Partial) == ComponentModifier.Partial)
-        {
-            outputContext.Write(KeyWords.Partial);
-            outputContext.WriteSpace();
-        }
+        // One chain of `else if` used to mean one modifier: `abstract partial` kept both because
+        // partial was tested separately, but `static abstract` lost the abstract, and `readonly`
+        // was never written, so a readonly struct came out mutable.
+        outputContext.Write(
+            Modifiers.GetModifierKeywords(ComponentModifierExtensions.TypeModifiers));
 
         outputContext.Write(GetTypeKeywordString());
         outputContext.WriteSpace();

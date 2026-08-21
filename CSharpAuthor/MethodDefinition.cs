@@ -159,8 +159,34 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
         }
     }
 
+    /// <summary>
+    /// Declares the method without a body, terminating it with <c>;</c>.
+    /// </summary>
+    /// <remarks>
+    /// The defining half of a <c>partial</c> method, or an <c>extern</c> one. <c>abstract</c>
+    /// implies it, so that does not need setting as well.
+    /// </remarks>
+    public bool OmitBody { get; set; }
+
+    /// <summary>
+    /// Whether this declaration ends at the signature.
+    /// </summary>
+    /// <remarks>
+    /// An abstract method used to be written with <c>{ }</c> after it, which is CS0500 - "cannot
+    /// declare a body because it is marked abstract". The modifier was being dropped at the same
+    /// time, so the result compiled as an ordinary empty method and the abstraction quietly
+    /// disappeared instead.
+    /// </remarks>
+    protected virtual bool IsBodyless =>
+        OmitBody || (Modifiers & ComponentModifier.Abstract) == ComponentModifier.Abstract;
+
     protected virtual void WriteMethodBody(IOutputContext outputContext)
     {
+        if (IsBodyless)
+        {
+            return;
+        }
+
         WriteBlock(outputContext);
     }
 
@@ -219,7 +245,12 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
 
             constraint.WriteOutput(outputContext);
         }
-        
+
+        if (IsBodyless)
+        {
+            outputContext.Write(";");
+        }
+
         outputContext.WriteLine();
     }
 
@@ -227,38 +258,21 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
     {
         outputContext.WriteIndent();
 
-        if (InterfaceImplementation == null)
+        // An explicit interface implementation takes no accessibility and none of the inheritance
+        // modifiers - the interface decides all of that - but it can still be async.
+        if (InterfaceImplementation != null)
         {
-            outputContext.Write(GetAccessModifier(KeyWords.Public));
-            outputContext.WriteSpace();
+            outputContext.Write(
+                Modifiers.GetModifierKeywords(ComponentModifier.Async));
 
-            if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
-            {
-                outputContext.Write(KeyWords.Static);
-                outputContext.WriteSpace();
-            }
-            else if ((Modifiers & ComponentModifier.Abstract) == ComponentModifier.Abstract)
-            {
-                outputContext.Write(KeyWords.Abstract);
-                outputContext.WriteSpace();
-            }
-            else if ((Modifiers & ComponentModifier.Virtual) == ComponentModifier.Virtual)
-            {
-                outputContext.Write(KeyWords.Virtual);
-                outputContext.WriteSpace();
-            }
-            else if ((Modifiers & ComponentModifier.Override) == ComponentModifier.Override)
-            {
-                outputContext.Write(KeyWords.Override);
-                outputContext.WriteSpace();
-            }
+            return;
         }
-            
-        if ((Modifiers & ComponentModifier.Async) == ComponentModifier.Async)
-        {
-            outputContext.Write(KeyWords.Async);
-            outputContext.WriteSpace();
-        }
+
+        outputContext.Write(GetAccessModifier(KeyWords.Public));
+        outputContext.WriteSpace();
+
+        outputContext.Write(
+            Modifiers.GetModifierKeywords(ComponentModifierExtensions.MethodModifiers));
     }
 
     protected virtual void WriteReturnType(IOutputContext outputContext)

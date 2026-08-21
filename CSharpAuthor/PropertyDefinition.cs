@@ -163,19 +163,10 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
     protected virtual void WriteAccessModifiers(IOutputContext outputContext)
     {
         var modifier = GetAccessModifier("public");
-        var virtualKeyword = GetVirtualModifier();
 
         outputContext.WriteIndent($"{modifier} ");
 
-        if (!string.IsNullOrEmpty(virtualKeyword))
-        {
-            outputContext.Write(virtualKeyword);
-            outputContext.WriteSpace();
-        }
-        else if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
-        {
-            outputContext.Write(KeyWords.Static);
-            outputContext.WriteSpace();
-        }
+        outputContext.Write(
+            Modifiers.GetModifierKeywords(ComponentModifierExtensions.PropertyModifiers));
     }
 }

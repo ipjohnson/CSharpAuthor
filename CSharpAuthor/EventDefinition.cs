@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace CSharpAuthor;
 
@@ -47,21 +47,8 @@ public class EventDefinition : BaseOutputComponent, INamedComponent
             outputContext.WriteSpace();
         }
 
-        if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
-        {
-            outputContext.Write(KeyWords.Static);
-            outputContext.WriteSpace();
-        }
-        else if ((Modifiers & ComponentModifier.Virtual) == ComponentModifier.Virtual)
-        {
-            outputContext.Write(KeyWords.Virtual);
-            outputContext.WriteSpace();
-        }
-        else if ((Modifiers & ComponentModifier.Override) == ComponentModifier.Override)
-        {
-            outputContext.Write(KeyWords.Override);
-            outputContext.WriteSpace();
-        }
+        outputContext.Write(
+            Modifiers.GetModifierKeywords(ComponentModifierExtensions.PropertyModifiers));
 
         outputContext.Write("event ");
         outputContext.Write(HandlerType);

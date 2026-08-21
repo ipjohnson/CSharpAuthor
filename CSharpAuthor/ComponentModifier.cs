@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 
 namespace CSharpAuthor;
 
@@ -64,6 +65,85 @@ public enum ComponentModifier
 /// </summary>
 public static class ComponentModifierExtensions
 {
+    /// <summary>
+    /// Every modifier that is not an accessibility level, in the order C# convention puts them.
+    /// </summary>
+    /// <remarks>
+    /// The order is <c>csharp_preferred_modifier_order</c> from this repository's .editorconfig,
+    /// with <c>partial</c> last because it belongs immediately before the return type or the type
+    /// keyword.
+    /// </remarks>
+    private static readonly (ComponentModifier Flag, string Keyword)[] OrderedModifiers =
+    {
+        (ComponentModifier.Static, "static"),
+        (ComponentModifier.Virtual, "virtual"),
+        (ComponentModifier.Abstract, "abstract"),
+        (ComponentModifier.Sealed, "sealed"),
+        (ComponentModifier.Override, "override"),
+        (ComponentModifier.Readonly, "readonly"),
+        (ComponentModifier.Async, "async"),
+        (ComponentModifier.Partial, "partial"),
+    };
+
+    /// <summary>
+    /// The non-accessibility modifier keywords in <paramref name="modifiers"/> that
+    /// <paramref name="applicable"/> allows, in canonical order, each followed by a space.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every caller of this used to be a chain of <c>else if</c>, which meant exactly one modifier
+    /// could ever be written and the rest were dropped in silence. <c>sealed override</c> - the
+    /// only form in which <c>sealed</c> is legal on a member - lost its <c>sealed</c>;
+    /// <c>static abstract</c> lost its <c>abstract</c>; <c>partial</c> and <c>readonly</c> were
+    /// never written at all, so a partial method came out as a duplicate definition and a readonly
+    /// struct came out mutable.
+    /// </para>
+    /// <para>
+    /// Combinations are not validated. <c>abstract sealed</c> on a method is CS0238, and this
+    /// writes it, the same way the rest of the library writes what it is handed and lets the
+    /// compiler be the one to object. A dropped modifier is silent; a rejected one is not.
+    /// </para>
+    /// </remarks>
+    public static string GetModifierKeywords(
+        this ComponentModifier modifiers, ComponentModifier applicable)
+    {
+        var builder = new StringBuilder();
+
+        foreach (var ordered in OrderedModifiers)
+        {
+            if ((applicable & ordered.Flag) == ordered.Flag &&
+                (modifiers & ordered.Flag) == ordered.Flag)
+            {
+                builder.Append(ordered.Keyword);
+                builder.Append(' ');
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    /// <summary>
+    /// What a type declaration may be marked with.
+    /// </summary>
+    public const ComponentModifier TypeModifiers =
+        ComponentModifier.Static | ComponentModifier.Abstract | ComponentModifier.Sealed |
+        ComponentModifier.Readonly | ComponentModifier.Partial;
+
+    /// <summary>
+    /// What a method declaration may be marked with.
+    /// </summary>
+    public const ComponentModifier MethodModifiers =
+        ComponentModifier.Static | ComponentModifier.Virtual | ComponentModifier.Abstract |
+        ComponentModifier.Sealed | ComponentModifier.Override | ComponentModifier.Readonly |
+        ComponentModifier.Async | ComponentModifier.Partial;
+
+    /// <summary>
+    /// What a property or event declaration may be marked with.
+    /// </summary>
+    public const ComponentModifier PropertyModifiers =
+        ComponentModifier.Static | ComponentModifier.Virtual | ComponentModifier.Abstract |
+        ComponentModifier.Sealed | ComponentModifier.Override | ComponentModifier.Readonly;
+
     /// <summary>
     /// The accessibility keywords <paramref name="modifiers"/> declares, or
     /// <paramref name="defaultString"/> when it declares none.
