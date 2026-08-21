@@ -782,3 +782,80 @@ recorded here.
 | 21 | Should the blank line before the first member go, and should `System` usings sort first? | Not yet, for the same reason. | The same 9 snapshots carry both. §11 predicted precisely this: "expect the consumer snapshots to be what catches it." |
 | 22 | An enum value handed to `CodeOutputComponent.Get` | Written as `Type.Member` with the type left unrendered; flags as `Type.A \| Type.B`; an unnamed value as `(Type)5`. | This is §1's `ServiceLifetime` defect at its source, and the only reading that carries a namespace. `AddCode`'s `[argN]` - the raw hatch - is deliberately left writing `ToString()`, because a caller reaching for it has asked for text. |
 | 23 | An unmatched `{argN}` / `[argN]` in `AddCode` | Left in the output, as before. | `ValueConversionAdversaryTests.UnmatchedPlaceholder` asserts the output does not contain `[arg9]`, which rules out reporting it in the output; throwing at the call fails the test as well; and deleting it silently is the defect class this project exists to remove. Reporting it on the diagnostic channel is the right answer, and that channel is `EmitDiagnostic`, which is keyed on `LanguageFeature` - it would have to grow a category first. |
+
+---
+
+## fastpath
+
+### 24. Streaming a file that qualifies every type it writes
+
+**Silent on:** whether the record and the second pass over it have to run in a mode where
+nothing recorded is ever re-decided.
+
+**Observed:** in `TypeOutputMode.Global` and `TypeOutputMode.FullName` a type is written the
+same way whatever else the file turns out to contain — there is no name plan, no aliasing and
+no `using` derived from a type. The record exists so that a name can be chosen once the whole
+file is known; in those two modes there is nothing to choose. Measured on the §10 payload, the
+record and the walk over it were 4.9 µs of an 19.0 µs file, all of it spent producing text that
+was already decided.
+
+**What was done:** those two modes now write straight into the builder the string is returned
+from, and the generated directives are inserted afterwards at the offset the file header ended
+at — V1's trick, at the header offset rather than at zero.
+
+**The guarantee that had to be kept.** `RestyleTests` promises, in its own class remark, that
+indentation, line endings and brace placement are "decided when the file is serialized, not when
+it is written", and its tests set their options *before* writing — so a write-time styling would
+pass them without keeping the promise. It is kept, in full, and by construction rather than by
+inspection:
+
+- the values the stream commits to — `IndentChar`, `IndentCharCount`, `NewLine`, `BraceStyle`
+  and `TypeOutputMode` — are snapshotted when the fast path takes over;
+- every write that spends one of them checks the snapshot first, and `Output()` checks it once
+  more before handing the string back;
+- **any disagreement turns the stream back into the record it would have been** — the journal
+  of non-text writes says where each one starts in the stream, so the text between two of them
+  is cut out as the string it was written from — and the ordinary serializer finishes the file
+  with the options as they stand. Nothing is decided any earlier than it was.
+
+`QualifiedModeRestyleTests` exercises each of those five options changed *after* the whole file
+is written, and one changed part way through, asserting the result is the same string as the
+same file written with those options from the start.
+
+**The one thing that changed, and its condition.** The fast path is *not taken* when
+`BraceStyle` is `KAndR` at the first write. Joining a brace to the line above it trims
+characters back off the output, and characters trimmed out of a stream cannot be handed back to
+a record rebuilt from it. Such a file takes the recording path — the same code, the same output
+and the same performance it had before. This is a narrowing of when the fast path engages, not
+of what the library promises: a file written under `KAndR` and restyled to `Allman` before
+serializing still restyles, because it was recorded.
+
+**Why not detect the trim and record it instead:** it can be done — the trimmed characters could
+be kept aside and given back — but it is a second reconstruction rule for a style that is not
+the default, in exchange for microseconds on files nobody in either consumer generates. If the
+K&R case ever matters, that is the change: capture the trimmed run at `TrimLineEnd` and restore
+it ahead of the brace when the record is rebuilt.
+
+**Who decides otherwise:** Ian. Taking the fast path in `ShortName` mode as well is *not* the
+next step — that is the crown jewel and it is not available; a short name genuinely is not known
+until the file ends.
+
+### 25. Deriving the name plan's types as they are written
+
+**Silent on:** where the types a `using` list is derived from are found.
+
+**Observed:** `BuildNamePlan` walked every recorded code to find the one write in fourteen that
+names a type, then built a list and an identity set of them and asked each for its namespaces —
+in nearly every file only to discover that no two of them wanted the same name. The types are in
+hand at `Write(ITypeDefinition)` already.
+
+**Default taken:** they are gathered there instead, and the collision pass runs only when the
+hash test says two names might be contested. The deferral is untouched: nothing is *decided*
+earlier, only *collected* earlier, and a caller that changes `TypeOutputMode` after writing —
+which is allowed — leaves the gathering incomplete and the plan is built off the record exactly
+as it was before.
+
+**Measured, not assumed:** an O(1) form of the collision answer was tried first, hashing each
+newly seen type's rendered name as it arrived so `Output()` had nothing left to ask. It was
+**0.66 µs slower** than the array-and-sort pass it replaced: the same renders cost more spread
+through the write than they do in one tight loop over the gathered types. The tight loop stayed.

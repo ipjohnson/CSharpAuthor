@@ -270,6 +270,48 @@ public class OutputContext : IOutputContext
     private int _indentIndex;
     private bool _generateUsings;
 
+    // -----------------------------------------------------------------------------------------
+    // The fast path: a mode that qualifies every type it writes.
+    //
+    // Nothing recorded is ever re-decided there. A qualified name is the same name whatever else
+    // the file turns out to contain, so there is no plan to make and no second pass to make it in
+    // - the record and the walk over it are pure overhead, and the file can go straight into the
+    // builder it will be returned from, with the directives inserted afterwards at the offset the
+    // header ended at.
+    //
+    // What it must not lose is the promise that indentation, line endings and brace placement are
+    // decided when the file is SERIALIZED. So the options those three come from are snapshotted
+    // when the path is taken and checked again on every write that spends one, and once more
+    // before the string is handed back. Any disagreement turns the stream back into the record it
+    // would have been - see MaterialiseStream - and the ordinary serializer finishes the job. The
+    // journal below is what makes that possible: one entry per write that is not plain text,
+    // holding where in the stream it starts and what it was.
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>The file so far, already styled. Null unless the fast path was taken.</summary>
+    private StringBuilder? _stream;
+
+    /// <summary>Where each non-text write starts in <see cref="_stream"/>, and what it was.</summary>
+    /// <remarks>
+    /// Text is not journalled: it is whatever lies between one entry and the next, which is what
+    /// makes the entries the small part. Only <see cref="MaterialiseStream"/> reads this.
+    /// </remarks>
+    private ChunkChain<long> _journal;
+
+    private bool _streaming;
+    private bool _pathChosen;
+
+    /// <summary>Where the file header ended, in characters, on the fast path.</summary>
+    private int _headerOffset;
+
+    // What the fast path committed to when it took over. Every one of them is settled at
+    // serialization on the ordinary path, so any of them moving is what has to be caught.
+    private char _snapIndentChar;
+    private int _snapIndentWidth;
+    private string _snapNewLine = "";
+    private BraceStyle _snapBraceStyle;
+    private TypeOutputMode _snapMode;
+
     /// <summary>
     /// How many segments belong above the generated <c>using</c> directives.
     /// </summary>
@@ -371,17 +413,26 @@ public class OutputContext : IOutputContext
         {
             if (text == IndentString)
             {
-                RecordIndent(_indentIndex);
+                EmitIndent(_indentIndex);
 
                 return;
             }
 
             if (text == SingleIndent)
             {
-                RecordIndent(1);
+                EmitIndent(1);
 
                 return;
             }
+        }
+
+        if (Streaming)
+        {
+            // Text is the same characters whatever the file turns out to be, so on the fast path it
+            // goes straight in and is not journalled at all.
+            _stream!.Append(text);
+
+            return;
         }
 
         _textChars += text.Length;
@@ -390,13 +441,34 @@ public class OutputContext : IOutputContext
     }
 
     /// <summary>
-    /// The point everything else depends on: the type is recorded, not rendered.
+    /// The point everything else depends on: the type is recorded, not rendered - unless the mode
+    /// in force renders it the same way whatever else the file contains.
     /// </summary>
     public void Write(ITypeDefinition typeDefinition)
     {
         if (typeDefinition == null)
         {
             return;
+        }
+
+        if (Streaming)
+        {
+            var mode = Options.TypeOutputMode;
+
+            if (mode == _snapMode)
+            {
+                var stream = _stream!;
+                var start = stream.Length;
+
+                typeDefinition.WriteTypeName(stream, mode);
+
+                _journal.Add(JournalEntry(start, SegmentKind.TypeReference, stream.Length - start));
+                _values.Add(typeDefinition);
+
+                return;
+            }
+
+            MaterialiseStream();
         }
 
         // What the name will be is not known yet - that is the point of the whole design - so the
@@ -411,7 +483,10 @@ public class OutputContext : IOutputContext
         // mode can still change before serialization, and then the record is read instead.
         if (Options.TypeOutputMode == TypeOutputMode.ShortName)
         {
-            NoteWrittenType(typeDefinition);
+            if (_typesGathered)
+            {
+                NoteWrittenType(typeDefinition);
+            }
         }
         else
         {
@@ -493,18 +568,25 @@ public class OutputContext : IOutputContext
 
     public void WriteLine()
     {
-        RecordNewLine();
+        EmitNewLine();
     }
 
     public void WriteLine(string text)
     {
         Write(text);
 
-        RecordNewLine();
+        EmitNewLine();
     }
 
     public void WriteSpace()
     {
+        if (Streaming)
+        {
+            _stream!.Append(' ');
+
+            return;
+        }
+
         _textChars++;
 
         RecordValue(SegmentKind.Text, " ");
@@ -512,23 +594,23 @@ public class OutputContext : IOutputContext
 
     public void WriteIndent(string text = "")
     {
-        RecordIndent(_indentIndex);
+        EmitIndent(_indentIndex);
 
         Write(text);
     }
 
     public void WriteIndentedLine(string text)
     {
-        RecordIndent(_indentIndex);
+        EmitIndent(_indentIndex);
 
         Write(text);
 
-        RecordNewLine();
+        EmitNewLine();
     }
 
     public void OpenScope()
     {
-        RecordScope(SegmentKind.ScopeOpen, _indentIndex);
+        EmitScope(SegmentKind.ScopeOpen, _indentIndex);
 
         _indentIndex++;
     }
@@ -537,7 +619,128 @@ public class OutputContext : IOutputContext
     {
         _indentIndex--;
 
-        RecordScope(SegmentKind.ScopeClose, _indentIndex);
+        EmitScope(SegmentKind.ScopeClose, _indentIndex);
+    }
+
+    // -----------------------------------------------------------------------------------------
+    // The three writes whose characters depend on an option. Each one streams while the options
+    // still say what they said when the fast path took over, and turns the stream back into a
+    // record the moment they do not - so the answer is the serializer's either way.
+    // -----------------------------------------------------------------------------------------
+
+    private void EmitIndent(int depth)
+    {
+        if (Streaming && StreamIndent(depth))
+        {
+            return;
+        }
+
+        RecordIndent(depth);
+    }
+
+    private void EmitNewLine()
+    {
+        if (Streaming && StreamNewLine())
+        {
+            return;
+        }
+
+        RecordNewLine();
+    }
+
+    private void EmitScope(SegmentKind kind, int depth)
+    {
+        if (Streaming && StreamScope(kind, depth))
+        {
+            return;
+        }
+
+        RecordScope(kind, depth);
+    }
+
+    private bool StreamIndent(int depth)
+    {
+        if (Options.IndentChar != _snapIndentChar || Options.IndentCharCount != _snapIndentWidth)
+        {
+            MaterialiseStream();
+
+            return false;
+        }
+
+        var stream = _stream!;
+
+        _journal.Add(JournalEntry(stream.Length, SegmentKind.Indent, depth));
+
+        if (depth > 0)
+        {
+            stream.Append(_snapIndentChar, _snapIndentWidth * depth);
+        }
+
+        return true;
+    }
+
+    private bool StreamNewLine()
+    {
+        if (!NewLineUnchanged())
+        {
+            MaterialiseStream();
+
+            return false;
+        }
+
+        var stream = _stream!;
+
+        _journal.Add(JournalEntry(stream.Length, SegmentKind.NewLine, 0));
+
+        stream.Append(_snapNewLine);
+
+        return true;
+    }
+
+    private bool StreamScope(SegmentKind kind, int depth)
+    {
+        // A negative depth is an unbalanced scope, and what it does - throw, out of the serializer -
+        // is the record's answer to give, not this one's.
+        if (depth < 0 || Options.BraceStyle != BraceStyle.Allman ||
+            Options.IndentChar != _snapIndentChar || Options.IndentCharCount != _snapIndentWidth ||
+            !NewLineUnchanged())
+        {
+            MaterialiseStream();
+
+            return false;
+        }
+
+        var stream = _stream!;
+
+        _journal.Add(JournalEntry(stream.Length, kind, depth));
+
+        stream.Append(_snapIndentChar, _snapIndentWidth * depth);
+        stream.Append(kind == SegmentKind.ScopeOpen ? '{' : '}').Append(_snapNewLine);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Whether the line ending is still the one the stream was written with, re-anchoring on an
+    /// equal string that happens to be a different instance.
+    /// </summary>
+    private bool NewLineUnchanged()
+    {
+        var newLine = Options.NewLine;
+
+        if (ReferenceEquals(newLine, _snapNewLine))
+        {
+            return true;
+        }
+
+        if (!string.Equals(newLine, _snapNewLine, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        _snapNewLine = newLine;
+
+        return true;
     }
 
     private void RecordIndent(int depth)
@@ -577,6 +780,215 @@ public class OutputContext : IOutputContext
     private static int Code(SegmentKind kind, int depth)
     {
         return (int)kind | (depth << KindBits);
+    }
+
+    // -----------------------------------------------------------------------------------------
+    // Choosing between the two, once, at the first write.
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>Whether this write goes straight into the output, deciding it if it is the first.</summary>
+    private bool Streaming
+    {
+        get
+        {
+            if (!_pathChosen)
+            {
+                ChoosePath();
+            }
+
+            return _streaming;
+        }
+    }
+
+    /// <summary>
+    /// Takes the fast path when the file about to be written cannot need a second look.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="TypeOutputMode.ShortName"/> is excluded because a short name is only decided once
+    /// the whole file is known - that is the crown jewel and it is not for sale.
+    /// </para>
+    /// <para>
+    /// <see cref="BraceStyle.KAndR"/> is excluded for a smaller reason: joining a brace to the line
+    /// above it trims characters back off the output, and characters trimmed out of a stream cannot
+    /// be given back to a record built from it. Nothing about that style is decided any earlier
+    /// than it was - such a file simply takes the ordinary path, exactly as it did before.
+    /// </para>
+    /// </remarks>
+    private void ChoosePath()
+    {
+        _pathChosen = true;
+
+        var options = Options;
+
+        if (options.TypeOutputMode == TypeOutputMode.ShortName ||
+            options.BraceStyle != BraceStyle.Allman ||
+            options.NewLine == null)
+        {
+            return;
+        }
+
+        _snapMode = options.TypeOutputMode;
+        _snapIndentChar = options.IndentChar;
+        _snapIndentWidth = options.IndentCharCount;
+        _snapNewLine = options.NewLine;
+        _snapBraceStyle = options.BraceStyle;
+
+        // Small: most contexts write a handful of tokens and are thrown away, and a builder grows
+        // by adding a block rather than by copying what it holds.
+        _stream = new StringBuilder(256);
+        _streaming = true;
+
+        // Nothing was gathered for a name plan while the stream ran, so a mode that turns out to
+        // need one reads the types back off the record the stream is turned into.
+        _typesGathered = false;
+    }
+
+    /// <summary>Where a non-text write starts in the stream, and what it was.</summary>
+    private static long JournalEntry(int start, SegmentKind kind, int payload)
+    {
+        return ((long)start << 32) | (uint)Code(kind, payload);
+    }
+
+    /// <summary>How many characters a journalled write put into the stream.</summary>
+    /// <remarks>
+    /// Read from the snapshot rather than from the options, which is sound because every one of
+    /// these writes checked the snapshot before it streamed anything.
+    /// </remarks>
+    private int StreamedLength(int code)
+    {
+        switch (KindOf(code))
+        {
+            case SegmentKind.NewLine:
+                return _snapNewLine.Length;
+
+            case SegmentKind.Indent:
+                return DepthOf(code) > 0 ? _snapIndentWidth * DepthOf(code) : 0;
+
+            case SegmentKind.ScopeOpen:
+            case SegmentKind.ScopeClose:
+                return _snapIndentWidth * DepthOf(code) + 1 + _snapNewLine.Length;
+
+            case SegmentKind.TypeReference:
+                return DepthOf(code);
+
+            default:
+                return 0;
+        }
+    }
+
+    /// <summary>
+    /// Turns the stream back into the record it would have been, and abandons the fast path.
+    /// </summary>
+    /// <remarks>
+    /// Every write that streamed anything a style option decides left an entry saying where in the
+    /// stream it began and what it was, and everything between two entries is text - so the record
+    /// is the entries, in order, with the gaps between them cut out of the stream as the strings
+    /// they were written from. From here on the file is served by the ordinary serializer, which
+    /// applies the options as they stand when <see cref="Output"/> is called, which is the whole
+    /// point of there being a record at all.
+    /// </remarks>
+    private void MaterialiseStream()
+    {
+        var stream = _stream!;
+        var streamLength = stream.Length;
+        var journal = _journal;
+        var streamedTypes = _values;
+
+        _stream = null;
+        _streaming = false;
+        _journal = default;
+        _values = default;
+
+        // The header boundary was a character offset while the stream ran; the serializer wants it
+        // as a segment count, so it is found again as the record is laid out.
+        var headerOffset = _headerOffset;
+        var headerFound = false;
+        var cursor = 0;
+
+        var typeChunkIndex = -1;
+        var typeChunk = Array.Empty<object>();
+        var typeUsed = 0;
+        var typeIndex = 0;
+
+        for (var chunkIndex = 0; chunkIndex < journal.ChunkCount; chunkIndex++)
+        {
+            var chunk = journal.ChunkAt(chunkIndex, out var used);
+
+            for (var i = 0; i < used; i++)
+            {
+                var entry = chunk[i];
+                var start = (int)(entry >> 32);
+                var code = (int)entry;
+
+                RecoverText(stream, cursor, start, headerOffset, ref headerFound);
+
+                if (!headerFound && start >= headerOffset)
+                {
+                    _headerSegmentCount = _codes.Count;
+                    headerFound = true;
+                }
+
+                _codes.Add(code);
+
+                if (KindOf(code) == SegmentKind.TypeReference)
+                {
+                    if (typeIndex == typeUsed)
+                    {
+                        typeChunk = streamedTypes.ChunkAt(++typeChunkIndex, out typeUsed);
+                        typeIndex = 0;
+                    }
+
+                    _values.Add(typeChunk[typeIndex++]);
+                }
+
+                cursor = start + StreamedLength(code);
+            }
+        }
+
+        RecoverText(stream, cursor, streamLength, headerOffset, ref headerFound);
+
+        if (!headerFound)
+        {
+            _headerSegmentCount = _codes.Count;
+        }
+
+        // The estimate the output builder is sized from. What was streamed is already the width it
+        // will be written at, near enough - the only thing that moves it is the option change that
+        // brought us here, and an estimate that is a little out only costs a growth.
+        _textChars += streamLength;
+    }
+
+    /// <summary>
+    /// Cuts the text between two journal entries out of the stream and records it, splitting it
+    /// where the file header ended if the header ended inside it.
+    /// </summary>
+    private void RecoverText(StringBuilder stream, int from, int to, int headerOffset, ref bool headerFound)
+    {
+        if (to <= from)
+        {
+            return;
+        }
+
+        if (!headerFound && from < headerOffset && headerOffset < to)
+        {
+            RecordValue(SegmentKind.Text, stream.ToString(from, headerOffset - from));
+
+            _headerSegmentCount = _codes.Count;
+            headerFound = true;
+
+            RecordValue(SegmentKind.Text, stream.ToString(headerOffset, to - headerOffset));
+
+            return;
+        }
+
+        if (!headerFound && from >= headerOffset)
+        {
+            _headerSegmentCount = _codes.Count;
+            headerFound = true;
+        }
+
+        RecordValue(SegmentKind.Text, stream.ToString(from, to - from));
     }
 
     private static SegmentKind KindOf(int code)
@@ -694,6 +1106,11 @@ public class OutputContext : IOutputContext
     public void MarkEndOfFileHeader()
     {
         _headerSegmentCount = _codes.Count;
+
+        if (_streaming)
+        {
+            _headerOffset = _stream!.Length;
+        }
     }
 
     /// <summary>
@@ -717,6 +1134,13 @@ public class OutputContext : IOutputContext
     {
         get
         {
+            if (_streaming)
+            {
+                var stream = _stream!;
+
+                return stream.Length == 0 ? (char?)null : stream[stream.Length - 1];
+            }
+
             // Backwards over the codes, and backwards over the values in step with them: a code that
             // names something took the value before the one the code after it took.
             var valueChunkIndex = _values.ChunkCount - 1;
@@ -810,6 +1234,19 @@ public class OutputContext : IOutputContext
 
     public string Output()
     {
+        if (_streaming)
+        {
+            if (StyleStillSettled())
+            {
+                return StreamOutput();
+            }
+
+            // The promise is that these are decided here, not while the file was written. One of
+            // them moved since, so the stream becomes the record it would have been and the
+            // ordinary serializer decides all of them, now, exactly as it always did.
+            MaterialiseStream();
+        }
+
         var namePlan = BuildNamePlan();
 
         var builder = new StringBuilder(EstimateOutputLength(namePlan));
@@ -828,6 +1265,60 @@ public class OutputContext : IOutputContext
         Serialize(builder, namePlan, headerEnd, _codes.Count);
 
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// Whether everything the fast path committed to when it took over still says what it said.
+    /// </summary>
+    private bool StyleStillSettled()
+    {
+        var options = Options;
+
+        return options.TypeOutputMode == _snapMode
+               && options.BraceStyle == _snapBraceStyle
+               && options.IndentChar == _snapIndentChar
+               && options.IndentCharCount == _snapIndentWidth
+               && string.Equals(options.NewLine, _snapNewLine, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The streamed file, with the generated directives put in where the header ended.
+    /// </summary>
+    /// <remarks>
+    /// The insertion is undone before returning, so the context is left exactly as it was found and
+    /// asking for the output twice answers twice - which the record path has always done because it
+    /// never wrote into itself at all.
+    /// </remarks>
+    private string StreamOutput()
+    {
+        var stream = _stream!;
+
+        if (!_generateUsings)
+        {
+            return stream.ToString();
+        }
+
+        var namePlan = BuildNamePlan();
+
+        if (namePlan.Namespaces.Count == 0 && namePlan.Aliases.Count == 0)
+        {
+            return stream.ToString();
+        }
+
+        var directives = new StringBuilder(namePlan.UsingsLength(Options.NewLine.Length));
+
+        WriteUsings(directives, namePlan);
+
+        var text = directives.ToString();
+        var at = _headerOffset > stream.Length ? stream.Length : _headerOffset;
+
+        stream.Insert(at, text);
+
+        var output = stream.ToString();
+
+        stream.Remove(at, text.Length);
+
+        return output;
     }
 
     /// <summary>
