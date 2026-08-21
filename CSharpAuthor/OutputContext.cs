@@ -132,7 +132,10 @@ public class OutputContext : IOutputContext
         /// <summary>Small, because most contexts record a handful of entries and are then thrown away.</summary>
         private const int FirstCapacity = 32;
 
-        /// <summary>8192 entries is 64 KB of references, the largest chunk that stays off the large object heap.</summary>
+        /// <summary>
+        /// 8192 entries is 64 KB of references or 32 KB of codes - either way the largest chunk that
+        /// stays off the large object heap.
+        /// </summary>
         private const int MaxCapacity = 8192;
 
         private T[]? _chunk;
