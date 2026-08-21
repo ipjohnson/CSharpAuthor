@@ -73,14 +73,19 @@ public class NestedTypeConversionTests
         Assert.Empty(symbol.TypeArguments);
 
         // What both consumers build from exactly that: a generic definition closed over the empty
-        // argument list.
+        // argument list. V1 rendered this as `Outer.PlainInner<>`, which is CS1031 - a type
+        // expected inside the brackets. V2 drops the empty list instead, so the naive consumer
+        // construction now at least emits valid C#. The `<int>` is still lost, which is why the
+        // bridge exists and why NonGenericNestedInAGenericIsNotWrittenAsGeneric is the one to
+        // read for what correct looks like.
         var asTheConsumersBuildIt = new GenericTypeDefinition(
             TypeDefinitionEnum.ClassDefinition,
             "BridgeTestNamespace",
             "Outer.PlainInner",
             System.Array.Empty<ITypeDefinition>());
 
-        Assert.Equal("Outer.PlainInner<>", TestCompilation.Write(asTheConsumersBuildIt));
+        Assert.Equal("Outer.PlainInner", TestCompilation.Write(asTheConsumersBuildIt));
+        Assert.DoesNotContain("<>", TestCompilation.Write(asTheConsumersBuildIt));
     }
 
     [Fact]
