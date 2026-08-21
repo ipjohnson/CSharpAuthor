@@ -1,0 +1,139 @@
+name: release
+
+# Cutting a release:
+#   git tag v1.2.0 && git push origin v1.2.0
+#
+# The tag is the single source of truth for the published version. Requires a NUGET_API_KEY
+# repository secret with push rights for the CSharpAuthor package id on nuget.org.
+#
+# NOT the path releases currently take. CSharpAuthor is published by a deployment configured on the
+# AppVeyor side, which pushes the artifact appveyor.yml declares - that is how 1.2.0 shipped, and it
+# still works. This workflow is a second path that has never run.
+#
+# Two live publish paths is one too many: a tag would push here while an AppVeyor build pushes the
+# same version there. --skip-duplicate makes that harmless rather than correct. Pick one before
+# relying on this, and if it is this one, turn the AppVeyor deployment off.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (without the leading v), e.g. 1.2.0'
+        required: true
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Two SDKs, and both are load-bearing.
+      #
+      # global.json pins the build to the .NET 11 preview, which is the compiler that can read a
+      # union - the test project declares one so that what this library emits is checked by a
+      # compiler rather than only against a string.
+      #
+      # 8.0.x is here for the runtime. It is not needed by the tests, which target net11.0, but the
+      # library itself is netstandard2.0 and a consumer on .NET 8 is the case this package exists
+      # to serve; installing the floor keeps a restore of it honest on the machine that packs it.
+      #
+      # The preview is named exactly rather than as 11.0.x. A floating preview means the version
+      # that produced a package cannot be read back from anything.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            11.0.100-preview.7.26381.103
+
+      - name: Resolve version
+        id: version
+        run: |
+          # A manual dispatch runs against whatever ref was selected, and that selector remembers
+          # the last branch used. Without this, an unreviewed branch could be published to
+          # nuget.org, where a version can be unlisted but never removed.
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Releases may only be dispatched from main. This run is on '${GITHUB_REF_NAME}'."
+            exit 1
+          fi
+
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+
+          # Guard against a mistyped tag producing a bad package version.
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::'$VERSION' is not a valid semantic version"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing $VERSION"
+
+      - run: dotnet restore CSharpAuthor.sln
+
+      # -p:Version here as well as on the pack below, because pack runs --no-build. Without it the
+      # assembly carries the csproj's VersionPrefix while the package carries the tag, so any tag
+      # that is not the prefix ships a package whose contents disagree with its name.
+      - run: |
+          dotnet build CSharpAuthor.sln --no-restore --configuration Release \
+            -p:ContinuousIntegrationBuild=true \
+            -p:Version=${{ steps.version.outputs.version }}
+
+      # A release is the last place to skip these. The union tests are the ones that say the
+      # emitted declaration is C# rather than a plausible-looking string.
+      - run: dotnet test CSharpAuthor.sln --no-build --configuration Release
+
+      # --no-build, so what is packed is what was tested rather than a second compilation of the
+      # same sources. Release, to match.
+      - name: Pack
+        run: |
+          dotnet pack CSharpAuthor/CSharpAuthor.csproj \
+            --no-build --configuration Release \
+            -p:Version=${{ steps.version.outputs.version }} \
+            --output ./artifacts
+
+      - name: Check a package was produced
+        run: |
+          set -euo pipefail
+          count=$(ls ./artifacts/*.nupkg 2>/dev/null | wc -l)
+          if [ "$count" -ne 1 ]; then
+            echo "::error::Expected one package, found $count."
+            ls -la ./artifacts || true
+            exit 1
+          fi
+          ls -la ./artifacts
+
+      - name: Push to nuget.org
+        run: |
+          dotnet nuget push "./artifacts/*.nupkg" \
+            --api-key "${{ secrets.NUGET_API_KEY }}" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
+
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # A version carrying a prerelease label must not appear as a stable release.
+          case "${{ steps.version.outputs.version }}" in
+            *-*) prerelease="--prerelease" ;;
+            *)   prerelease="" ;;
+          esac
+
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            $prerelease \
+            ./artifacts/*.nupkg
