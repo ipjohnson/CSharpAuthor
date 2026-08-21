@@ -24,9 +24,22 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
         return component;
     }
 
+    /// <summary>
+    /// A statement with types substituted into it, held as pieces so the types are still types when
+    /// the file is serialized.
+    /// </summary>
+    /// <remarks>
+    /// A <c>{argN}</c> used to be replaced with the type's short name on the spot, which fixed the
+    /// text before anything knew what mode the file would be written in or what else it would
+    /// contain. The name went in unqualified even in a file that qualified everything, and the
+    /// namespace was declared on the side to make it resolve. The pieces keep the type instead:
+    /// it is rendered with everything else, at the end.
+    ///
+    /// A <c>[argN]</c> is still substituted here, because it is text by definition.
+    /// </remarks>
     public virtual CodeOutputComponent AddCode(string statement, params object[] types)
     {
-        var typeDefinitions = new List<ITypeDefinition>();
+        var parts = new List<object> { statement };
 
         if (types is { Length: > 0 })
         {
@@ -35,38 +48,88 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
                 var value = types[index];
                 var typeSwapString = "{arg" + (index + 1) + "}";
 
-                if (statement.IndexOf(typeSwapString, StringComparison.CurrentCulture) >= 0)
+                if (PartsContain(parts, typeSwapString))
                 {
-
                     if (value is Type typeValue)
                     {
                         value = TypeDefinition.Get(typeValue);
                     }
 
-                    if (value is ITypeDefinition typeDefinition)
-                    {
-                        typeDefinitions.Add(typeDefinition);
-                    }
-
-                    statement = statement.Replace(typeSwapString, GetObjectStringValue(value));
+                    ReplaceInParts(
+                        parts,
+                        typeSwapString,
+                        value is ITypeDefinition typeDefinition ? typeDefinition : (object)GetObjectStringValue(value));
                 }
                 else
                 {
                     var rawSwapString = $"[arg{index + 1}]";
 
-                    if (statement.IndexOf(rawSwapString, StringComparison.CurrentCulture) >= 0)
+                    if (PartsContain(parts, rawSwapString))
                     {
-                        statement = statement.Replace(rawSwapString, value.ToString());
+                        ReplaceInParts(parts, rawSwapString, value.ToString());
                     }
                 }
             }
         }
 
-        var statementOutput = new CodeOutputComponent(statement);
+        return Add(CodeOutputComponent.FromParts(parts));
+    }
 
-        statementOutput.AddTypes(typeDefinitions);
+    private static bool PartsContain(List<object> parts, string marker)
+    {
+        for (var i = 0; i < parts.Count; i++)
+        {
+            if (parts[i] is string text && text.IndexOf(marker, StringComparison.CurrentCulture) >= 0)
+            {
+                return true;
+            }
+        }
 
-        return Add(statementOutput);
+        return false;
+    }
+
+    private static void ReplaceInParts(List<object> parts, string marker, object replacement)
+    {
+        for (var i = 0; i < parts.Count; i++)
+        {
+            if (parts[i] is not string text)
+            {
+                continue;
+            }
+
+            var index = text.IndexOf(marker, StringComparison.CurrentCulture);
+
+            if (index < 0)
+            {
+                continue;
+            }
+
+            var replaced = new List<object>();
+            var position = 0;
+
+            while (index >= 0)
+            {
+                if (index > position)
+                {
+                    replaced.Add(text.Substring(position, index - position));
+                }
+
+                replaced.Add(replacement);
+
+                position = index + marker.Length;
+                index = text.IndexOf(marker, position, StringComparison.CurrentCulture);
+            }
+
+            if (position < text.Length)
+            {
+                replaced.Add(text.Substring(position));
+            }
+
+            parts.RemoveAt(i);
+            parts.InsertRange(i, replaced);
+
+            i += replaced.Count - 1;
+        }
     }
 
     private string GetObjectStringValue(object value)
