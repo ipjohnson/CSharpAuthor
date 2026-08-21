@@ -99,23 +99,63 @@ public class OutputContext : IOutputContext
     /// <summary>
     /// One recorded write. A struct so the whole file is one array rather than one object per write.
     /// </summary>
+    /// <remarks>
+    /// The text and the type share one field. A segment is one kind or the other and never both, and
+    /// two reference fields cost sixteen bytes a segment where one costs eight - on a file of a few
+    /// hundred segments that is the difference between the recording being free and it being the
+    /// largest thing in the profile. <see cref="Kind"/> says which field it is, so the cast is
+    /// checked by the switch that already had to happen.
+    /// </remarks>
     private readonly struct Segment
     {
-        public Segment(SegmentKind kind, string? text, int depth, ITypeDefinition? type)
+        private readonly object? _value;
+
+        private Segment(SegmentKind kind, object? value, int depth)
         {
-            Kind = kind;
-            Text = text;
+            _value = value;
             Depth = depth;
-            Type = type;
+            Kind = kind;
         }
 
-        public readonly SegmentKind Kind;
-        public readonly string? Text;
         public readonly int Depth;
-        public readonly ITypeDefinition? Type;
+        public readonly SegmentKind Kind;
+
+        public string? Text => (string?)_value;
+
+        public ITypeDefinition? Type => (ITypeDefinition?)_value;
+
+        public static Segment ForText(string text)
+        {
+            return new Segment(SegmentKind.Text, text, 0);
+        }
+
+        public static Segment ForType(ITypeDefinition type)
+        {
+            return new Segment(SegmentKind.TypeReference, type, 0);
+        }
+
+        public static Segment Structural(SegmentKind kind, int depth)
+        {
+            return new Segment(kind, null, depth);
+        }
     }
 
-    private readonly List<Segment> _segments = new List<Segment>();
+    // -----------------------------------------------------------------------------------------
+    // The recorded file. A chain of chunks rather than one growing array: a List<T> doubles by
+    // allocating a new array and copying, so recording an N-segment file allocates about 2N
+    // segments' worth of array and throws half of it away. Chunks are never copied and never
+    // reach the large object heap, so it allocates N and copies nothing.
+    // -----------------------------------------------------------------------------------------
+
+    private const int FirstChunkCapacity = 32;
+
+    /// <summary>4096 segments is 64 KB, which is the largest chunk that stays off the large object heap.</summary>
+    private const int MaxChunkCapacity = 4096;
+
+    private Segment[] _chunk = Array.Empty<Segment>();
+    private List<Segment[]>? _filledChunks;
+    private int _chunkCount;
+    private int _segmentCount;
 
     /// <summary>Namespaces asked for by name. User intent, not derived from anything written.</summary>
     private readonly HashSet<string> _explicitNamespaces = new HashSet<string>();
@@ -219,20 +259,20 @@ public class OutputContext : IOutputContext
         {
             if (text == IndentString)
             {
-                _segments.Add(new Segment(SegmentKind.Indent, null, _indentIndex, null));
+                Add(Segment.Structural(SegmentKind.Indent, _indentIndex));
 
                 return;
             }
 
             if (text == SingleIndent)
             {
-                _segments.Add(new Segment(SegmentKind.Indent, null, 1, null));
+                Add(Segment.Structural(SegmentKind.Indent, 1));
 
                 return;
             }
         }
 
-        _segments.Add(new Segment(SegmentKind.Text, text, 0, null));
+        Add(Segment.ForText(text));
     }
 
     /// <summary>
@@ -245,45 +285,45 @@ public class OutputContext : IOutputContext
             return;
         }
 
-        _segments.Add(new Segment(SegmentKind.TypeReference, null, 0, typeDefinition));
+        Add(Segment.ForType(typeDefinition));
     }
 
     public void WriteLine()
     {
-        _segments.Add(new Segment(SegmentKind.NewLine, null, 0, null));
+        Add(Segment.Structural(SegmentKind.NewLine, 0));
     }
 
     public void WriteLine(string text)
     {
         Write(text);
 
-        _segments.Add(new Segment(SegmentKind.NewLine, null, 0, null));
+        Add(Segment.Structural(SegmentKind.NewLine, 0));
     }
 
     public void WriteSpace()
     {
-        _segments.Add(new Segment(SegmentKind.Text, " ", 0, null));
+        Add(Segment.ForText(" "));
     }
 
     public void WriteIndent(string text = "")
     {
-        _segments.Add(new Segment(SegmentKind.Indent, null, _indentIndex, null));
+        Add(Segment.Structural(SegmentKind.Indent, _indentIndex));
 
         Write(text);
     }
 
     public void WriteIndentedLine(string text)
     {
-        _segments.Add(new Segment(SegmentKind.Indent, null, _indentIndex, null));
+        Add(Segment.Structural(SegmentKind.Indent, _indentIndex));
 
         Write(text);
 
-        _segments.Add(new Segment(SegmentKind.NewLine, null, 0, null));
+        Add(Segment.Structural(SegmentKind.NewLine, 0));
     }
 
     public void OpenScope()
     {
-        _segments.Add(new Segment(SegmentKind.ScopeOpen, null, _indentIndex, null));
+        Add(Segment.Structural(SegmentKind.ScopeOpen, _indentIndex));
 
         _indentIndex++;
     }
@@ -292,7 +332,61 @@ public class OutputContext : IOutputContext
     {
         _indentIndex--;
 
-        _segments.Add(new Segment(SegmentKind.ScopeClose, null, _indentIndex, null));
+        Add(Segment.Structural(SegmentKind.ScopeClose, _indentIndex));
+    }
+
+    private void Add(Segment segment)
+    {
+        var chunk = _chunk;
+        var index = _chunkCount;
+
+        if (index == chunk.Length)
+        {
+            chunk = GrowChunk();
+            index = 0;
+        }
+
+        chunk[index] = segment;
+        _chunkCount = index + 1;
+        _segmentCount++;
+    }
+
+    private Segment[] GrowChunk()
+    {
+        var current = _chunk;
+
+        if (current.Length == 0)
+        {
+            return _chunk = new Segment[FirstChunkCapacity];
+        }
+
+        (_filledChunks ??= new List<Segment[]>()).Add(current);
+
+        _chunkCount = 0;
+
+        return _chunk = new Segment[current.Length < MaxChunkCapacity ? current.Length * 2 : MaxChunkCapacity];
+    }
+
+    /// <summary>The number of chunks holding segments; the last one is the only partly filled one.</summary>
+    private int ChunkCount => _segmentCount == 0 ? 0 : (_filledChunks?.Count ?? 0) + 1;
+
+    /// <summary>The chunk at <paramref name="chunkIndex"/> and how many of its slots are in use.</summary>
+    private Segment[] ChunkAt(int chunkIndex, out int used)
+    {
+        var filled = _filledChunks;
+
+        if (filled != null && chunkIndex < filled.Count)
+        {
+            var chunk = filled[chunkIndex];
+
+            used = chunk.Length;
+
+            return chunk;
+        }
+
+        used = _chunkCount;
+
+        return _chunk;
     }
 
     public void AddImportNamespace(string ns)
@@ -385,57 +479,64 @@ public class OutputContext : IOutputContext
     {
         get
         {
-            for (var i = _segments.Count - 1; i >= 0; i--)
+            for (var chunkIndex = ChunkCount - 1; chunkIndex >= 0; chunkIndex--)
             {
-                var segment = _segments[i];
+                var chunk = ChunkAt(chunkIndex, out var used);
 
-                switch (segment.Kind)
+                for (var i = used - 1; i >= 0; i--)
                 {
-                    case SegmentKind.Text:
-                        if (!string.IsNullOrEmpty(segment.Text))
-                        {
-                            return segment.Text![segment.Text!.Length - 1];
-                        }
+                    var segment = chunk[i];
 
-                        break;
+                    switch (segment.Kind)
+                    {
+                        case SegmentKind.Text:
+                            var text = segment.Text;
 
-                    case SegmentKind.NewLine:
-                        if (Options.NewLine.Length > 0)
-                        {
-                            return Options.NewLine[Options.NewLine.Length - 1];
-                        }
+                            if (!string.IsNullOrEmpty(text))
+                            {
+                                return text![text.Length - 1];
+                            }
 
-                        break;
+                            break;
 
-                    case SegmentKind.Indent:
-                        if (segment.Depth > 0 && Options.IndentCharCount > 0)
-                        {
-                            return Options.IndentChar;
-                        }
+                        case SegmentKind.NewLine:
+                            if (Options.NewLine.Length > 0)
+                            {
+                                return Options.NewLine[Options.NewLine.Length - 1];
+                            }
 
-                        break;
+                            break;
 
-                    case SegmentKind.ScopeOpen:
-                    case SegmentKind.ScopeClose:
-                        // The scope marker writes its brace and then a line break.
-                        if (Options.NewLine.Length > 0)
-                        {
-                            return Options.NewLine[Options.NewLine.Length - 1];
-                        }
+                        case SegmentKind.Indent:
+                            if (segment.Depth > 0 && Options.IndentCharCount > 0)
+                            {
+                                return Options.IndentChar;
+                            }
 
-                        return segment.Kind == SegmentKind.ScopeOpen ? '{' : '}';
+                            break;
 
-                    case SegmentKind.TypeReference:
-                        var builder = new StringBuilder();
+                        case SegmentKind.ScopeOpen:
+                        case SegmentKind.ScopeClose:
+                            // The scope marker writes its brace and then a line break.
+                            if (Options.NewLine.Length > 0)
+                            {
+                                return Options.NewLine[Options.NewLine.Length - 1];
+                            }
 
-                        segment.Type!.WriteTypeName(builder, Options.TypeOutputMode);
+                            return segment.Kind == SegmentKind.ScopeOpen ? '{' : '}';
 
-                        if (builder.Length > 0)
-                        {
-                            return builder[builder.Length - 1];
-                        }
+                        case SegmentKind.TypeReference:
+                            var builder = new StringBuilder();
 
-                        break;
+                            segment.Type!.WriteTypeName(builder, Options.TypeOutputMode);
+
+                            if (builder.Length > 0)
+                            {
+                                return builder[builder.Length - 1];
+                            }
+
+                            break;
+                    }
                 }
             }
 
@@ -500,59 +601,66 @@ public class OutputContext : IOutputContext
         var indentWidth = Options.IndentCharCount;
         var newLine = Options.NewLine;
         var kAndR = Options.BraceStyle == BraceStyle.KAndR;
+        var typeOutputMode = Options.TypeOutputMode;
+        var hasRenames = namePlan.HasRenames;
 
-        for (var i = 0; i < _segments.Count; i++)
+        for (var chunkIndex = 0; chunkIndex < ChunkCount; chunkIndex++)
         {
-            var segment = _segments[i];
+            var chunk = ChunkAt(chunkIndex, out var used);
 
-            switch (segment.Kind)
+            for (var i = 0; i < used; i++)
             {
-                case SegmentKind.Text:
-                    builder.Append(segment.Text);
-                    break;
+                var segment = chunk[i];
 
-                case SegmentKind.NewLine:
-                    builder.Append(newLine);
-                    break;
+                switch (segment.Kind)
+                {
+                    case SegmentKind.Text:
+                        builder.Append(segment.Text);
+                        break;
 
-                case SegmentKind.Indent:
-                    if (segment.Depth > 0)
-                    {
+                    case SegmentKind.NewLine:
+                        builder.Append(newLine);
+                        break;
+
+                    case SegmentKind.Indent:
+                        if (segment.Depth > 0)
+                        {
+                            builder.Append(indentChar, indentWidth * segment.Depth);
+                        }
+
+                        break;
+
+                    case SegmentKind.ScopeOpen:
+                        if (kAndR)
+                        {
+                            TrimLineEnd(builder);
+                            builder.Append(' ').Append('{').Append(newLine);
+                        }
+                        else
+                        {
+                            builder.Append(indentChar, indentWidth * segment.Depth);
+                            builder.Append('{').Append(newLine);
+                        }
+
+                        break;
+
+                    case SegmentKind.ScopeClose:
                         builder.Append(indentChar, indentWidth * segment.Depth);
-                    }
+                        builder.Append('}').Append(newLine);
+                        break;
 
-                    break;
+                    case SegmentKind.TypeReference:
+                        if (hasRenames)
+                        {
+                            AppendPlannedName(builder, segment.Type!, namePlan);
+                        }
+                        else
+                        {
+                            segment.Type!.WriteTypeName(builder, typeOutputMode);
+                        }
 
-                case SegmentKind.ScopeOpen:
-                    if (kAndR)
-                    {
-                        TrimLineEnd(builder);
-                        builder.Append(' ').Append('{').Append(newLine);
-                    }
-                    else
-                    {
-                        builder.Append(indentChar, indentWidth * segment.Depth);
-                        builder.Append('{').Append(newLine);
-                    }
-
-                    break;
-
-                case SegmentKind.ScopeClose:
-                    builder.Append(indentChar, indentWidth * segment.Depth);
-                    builder.Append('}').Append(newLine);
-                    break;
-
-                case SegmentKind.TypeReference:
-                    if (namePlan.HasRenames)
-                    {
-                        AppendPlannedName(builder, segment.Type!, namePlan);
-                    }
-                    else
-                    {
-                        segment.Type!.WriteTypeName(builder, Options.TypeOutputMode);
-                    }
-
-                    break;
+                        break;
+                }
             }
         }
     }
@@ -679,11 +787,16 @@ public class OutputContext : IOutputContext
         var written = new List<ITypeDefinition>();
         var seen = new HashSet<ITypeDefinition>();
 
-        for (var i = 0; i < _segments.Count; i++)
+        for (var chunkIndex = 0; chunkIndex < ChunkCount; chunkIndex++)
         {
-            if (_segments[i].Kind == SegmentKind.TypeReference)
+            var chunk = ChunkAt(chunkIndex, out var used);
+
+            for (var i = 0; i < used; i++)
             {
-                CollectType(_segments[i].Type!, written, seen);
+                if (chunk[i].Kind == SegmentKind.TypeReference)
+                {
+                    CollectType(chunk[i].Type!, written, seen);
+                }
             }
         }
 
@@ -718,18 +831,23 @@ public class OutputContext : IOutputContext
     /// </summary>
     private void CollectDerivedNamespaces(NamePlan namePlan)
     {
-        for (var i = 0; i < _segments.Count; i++)
+        for (var chunkIndex = 0; chunkIndex < ChunkCount; chunkIndex++)
         {
-            if (_segments[i].Kind != SegmentKind.TypeReference)
-            {
-                continue;
-            }
+            var chunk = ChunkAt(chunkIndex, out var used);
 
-            foreach (var knownNamespace in _segments[i].Type!.KnownNamespaces)
+            for (var i = 0; i < used; i++)
             {
-                if (!string.IsNullOrEmpty(knownNamespace))
+                if (chunk[i].Kind != SegmentKind.TypeReference)
                 {
-                    namePlan.Namespaces.Add(knownNamespace);
+                    continue;
+                }
+
+                foreach (var knownNamespace in chunk[i].Type!.KnownNamespaces)
+                {
+                    if (!string.IsNullOrEmpty(knownNamespace))
+                    {
+                        namePlan.Namespaces.Add(knownNamespace);
+                    }
                 }
             }
         }
