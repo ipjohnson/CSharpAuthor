@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace CSharpAuthor;
@@ -33,9 +34,10 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
             for (var index = 0; index < types.Length; index++)
             {
                 var value = types[index];
-                var typeSwapString = "{arg" + (index + 1) + "}";
+                var typeSwapString =
+                    "{arg" + (index + 1).ToString(CultureInfo.InvariantCulture) + "}";
 
-                if (statement.IndexOf(typeSwapString, StringComparison.CurrentCulture) >= 0)
+                if (statement.IndexOf(typeSwapString, StringComparison.Ordinal) >= 0)
                 {
 
                     if (value is Type typeValue)
@@ -52,9 +54,10 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
                 }
                 else
                 {
-                    var rawSwapString = $"[arg{index + 1}]";
+                    var rawSwapString =
+                        "[arg" + (index + 1).ToString(CultureInfo.InvariantCulture) + "]";
 
-                    if (statement.IndexOf(rawSwapString, StringComparison.CurrentCulture) >= 0)
+                    if (statement.IndexOf(rawSwapString, StringComparison.Ordinal) >= 0)
                     {
                         statement = statement.Replace(rawSwapString, LiteralFormatter.Format(value));
                     }

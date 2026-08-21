@@ -146,6 +146,30 @@ public class CultureTests
         });
     }
 
+    [Theory]
+    [InlineData("de-DE")]
+    [InlineData("tr-TR")]
+    [InlineData("sv-SE")]
+    public void AddCodePlaceholderMatchingIsCultureStable(string cultureName)
+    {
+        // AddCode located its {argN} and [argN] placeholders with
+        // StringComparison.CurrentCulture. Finding a placeholder is an exact-text question, so it
+        // is now Ordinal - and culture-sensitive comparison is a hard analyzer error in both
+        // consumer builds, which have EnforceExtendedAnalyzerRules turned on.
+        InCulture(cultureName, () =>
+        {
+            var method = new MethodDefinition("Test");
+
+            method.AddCode("var x = new {arg1}(); var y = [arg2];", typeof(string), 42);
+
+            var outputContext = new OutputContext();
+
+            method.WriteOutput(outputContext);
+
+            AssertEqual.ContainsWithoutNewLine("var x = new string(); var y = 42;", outputContext.Output());
+        });
+    }
+
     [Fact]
     public void AddCodeSubstitutionIsInvariantUnderGermanCulture()
     {

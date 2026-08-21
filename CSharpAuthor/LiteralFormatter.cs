@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Text;
 
@@ -19,8 +19,14 @@ namespace CSharpAuthor;
 /// <c>1.5</c> is a <c>double</c>; only <c>1.5f</c> is the float. The same applies to
 /// <c>decimal</c>, and to <c>uint</c>/<c>ulong</c> values above <see cref="int.MaxValue"/>.
 /// </para>
+/// <para>
+/// Internal: the consumers source-include this library, so they can still use it, but it is not
+/// public API anyone has to support forever. V2-HANDOFF.md section 3 already establishes this for
+/// generated nodes - "mark generated node types internal when source-included so they don't leak
+/// into consumer API surface" - and an incidental helper is the same case.
+/// </para>
 /// </remarks>
-public static class LiteralFormatter
+internal static class LiteralFormatter
 {
     /// <summary>
     /// The literal text for <paramref name="value"/>, quoted and suffixed as its type requires.

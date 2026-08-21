@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -21,8 +21,14 @@ namespace CSharpAuthor;
 /// <c>record</c>, <c>async</c>, <c>where</c>, <c>nint</c> and the rest - are legal identifiers as
 /// they stand, and prefixing them would be noise in the output for no gain.
 /// </para>
+/// <para>
+/// Internal: the consumers source-include this library, so they can still use it, but it is not
+/// public API anyone has to support forever. V2-HANDOFF.md section 3 already establishes this for
+/// generated nodes - "mark generated node types internal when source-included so they don't leak
+/// into consumer API surface" - and an incidental helper is the same case.
+/// </para>
 /// </remarks>
-public static class CSharpIdentifier
+internal static class CSharpIdentifier
 {
     /// <summary>
     /// C#'s reserved words. A reserved word cannot be used as an identifier without the prefix.

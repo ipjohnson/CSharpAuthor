@@ -80,3 +80,77 @@ a file exercising every fix above was generated **under `de-DE`**, compiled
 clean on `net8.0`, and then executed to confirm every literal equals the value
 it was generated from — including a string containing `"`, `\`, CRLF, tab, NUL,
 a control character, and a surrogate pair.
+
+### Culture-dependent APIs (RS1035)
+
+Both consumers build with `EnforceExtendedAnalyzerRules=true`, and this library
+is compiled **into** them from source, so a culture-dependent API here is a hard
+error in their build and invisible to `dotnet test CSharpAuthor.Tests`. The whole
+library was swept, not only the numeric emission sites:
+
+| Site | Was | Now |
+|---|---|---|
+| `BaseBlockDefinition.AddCode` | `IndexOf(placeholder, StringComparison.CurrentCulture)` ×2 | `StringComparison.Ordinal` |
+| `BaseBlockDefinition.AddCode` | `"{arg" + (index + 1)` ×2 — `int.ToString()` under the current culture | `.ToString(CultureInfo.InvariantCulture)` |
+| `MethodDefinition.GetUniqueVariable` | `prefix + VariableCount++` | `.ToString(CultureInfo.InvariantCulture)` |
+| `AttributeDefinition.WriteBody` | `EndsWith(string)` — the culture-sensitive overload | `EndsWith(string, StringComparison.Ordinal)` |
+
+Locating a fixed placeholder is an exact-text question, so ordinal is also the
+correct answer on the merits, not only for the analyzer.
+
+Clean already, and confirmed by sweep: no `ToLower`/`ToUpper`, no `Parse`, no
+`Convert`, no `string.Format`, no file I/O, no `Environment`. `string.Compare`
+was already explicit `StringComparison.Ordinal` everywhere. The `IndexOf(char)`
+overloads are ordinal by definition and were left alone.
+
+netstandard2.0 was respected throughout: surrogate pairs are handled manually
+with `char.IsHighSurrogate`/`IsLowSurrogate` (there is no `Rune`), and nothing
+uses `string.Contains(char)` or `HashCode`.
+
+### Public API surface
+
+`DependencyModules`' `PublicApiTests` snapshot legitimately changes, because §7
+requires new public API. After demoting every incidental helper to `internal`,
+the diff is exactly:
+
+```
+BaseBlockDefinition:  + Continue()
+                      + For(IOutputComponent?, IOutputComponent?, IOutputComponent?)
+                      + For(string, object, object)
+ComponentModifier:    + ProtectedInternal = 1026
+                      + PrivateProtected  = 6
+ForDefinition:        + two constructors
+                      + Condition, Increment, Initializer, Variable
+MethodDefinition:     + OmitBody
+```
+
+Every line is a §7 line item except `MethodDefinition.OmitBody`, which is the
+only way to declare the defining half of a `partial` method and so is mandated in
+substance — see `docs/v2-open-questions.md` §9.
+
+Demoted to `internal` and therefore **absent** from the diff: `LiteralFormatter`,
+`CSharpIdentifier`, `ComponentModifierExtensions` (whole classes), and
+`MethodDefinition.IsBodyless` (now `private`). That removed 25 of the 38 added
+lines.
+
+**This snapshot has not been re-baselined and must not be** (rule 8.1). Adding
+public API is exactly the kind of change that is the human's call, so
+`DependencyModules` sits at **733/735** — the two failures are the same single
+`PublicApiTests` test, counted once per target framework. It cannot reach 735/735
+without someone approving the addition above.
+
+### Proof that `private protected` no longer widens access
+
+A string assertion can be satisfied by a coincidence, so this was checked against
+the compiler as a differential. Two types were generated that differ **only** in
+that modifier, and one separate assembly was compiled against each, deriving from
+the type and touching a method, a field and a property:
+
+| Generated as | Cross-assembly derived access |
+|---|---|
+| `protected` | **compiles** — correct, it is reachable from a derived type in any assembly |
+| `private protected` | **fails** — the members do not resolve at all |
+
+Same generator, same consumer source, one modifier different, opposite results.
+Had the emitter still widened `private protected` to `protected`, both would have
+compiled.

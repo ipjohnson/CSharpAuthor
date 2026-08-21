@@ -49,6 +49,43 @@ public class AccessibilityTests
     }
 
     [Fact]
+    public void PrivateProtectedEmitsExactlyThoseTwoKeywordsAndNothingElse()
+    {
+        // Asserted as the whole emitted declaration rather than by substring. A Contains check for
+        // "private protected" can be satisfied by output that also says something else; this
+        // cannot.
+        AssertEqual.WithoutNewLine(
+            "private protected void Method()\n{\n}\n",
+            WriteMethod(ComponentModifier.Private | ComponentModifier.Protected));
+    }
+
+    [Fact]
+    public void ProtectedInternalEmitsExactlyThoseTwoKeywordsAndNothingElse()
+    {
+        AssertEqual.WithoutNewLine(
+            "protected internal void Method()\n{\n}\n",
+            WriteMethod(ComponentModifier.Protected | ComponentModifier.Internal));
+    }
+
+    [Fact]
+    public void PrivateProtectedIsNotTheSameOutputAsProtected()
+    {
+        // The defect was that these two produced identical output. They are different
+        // accessibility levels: `protected` is reachable from a derived type in any assembly,
+        // `private protected` only from one in this assembly.
+        //
+        // Proven at the compiler level too, not just here: generating both and compiling a
+        // SEPARATE assembly that derives from each and touches the member, the `protected` one
+        // builds and the `private protected` one fails to resolve the member at all. See
+        // docs/migration-v1-v2.md.
+        var privateProtected = WriteMethod(ComponentModifier.PrivateProtected);
+        var justProtected = WriteMethod(ComponentModifier.Protected);
+
+        Assert.NotEqual(justProtected, privateProtected);
+        AssertEqual.WithoutNewLine("protected void Method()\n{\n}\n", justProtected);
+    }
+
+    [Fact]
     public void NamedCombinationsMatchTheirFlagPairs()
     {
         Assert.Equal(

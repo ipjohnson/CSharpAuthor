@@ -63,7 +63,13 @@ public enum ComponentModifier
 /// <summary>
 /// Reading a <see cref="ComponentModifier"/> as the C# keywords that spell it.
 /// </summary>
-public static class ComponentModifierExtensions
+/// <remarks>
+/// Internal: the consumers source-include this library, so they can still use it, but it is not
+/// public API anyone has to support forever. V2-HANDOFF.md section 3 already establishes this for
+/// generated nodes - "mark generated node types internal when source-included so they don't leak
+/// into consumer API surface" - and an incidental helper is the same case.
+/// </remarks>
+internal static class ComponentModifierExtensions
 {
     /// <summary>
     /// Every modifier that is not an accessibility level, in the order C# convention puts them.

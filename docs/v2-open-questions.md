@@ -69,3 +69,53 @@ There is no C# literal for NaN or infinity, so `float.NaN`,
 `float.PositiveInfinity` and the `double` equivalents are emitted as member
 accesses. This is the only place the formatter emits something that is not a
 literal.
+
+### 8. The incidental helpers are `internal`, not `public`
+
+`LiteralFormatter`, `CSharpIdentifier` and `ComponentModifierExtensions` were
+written `public` and are now `internal`. None of them is something §7 asks for:
+§7 mandates the *behaviour* (escaped strings, invariant numbers, suffixed
+literals, `@`-prefixed keywords), and that reaches callers through API that was
+already public — `CodeOutputComponent.Get`, `SyntaxHelpers.QuoteString`, and the
+writers themselves.
+
+Making them public would have committed the project to supporting three helper
+surfaces forever in exchange for nothing. The consumers **source-include** this
+library (§3), so they can still reach every one of them; only the compiled
+package's public surface shrinks. §3 already sets this precedent for the
+generated grammar nodes: *"mark generated node types `internal` when
+source-included so they don't leak into consumer API surface."*
+
+`CSharpAuthor.Tests` reaches them through an `InternalsVisibleTo` declared as an
+**MSBuild item**, not a source attribute, so the attribute is generated into
+`obj/` and is not one of the `.cs` files a consumer compiles in.
+
+Reversible: `internal` → `public` is not a breaking change, so any of these can
+be promoted later if a consumer turns out to want it.
+
+### 9. `MethodDefinition.OmitBody` stays public
+
+It is the only way to express the *defining* half of a `partial` method — the
+one that ends at `;`. §7 requires `partial` on methods to work, and emitting the
+keyword alone does not achieve that: two implementing halves is CS0111. So this
+is mandated in substance even though §7 does not name it.
+
+It is the one member in the public-API diff that is a judgement call rather than
+a literal §7 line item.
+
+### 10. `MethodDefinition.IsBodyless` is `private`, not `protected virtual`
+
+Written `protected virtual` out of habit. Nothing overrides it, and `private` →
+`protected` is a non-breaking change later while the reverse is not, so it
+starts private and stays off the public surface. `OmitBody` already gives
+callers the control.
+
+### 11. `AddCode` placeholder matching is ordinal
+
+`AddCode` located its `{argN}` and `[argN]` placeholders with
+`StringComparison.CurrentCulture`. Finding a fixed placeholder is an exact-text
+question, so it is now `Ordinal`.
+
+This also matters for a reason invisible to gate 1: both consumers build with
+`EnforceExtendedAnalyzerRules=true`, which makes culture-dependent APIs hard
+errors, and the library is compiled *into* them from source.

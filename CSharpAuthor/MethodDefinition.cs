@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace CSharpAuthor;
@@ -68,7 +69,7 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
 
     public string GetUniqueVariable(string prefix)
     {
-        return prefix + VariableCount++;
+        return prefix + (VariableCount++).ToString(CultureInfo.InvariantCulture);
     }
 
     public void AddGenericParameter(ITypeDefinition typeDefinition)
@@ -177,7 +178,7 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
     /// time, so the result compiled as an ordinary empty method and the abstraction quietly
     /// disappeared instead.
     /// </remarks>
-    protected virtual bool IsBodyless =>
+    private bool IsBodyless =>
         OmitBody || (Modifiers & ComponentModifier.Abstract) == ComponentModifier.Abstract;
 
     protected virtual void WriteMethodBody(IOutputContext outputContext)
