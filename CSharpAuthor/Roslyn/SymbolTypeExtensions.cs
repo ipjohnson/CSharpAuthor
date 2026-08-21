@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CSharpAuthor.Roslyn;
 
@@ -71,7 +72,42 @@ public static class SymbolTypeExtensions
             type = semanticModel.GetSymbolInfo(node).Symbol as ITypeSymbol;
         }
 
-        return type == null ? null : Convert(type);
+        if (type == null)
+        {
+            return null;
+        }
+
+        var typeDefinition = Convert(type);
+
+        // A nullable reference type does not come back annotated: asked about the type `string?`,
+        // the model answers `string`, because the annotation belongs to the reference rather than to
+        // the type it bound. The syntax says so unambiguously - and it is the node's kind that says
+        // it, not its text, so `List<string?>` is not mistaken for a nullable list the way asking
+        // whether the source ended in "?" would.
+        if (!typeDefinition.IsNullable && node is NullableTypeSyntax)
+        {
+            typeDefinition = typeDefinition.MakeNullable();
+        }
+
+        return typeDefinition;
+    }
+
+    /// <summary>
+    /// The type definition for a syntax node, taking the semantic model from the generator context
+    /// the node arrived in.
+    /// </summary>
+    public static ITypeDefinition? GetTypeDefinition(this SyntaxNode node, GeneratorSyntaxContext context)
+    {
+        return node.GetTypeDefinition(context.SemanticModel);
+    }
+
+    /// <summary>
+    /// The type definition for a syntax node, taking the semantic model from an attribute-triggered
+    /// generator context.
+    /// </summary>
+    public static ITypeDefinition? GetTypeDefinition(this SyntaxNode node, GeneratorAttributeSyntaxContext context)
+    {
+        return node.GetTypeDefinition(context.SemanticModel);
     }
 
     /// <summary>The type definition a bound symbol refers to, or null when it is not a type.</summary>
