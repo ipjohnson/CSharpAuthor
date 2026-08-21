@@ -95,7 +95,7 @@ public static class CSharpText
         var builder = new StringBuilder(6);
 
         builder.Append('\'');
-        AppendEscaped(builder, value.ToString(), insideCharLiteral: true);
+        AppendEscaped(builder, value.ToString(CultureInfo.InvariantCulture), insideCharLiteral: true);
         builder.Append('\'');
 
         return builder.ToString();
