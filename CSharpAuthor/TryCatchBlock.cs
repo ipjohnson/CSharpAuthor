@@ -4,6 +4,15 @@ using System.Text;
 
 namespace CSharpAuthor;
 
+/// <summary>
+/// A <c>try</c> block with its <c>catch</c> clauses and <c>finally</c>.
+/// </summary>
+/// <remarks>
+/// Statements added to this object are the <c>try</c> body; <see cref="Catch(ITypeDefinition, string, IOutputComponent)"/>
+/// and <see cref="Finally"/> each return a block of their own. Clauses are written in the order
+/// they were added, which matters - C# requires the more derived exception type first, and nothing
+/// here reorders them.
+/// </remarks>
 public class TryCatchBlock : BaseBlockDefinition
 {
     private readonly List<CatchBlock> _catchBlocks = new ();
@@ -22,6 +31,44 @@ public class TryCatchBlock : BaseBlockDefinition
         return Catch(TypeDefinition.Get(exceptionType), name, when);
     }
 
+    /// <summary>
+    /// A <c>catch</c> clause, optionally naming the exception and filtering it with <c>when</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// An empty <paramref name="name"/> gives <c>catch (Exception)</c> - a clause that catches
+    /// without binding, which is what a rethrow wants. <paramref name="when"/> is written inside
+    /// its own parentheses, so pass the condition without them.
+    /// </para>
+    /// <example>
+    /// <code>
+    /// var attempt = method.Try();
+    /// attempt.AddIndentedStatement("Work()");
+    /// attempt.Catch(typeof(Exception), "e").AddIndentedStatement("Log(e)");
+    /// attempt.Finally().AddIndentedStatement("Cleanup()");
+    /// </code>
+    /// which is
+    /// <code>
+    /// try
+    /// {
+    ///     Work();
+    /// }
+    /// catch (Exception e)
+    /// {
+    ///     Log(e);
+    /// }
+    /// finally
+    /// {
+    ///     Cleanup();
+    /// }
+    /// </code>
+    /// </example>
+    /// <para>
+    /// A bare rethrow is <c>AddIndentedStatement("throw")</c> on the returned block;
+    /// <see cref="BaseBlockDefinition.Throw(ITypeDefinition, object[])"/> always constructs a new
+    /// exception.
+    /// </para>
+    /// </remarks>
     public BaseBlockDefinition Catch(ITypeDefinition exceptionType, string name = "", IOutputComponent? when = null)
     {
         var catchBlock = new CatchBlock(exceptionType, name, when);
@@ -31,6 +78,13 @@ public class TryCatchBlock : BaseBlockDefinition
         return catchBlock;
     }
 
+    /// <summary>
+    /// The <c>finally</c> clause. Statements go on the block this returns.
+    /// </summary>
+    /// <remarks>
+    /// A second call returns a second block and the first is discarded, so ask once and keep what
+    /// comes back.
+    /// </remarks>
     public BaseBlockDefinition Finally()
     {
         return _finallyBlock = new FinallyBlock();

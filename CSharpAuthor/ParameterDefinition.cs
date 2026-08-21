@@ -1,7 +1,26 @@
 namespace CSharpAuthor;
 
+/// <summary>
+/// A method or constructor parameter: its declaration, and a value the body can use.
+/// </summary>
+/// <remarks>
+/// It is an <see cref="InstanceDefinition"/>, so the same object that declares
+/// <c>string name</c> is what a statement in the body writes as <c>name</c>. That is why
+/// <see cref="MethodDefinition.AddParameter(ITypeDefinition, string)"/> hands it back: holding it
+/// is how the declaration and the body stay in step.
+/// </remarks>
 public class ParameterDefinition : InstanceDefinition
 {
+    /// <summary>
+    /// A parameter of <paramref name="typeDefinition"/> named <paramref name="name"/>. Prefer
+    /// <see cref="MethodDefinition.AddParameter(ITypeDefinition, string)"/>, which builds one and
+    /// appends it to a signature.
+    /// </summary>
+    /// <remarks>
+    /// Constructing one directly is for a parameter built before the method exists - a helper that
+    /// assembles a signature and then attaches it with
+    /// <see cref="MethodDefinition.AddParameter(ParameterDefinition)"/>.
+    /// </remarks>
     public ParameterDefinition(ITypeDefinition typeDefinition, string name)
         : base(name)
     {
@@ -38,8 +57,19 @@ public class ParameterDefinition : InstanceDefinition
     /// </summary>
     public bool This { get; set; } = false;
 
+    /// <summary>The declared type.</summary>
     public ITypeDefinition TypeDefinition { get; }
 
+    /// <summary>
+    /// The default: <c>public void Greet(string name = "world")</c>.
+    /// </summary>
+    /// <remarks>
+    /// A component rather than a value, so a string literal needs
+    /// <see cref="SyntaxHelpers.QuoteString"/> and a null default needs
+    /// <see cref="SyntaxHelpers.Null"/> - setting this to null means no default at all. C# requires
+    /// every parameter after an optional one to be optional too, and nothing here checks that; the
+    /// order is the order they were added.
+    /// </remarks>
     public IOutputComponent? DefaultValue { get; set; }
 
     public void WriteWithSignature(IOutputContext outputContext)
