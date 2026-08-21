@@ -173,6 +173,16 @@ public class CodeOutputComponent : BaseOutputComponent
             TypeDefinition.Get(type ?? typeof(object)), outputComponents.ToArray());
     }
 
+    /// <summary>
+    /// Says that this statement mentions a type without writing it as one.
+    /// </summary>
+    /// <remarks>
+    /// Kept for callers written against version 1. It cannot do what
+    /// <see cref="Get(ITypeDefinition, string, bool)"/> and <see cref="FromParts"/> do - the type is
+    /// still text by the time it gets here, so it cannot be qualified or aliased - and all it can
+    /// still offer is the namespace, in the one mode where a namespace is what makes the name
+    /// resolve. Prefer handing the type over instead of its name.
+    /// </remarks>
     public void AddType(ITypeDefinition typeDefinition)
     {
         _typeDefinitions ??= new List<ITypeDefinition>();
@@ -225,11 +235,16 @@ public class CodeOutputComponent : BaseOutputComponent
             }
         }
 
-        if (_typeDefinitions != null)
+        // Only where a namespace is what makes an unqualified name resolve. In a mode that
+        // qualifies, the name in this statement is text and no directive can make it right - which
+        // is the whole reason the type should have been handed over rather than named.
+        if (_typeDefinitions != null && outputContext.Options.TypeOutputMode == TypeOutputMode.ShortName)
         {
-            outputContext.AddImportNamespaces(_typeDefinitions);
+            foreach (var typeDefinition in _typeDefinitions)
+            {
+                outputContext.AddImportNamespaces(typeDefinition.KnownNamespaces);
+            }
         }
-
     }
     public static implicit operator CodeOutputComponent(string statement) => new(statement);
 }

@@ -7,9 +7,39 @@
 
 ### Source compatibility
 
-`IOutputContext` is unchanged. No member was added, removed or re-signatured, so every existing
-implementation and every one of the 198+ call sites in `DependencyModules` and `Hardened.Framework`
-compiles untouched.
+#### Breaking: two members left `IOutputContext`
+
+```diff
+  void AddImportNamespace(string ns);
+- void AddImportNamespace(ITypeDefinition typeDefinition);
+  void AddImportNamespaces(IEnumerable<string> namespaces);
+- void AddImportNamespaces(IEnumerable<ITypeDefinition> typeDefinition);
+```
+
+This is invariant 1 made structural rather than asked for: a writer holds an `IOutputContext`, so a
+writer can no longer declare the namespace of a type. It writes the type and the namespace follows.
+
+Both are still **public on `OutputContext` itself**, so `new OutputContext().AddImportNamespace(type)`
+compiles exactly as before, and they now do nothing in a mode that qualifies its types.
+
+**Mechanical fix**, for code that called them through the interface:
+
+```diff
+- context.AddImportNamespace(someType);   // then wrote the type as a string
++ context.Write(someType);                // write the type; the namespace is derived
+```
+
+or, for a namespace that is genuinely not derivable from a type — an extension method — use the
+string overload, which is unchanged:
+
+```csharp
+context.AddImportNamespace("Microsoft.Extensions.DependencyInjection");
+```
+
+Measured: **0 call sites** across `DependencyModules` and `Hardened.Framework`, so neither consumer
+is affected by this removal.
+
+Everything else on `IOutputContext` is unchanged, so the other 198+ references compile untouched.
 
 `OutputContext` keeps its constructor, its properties and all its members. Internally it records
 segments and turns them into text in `Output()` instead of appending to a `StringBuilder`.
@@ -102,8 +132,16 @@ writes an `AttributeTypeReference` through `IOutputContext.Write(ITypeDefinition
 mode the output is unchanged (`[Marker]`, plus the using). In a qualifying mode it becomes
 `[global::Sample.Annotations.Marker]` where it used to be `[Marker]` with a stray directive.
 
-A **generic** attribute now writes its type arguments — `[Marker<int>]` where V1 wrote `[Marker]` and
-silently dropped them.
+`AttributeTypeReference` writes whatever the type writes and then takes the `Attribute` postfix off
+its simple name, rather than rebuilding the name out of `Namespace` and `Name`. Everything a type
+knows about itself that a bare name does not now survives into the attribute list:
+
+- a **generic** attribute writes its type arguments — `[Marker<int>]` where V1 wrote `[Marker]`;
+- a **nested** attribute keeps its container — `[Outer.Inner]` where V1 wrote `[Inner]`;
+- anything the type model learns to write later is written here too, with no change to this file.
+
+`Name` deliberately keeps the postfix, because an alias has to name the type that exists:
+`using SecondMarker = Second.MarkerAttribute;`, not `Second.Marker`, which is not a type.
 
 #### 5. Same-name collisions are aliased
 
@@ -132,17 +170,101 @@ Windows a file that previously had mixed endings now has consistent ones.
 V1 threw `NullReferenceException` from inside `AddImportNamespace` in `ShortName` mode and wrote
 nothing in the other modes. It now writes nothing in every mode.
 
-### Snapshot diffs to expect in the consumers
+#### 8. A `using` for a namespace with a keyword segment is escaped
 
-Not yet run against the consumer suites from this branch — the migrator owns that gate. Predicted,
-from reading the writers:
+`GenerateUsingStatements` wrote `$"using {ns};"` straight from the raw string. A namespace with a
+segment that is a C# keyword produced `using Company.event.Models;` — CS1001 — above a namespace
+*declaration* that was correctly written as `namespace Company.@event.Models`. Both halves now go
+through `CSharpIdentifier.EscapeQualified`, and alias names and alias targets are escaped too.
 
-| Snapshot | Predicted diff | Why |
+Found by the `declarations` builder; `CSharpIdentifier` is their file, copied verbatim into this
+branch so it compiles standalone. The two copies are byte-identical and merge cleanly.
+
+#### 9. A file no longer imports its own namespace
+
+`CSharpFileDefinition` tells the context which namespace it is about to open, and a `using` naming
+it is dropped. Everything the file declares is in scope without it. Only the file's outermost
+namespace counts — a nested one does not enclose its siblings, so dropping it could drop a directive
+something else in the file needs. `OutputContextOptions.ContainingNamespace` does the same for a
+caller writing into a context directly, with no `CSharpFileDefinition` to notice.
+
+---
+
+## Measured against the consumer suites
+
+Run from this branch with
+`scripts/run-consumer-tests.sh <clone> --scope core`, `UPDATE_SNAPSHOTS` unset.
+
+| Suite | Baseline (published V1) | This branch |
 |---|---|---|
-| Any `Global`-mode file | `using Microsoft.Extensions.DependencyInjection;` and `using System.Diagnostics.CodeAnalysis;` disappear | #1 |
-| `ModuleGenerationSnapshotTests.RegistrationTypeVariants` | `ServiceLifetime.Singleton` becomes bare *unless* the six call sites are changed | #2 — **fix the call sites** |
-| Any `Global`-mode file with attributes | `[ExcludeFromCodeCoverage]` becomes `[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]` | #4 |
-| `Global`-mode files using `AddCode` with `{argN}` | the substituted type becomes qualified | #3 |
+| `DependencyModules.Tests` net8.0 | 735 passed / 0 failed | **384 passed / 351 failed** |
+| `DependencyModules.Tests` net10.0 | 735 passed / 0 failed | **384 passed / 351 failed** |
+| `Hardened.SourceGenerator.Tests` net8.0 | 468 passed / 0 failed | **265 passed / 203 failed** |
 
-Every one of these is the defect list being satisfied, not a regression. None is a reason to
-re-baseline without reading the diff.
+**With the `Global`-mode fix in place and the consumers' source unchanged, neither consumer's
+generated code compiles.** That is not a snapshot diff to justify; it is the other half of the §1
+interlock coming due, and it is larger than §1 described. Every failure is one of two shapes, and
+both are the same defect: **a name written as a string, resolved by a `using` that nothing asked
+for.** The directive was there only because some type from that namespace happened to be written
+somewhere in the file, and removing it is what makes the string visible.
+
+### Shape A — an extension method invoked as an instance method (CS1061)
+
+An extension method is reached through a `using` and no other way; `global::` cannot name one. The
+consumers never asked for these namespaces — they came free with a derived import.
+
+| Consumer | Call | Namespace it needs |
+|---|---|---|
+| both | `AddSingleton`, `AddScoped`, `AddTransient`, `AddKeyedSingleton` on `IServiceCollection` | `Microsoft.Extensions.DependencyInjection` |
+| both | `GetRequiredService`, `GetRequiredKeyedService` on `IServiceProvider` | `Microsoft.Extensions.DependencyInjection` |
+| Hardened | `AddLogging`, `BuildServiceProvider` on `ServiceCollection` | `Microsoft.Extensions.DependencyInjection` |
+| Hardened | `Get` on `IDictionary<string, StringValues>` | Hardened's own extensions namespace |
+
+**Mechanical fix**, one line per generated file, beside the request the writer already makes:
+
+```diff
+  classDefinition.AddUsingNamespace("Microsoft.Extensions.DependencyInjection.Extensions");
++ classDefinition.AddUsingNamespace("Microsoft.Extensions.DependencyInjection");
+```
+
+`DependencyFileWriter.cs:119` is the DependencyModules line to add it beside. The same is needed in
+whichever writer emits `*.Interceptors.g.cs` and `*.ConventionDependencies.g.cs`, and in
+Hardened's `ServiceProviderFileGenerator`, `ApplicationEntryPointFileWriter`,
+`FunctionIncrementalGenerator` and the request-binding writers.
+
+A namespace asked for by name is **kept** in `Global` mode precisely so this fix works — see
+`docs/v2-open-questions.md` §1.
+
+### Shape B — a type name written as a string (CS0246 / CS0103)
+
+| Consumer | Written as | Where |
+|---|---|---|
+| DependencyModules | `"ServiceLifetime.Transient"` etc. | `DependencyFileWriter.cs:296,299,302,375,378,381`; `DependencyModuleWriter.cs:193,262,286,377` |
+| Hardened | `$"new ExecutionRequestHandlerInfo(…)"` | `Requests/HandlerInfoCodeGenerator.cs` |
+| Hardened | `Exception` in the application-root writer | `Application.ApplicationRoot` output |
+
+**Mechanical fix** — hand over the type instead of its name:
+
+```diff
+- parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Transient"));
++ parameters.Add(CodeOutputComponent.Get(KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Transient"));
+```
+
+```diff
+- field.InitializeValue = new CodeOutputComponent($"new ExecutionRequestHandlerInfo({args})");
++ field.InitializeValue = CodeOutputComponent.FromParts(
++     new object[] { "new ", KnownTypes.Requests.ExecutionRequestHandlerInfo, $"({args})" });
+```
+
+Either of those, or one `AddUsingNamespace` per file, makes the file compile. Handing the type over
+is the one that keeps working when the output mode changes.
+
+### Snapshot diffs
+
+One snapshot produced a `.received.txt`: `PublicApiTests.SourceGeneratorApi`, which tracks the
+public surface the source-included library adds to the generator assembly. Its diff is exactly the
+API table above — twenty added lines, two removed (`AddImportNamespace(ITypeDefinition)` and
+`AddImportNamespaces(IEnumerable<ITypeDefinition>)`) — and nothing else.
+
+The nine generator-output snapshots did not reach their comparison: they assert the generated code
+compiles first, and it does not, for the reasons above. **Nothing was re-baselined.**

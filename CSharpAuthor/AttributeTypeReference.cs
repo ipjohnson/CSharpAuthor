@@ -55,53 +55,56 @@ public sealed class AttributeTypeReference : ITypeDefinition
     {
         get
         {
-            var name = _attributeType.Name;
+            var builder = new StringBuilder();
 
-            return name.Length > AttributePostfix.Length && name.EndsWith(AttributePostfix, StringComparison.Ordinal)
-                ? name.Substring(0, name.Length - AttributePostfix.Length)
-                : name;
+            WriteTypeName(builder);
+
+            return builder.ToString();
         }
     }
 
+    /// <summary>
+    /// Writes the type exactly as it writes itself, and then takes the postfix off its simple name.
+    /// </summary>
+    /// <remarks>
+    /// Delegating rather than rebuilding the name out of <c>Namespace</c> and <c>Name</c> is the
+    /// point: whatever the type model knows how to write - a containing type, generic arguments,
+    /// a qualification the mode asked for - is written here too. Rebuilding it drops exactly the
+    /// parts a type knows about itself and a name does not, which is how a nested attribute lost
+    /// its container and a generic one lost its arguments.
+    /// </remarks>
     public void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
-        if (!string.IsNullOrEmpty(Namespace))
+        var start = builder.Length;
+
+        _attributeType.WriteTypeName(builder, typeOutputMode);
+
+        // The simple name ends where the type argument list begins, or at the end.
+        var end = builder.Length;
+
+        for (var i = start; i < builder.Length; i++)
         {
-            if (typeOutputMode == TypeOutputMode.Global)
+            if (builder[i] == '<')
             {
-                builder.Append("global::");
-                builder.Append(Namespace);
-                builder.Append('.');
-            }
-            else if (typeOutputMode == TypeOutputMode.FullName)
-            {
-                builder.Append(Namespace);
-                builder.Append('.');
+                end = i;
+                break;
             }
         }
 
-        builder.Append(WrittenName);
-
-        var typeArguments = TypeArguments;
-
-        if (typeArguments == null || typeArguments.Count == 0)
+        if (end - start <= AttributePostfix.Length)
         {
             return;
         }
 
-        builder.Append('<');
-
-        for (var i = 0; i < typeArguments.Count; i++)
+        for (var i = 0; i < AttributePostfix.Length; i++)
         {
-            if (i > 0)
+            if (builder[end - AttributePostfix.Length + i] != AttributePostfix[i])
             {
-                builder.Append(',');
+                return;
             }
-
-            typeArguments[i].WriteTypeName(builder, typeOutputMode);
         }
 
-        builder.Append('>');
+        builder.Remove(end - AttributePostfix.Length, AttributePostfix.Length);
     }
 
     public ITypeDefinition MakeNullable(bool nullable = true) => _attributeType.MakeNullable(nullable);

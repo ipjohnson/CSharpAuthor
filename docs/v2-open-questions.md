@@ -67,3 +67,20 @@ no object per write — and the no-collision path calls `ITypeDefinition.WriteTy
 the output builder, exactly as V1 did. Allocation is one array of ~32-byte structs plus V1's
 `StringBuilder`, so a regression is possible and is **unverified either way**. Whoever owns gate 9
 should measure this before the PR claims it.
+
+### 7. Ordering of the `using` list
+
+**Taken:** ordinal.
+
+**Why:** V1 sorted with `List<string>.Sort()`, which is culture-aware, so the order of a generated
+file could depend on the culture the generator ran under — the same defect class as §7's
+culture-dependent numbers. For every namespace either consumer actually emits, ordinal and
+culture-aware agree, so this is a determinism fix with no observed output change. A namespace pair
+that differs only in punctuation (`A.B` against `AB`) could order differently than under V1.
+
+### 8. `CSharpIdentifier` is copied, not shared
+
+`CSharpAuthor/CSharpIdentifier.cs` is the `declarations` builder's file, copied byte-identical into
+this branch so it compiles standalone — the `using` directives need the same escaping the namespace
+declaration gets, and writing a second escaper would be worse. The two copies are the same file and
+merge cleanly; if `declarations` changes it, theirs wins.

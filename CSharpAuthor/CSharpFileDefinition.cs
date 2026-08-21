@@ -47,8 +47,20 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
         _namespaceDefinition.AddComponent(component);
     }
 
+    /// <summary>
+    /// The namespace this file declares.
+    /// </summary>
+    public string Namespace => _namespaceDefinition.Namespace;
+
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
+        // The file's own namespace is in scope for everything in it, so a using naming it back is
+        // noise. Said here rather than configured, because this is where it is known.
+        if (outputContext is OutputContext context)
+        {
+            context.DeclareContainingNamespace(_namespaceDefinition.Namespace);
+        }
+
         _namespaceDefinition.WriteOutput(outputContext);
 
         outputContext.GenerateUsingStatements();

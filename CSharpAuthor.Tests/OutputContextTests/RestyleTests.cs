@@ -61,11 +61,10 @@ public class RestyleTests
     }
 
     /// <summary>
-    /// The file's own namespace needs no directive. Off unless it is set, because dropping one a
-    /// caller was relying on is worse than leaving a redundant one in.
+    /// A file needs no directive naming its own namespace: everything in it is already in scope.
     /// </summary>
     [Fact]
-    public void TheFilesOwnNamespaceIsDroppedWhenItIsNamed()
+    public void TheFilesOwnNamespaceNeedsNoDirective()
     {
         var file = new CSharpFileDefinition("Sample.Models");
         var method = file.AddClass("Service").AddMethod("Handle");
@@ -73,14 +72,67 @@ public class RestyleTests
         method.AddParameter(TypeDefinition.Get("Sample.Models", "Request"), "request");
         method.SetReturnType(TypeDefinition.Get("Sample.Other", "Result"));
 
-        var withName = Write(file, new OutputContextOptions { ContainingNamespace = "Sample.Models" });
+        var output = Write(file, new OutputContextOptions());
 
-        Assert.DoesNotContain("using Sample.Models;", withName);
-        Assert.Contains("using Sample.Other;", withName);
+        Assert.DoesNotContain("using Sample.Models;", output);
+        Assert.Contains("using Sample.Other;", output);
+        Assert.Contains("Result Handle(Request request)", output);
+    }
 
-        var without = Write(file, new OutputContextOptions());
+    /// <summary>
+    /// The same for a caller writing into a context directly, where nothing declares a namespace
+    /// for the context to notice.
+    /// </summary>
+    [Fact]
+    public void TheContainingNamespaceCanAlsoBeNamedOnTheOptions()
+    {
+        var context = new OutputContext(new OutputContextOptions { ContainingNamespace = "Sample.Models" });
 
-        Assert.Contains("using Sample.Models;", without);
+        context.Write(TypeDefinition.Get("Sample.Models", "Request"));
+        context.WriteLine();
+        context.Write(TypeDefinition.Get("Sample.Other", "Result"));
+        context.GenerateUsingStatements();
+
+        var output = context.Output();
+
+        Assert.DoesNotContain("using Sample.Models;", output);
+        Assert.Contains("using Sample.Other;", output);
+    }
+
+    /// <summary>
+    /// A namespace segment that is a keyword is written the same way on both sides.
+    /// </summary>
+    /// <remarks>
+    /// The declaration was escaped and the directive was not, so a file naming a namespace called
+    /// <c>event</c> emitted <c>using Company.event.Models;</c> - CS1001 - above a namespace
+    /// declaration that was correct.
+    /// </remarks>
+    [Fact]
+    public void AKeywordNamespaceSegmentIsEscapedInTheDirectiveToo()
+    {
+        var file = new CSharpFileDefinition("TestNamespace");
+        var method = file.AddClass("Service").AddMethod("Handle");
+
+        method.AddParameter(TypeDefinition.Get("Company.event.Models", "Payload"), "payload");
+
+        var output = Write(file, new OutputContextOptions());
+
+        Assert.Contains("using Company.@event.Models;", output);
+        Assert.DoesNotContain("using Company.event.Models;", output);
+    }
+
+    [Fact]
+    public void AnAliasWithAKeywordSegmentIsEscapedOnBothSides()
+    {
+        var file = new CSharpFileDefinition("TestNamespace");
+        var method = file.AddClass("Service").AddMethod("Handle");
+
+        method.AddParameter(TypeDefinition.Get("First", "Model"), "a");
+        method.AddParameter(TypeDefinition.Get("Company.event", "Model"), "b");
+
+        var output = Write(file, new OutputContextOptions());
+
+        Assert.Contains("using eventModel = Company.@event.Model;", output);
     }
 
     private static string Write(OutputContextOptions options)

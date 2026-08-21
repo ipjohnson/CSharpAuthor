@@ -126,6 +126,9 @@ public class OutputContext : IOutputContext
     /// </summary>
     private readonly HashSet<string> _typeNamespaces = new HashSet<string>();
 
+    /// <summary>The namespaces the file itself declares. A using for one of them says nothing.</summary>
+    private readonly HashSet<string> _declaredNamespaces = new HashSet<string>();
+
     private int _indentIndex;
     private bool _generateUsings;
 
@@ -253,8 +256,10 @@ public class OutputContext : IOutputContext
     }
 
     /// <summary>
-    /// Kept for callers written against version 1. Nothing in this library calls it: a type that is
-    /// written declares its own namespace, and one that is not written does not need one.
+    /// Kept for callers written against version 1, which is why it is on the class and not on
+    /// <see cref="IOutputContext"/>. Nothing in this library calls it: a type that is written
+    /// declares its own namespace, and one that is not written does not need one. A writer holding
+    /// the interface cannot reach it, which is how invariant 1 is enforced rather than asked for.
     /// </summary>
     /// <remarks>
     /// It does nothing in a mode that qualifies every type it writes. A namespace derived from a
@@ -307,6 +312,23 @@ public class OutputContext : IOutputContext
     public void GenerateUsingStatements()
     {
         _generateUsings = true;
+    }
+
+    /// <summary>
+    /// Says that the file declares this namespace, so a <c>using</c> for it is redundant.
+    /// </summary>
+    /// <remarks>
+    /// Called by <see cref="CSharpFileDefinition"/> with the namespace it is about to open. Anything
+    /// declared inside that namespace is in scope without a directive, and one that names the file's
+    /// own namespace back at it is noise. Only the outermost namespace counts: a nested one does not
+    /// enclose its siblings, so dropping it could drop a directive something else in the file needs.
+    /// </remarks>
+    public void DeclareContainingNamespace(string ns)
+    {
+        if (!string.IsNullOrEmpty(ns))
+        {
+            _declaredNamespaces.Add(ns);
+        }
     }
 
     public char? LastCharacter
@@ -396,16 +418,21 @@ public class OutputContext : IOutputContext
     {
         var wroteAny = false;
 
+        // A namespace segment that is a keyword needs the same @ the declaration gets. The two used
+        // to disagree: `namespace Company.@event.Models` was written correctly and
+        // `using Company.event.Models;` was not, which is CS1001 in a file that otherwise compiles.
         foreach (var ns in namePlan.Namespaces)
         {
-            builder.Append("using ").Append(ns).Append(';').Append(Options.NewLine);
+            builder.Append("using ").Append(CSharpIdentifier.EscapeQualified(ns))
+                .Append(';').Append(Options.NewLine);
 
             wroteAny = true;
         }
 
         foreach (var alias in namePlan.Aliases)
         {
-            builder.Append("using ").Append(alias.Key).Append(" = ").Append(alias.Value)
+            builder.Append("using ").Append(CSharpIdentifier.Escape(alias.Key))
+                .Append(" = ").Append(CSharpIdentifier.EscapeQualified(alias.Value))
                 .Append(';').Append(Options.NewLine);
 
             wroteAny = true;
@@ -526,7 +553,8 @@ public class OutputContext : IOutputContext
         public readonly SortedDictionary<string, string> Aliases =
             new SortedDictionary<string, string>(StringComparer.Ordinal);
 
-        public readonly SortedSet<string> Namespaces = new SortedSet<string>();
+        // Ordinal, so the file a generator writes does not depend on the culture it ran under.
+        public readonly SortedSet<string> Namespaces = new SortedSet<string>(StringComparer.Ordinal);
 
         /// <summary>Whether any type is written as something other than what it writes itself as.</summary>
         public bool HasRenames => AliasFor.Count > 0 || Qualified.Count > 0;
@@ -569,8 +597,10 @@ public class OutputContext : IOutputContext
         }
 
         // A namespace asked for by name survives a qualifying mode, because a using is the only way
-        // to reach an extension method and qualification cannot stand in for it.
-        if (Options.EmitExplicitUsings)
+        // to reach an extension method and qualification cannot stand in for it. The option turns
+        // that off for a file that must carry none; it has nothing to say about short-name mode,
+        // where the directive is how the name resolves at all.
+        if (Options.EmitExplicitUsings || Options.TypeOutputMode == TypeOutputMode.ShortName)
         {
             foreach (var ns in _explicitNamespaces)
             {
@@ -583,6 +613,11 @@ public class OutputContext : IOutputContext
         if (!string.IsNullOrEmpty(Options.ContainingNamespace))
         {
             namePlan.Namespaces.Remove(Options.ContainingNamespace!);
+        }
+
+        foreach (var ns in _declaredNamespaces)
+        {
+            namePlan.Namespaces.Remove(ns);
         }
 
         return namePlan;

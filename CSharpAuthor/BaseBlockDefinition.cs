@@ -79,7 +79,7 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
     {
         for (var i = 0; i < parts.Count; i++)
         {
-            if (parts[i] is string text && text.IndexOf(marker, StringComparison.CurrentCulture) >= 0)
+            if (parts[i] is string text && text.IndexOf(marker, StringComparison.Ordinal) >= 0)
             {
                 return true;
             }
@@ -97,7 +97,7 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
                 continue;
             }
 
-            var index = text.IndexOf(marker, StringComparison.CurrentCulture);
+            var index = text.IndexOf(marker, StringComparison.Ordinal);
 
             if (index < 0)
             {
@@ -117,7 +117,7 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
                 replaced.Add(replacement);
 
                 position = index + marker.Length;
-                index = text.IndexOf(marker, position, StringComparison.CurrentCulture);
+                index = text.IndexOf(marker, position, StringComparison.Ordinal);
             }
 
             if (position < text.Length)
@@ -132,18 +132,17 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
         }
     }
 
+    /// <summary>
+    /// The text a substituted value becomes. A type never reaches here.
+    /// </summary>
+    /// <remarks>
+    /// It used to: a type was turned into its short name at this point, which is when the tree is
+    /// being built and before any output mode exists. There is no answer to give then - the same
+    /// tree is meant to be writable as <c>Result</c> or as <c>global::Sample.Models.Result</c> - so
+    /// the caller keeps the type and this only ever sees things that really are values.
+    /// </remarks>
     private string GetObjectStringValue(object value)
     {
-        if (value is Type type)
-        {
-            value = TypeDefinition.Get(type);
-        }
-
-        if (value is ITypeDefinition typeDefinition)
-        {
-            return typeDefinition.GetShortName();
-        }
-
         if (value is string stringValue)
         {
             return "\"" + stringValue + "\"";
