@@ -119,14 +119,15 @@ public sealed class AttributeTypeReference : ITypeDefinition
 
     public ITypeDefinition MakeArray(int rank) => _attributeType.MakeArray(rank);
 
+    /// <summary>
+    /// The shared ordering. Answering -1 to everything that was not another attribute reference
+    /// made this smaller than every type and, read the other way round, larger than none of them -
+    /// the <see cref="IComparable{T}"/> contract broken the same way the type definitions had it
+    /// broken.
+    /// </summary>
     public int CompareTo(ITypeDefinition other)
     {
-        if (other is not AttributeTypeReference attributeType)
-        {
-            return -1;
-        }
-
-        return _attributeType.CompareTo(attributeType._attributeType);
+        return TypeDefinitionOrder.Compare(this, other);
     }
 
     public override bool Equals(object obj)

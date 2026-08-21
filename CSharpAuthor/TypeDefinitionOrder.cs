@@ -105,8 +105,19 @@ internal static class TypeDefinitionOrder
         return CompareTypeArguments(left, right);
     }
 
+    /// <summary>
+    /// Which kind of thing this is. A type parameter names nothing outside its declaration and an
+    /// attribute reference writes a name the type itself does not have, so neither is interchangeable
+    /// with an ordinary type - and saying so here is what makes the answer the same in both
+    /// directions.
+    /// </summary>
     private static int KindRank(ITypeDefinition typeDefinition) =>
-        typeDefinition is TypeParameterDefinition ? 0 : 1;
+        typeDefinition switch
+        {
+            TypeParameterDefinition => 0,
+            AttributeTypeReference => 2,
+            _ => 1
+        };
 
     /// <summary>
     /// Asked by shape rather than through <see cref="ITypeDefinition"/>, which does not carry it -

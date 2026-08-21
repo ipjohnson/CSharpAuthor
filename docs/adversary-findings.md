@@ -372,7 +372,10 @@ None is hard; all of them are somebody's decision rather than an agent's.
 ### Still an open feature request (1)
 
 `AssemblyLevelAttribute` - `CSharpFileDefinition` has no position outside its namespace, so
-`[assembly: …]` has nowhere to go. Needs API, not a fix.
+`[assembly: …]` has nowhere to go. This one needs API rather than a fix. Note that the test cannot
+pass even once the API exists: it concatenates a preamble that already declares a namespace above
+the emitted file, and an assembly attribute has to precede **every** element in the file (CS1730).
+The gap is real; the test will have to be rewritten to prove it closed.
 
 ### One more thing the sweep found
 
