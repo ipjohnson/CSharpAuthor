@@ -975,25 +975,42 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <summary>The answer for a file no two of whose types want the same name, which is nearly all of them.</summary>
+    private static readonly List<NameGroup> NoGroups = new List<NameGroup>();
+
     /// <summary>
     /// Groups the types by the name they compete for. Arity is part of it, because two types of the
     /// same name and different arity do not compete: <c>Box</c> and <c>Box&lt;T&gt;</c> resolve
     /// separately.
     /// </summary>
+    /// <remarks>
+    /// Two passes, because the first one nearly always ends the matter. Grouping means a group
+    /// object with two lists in it for every distinct name in the file, and a string for each - all
+    /// of it to discover, in the overwhelming majority of files, that no two names were the same.
+    /// The first pass instead hashes each name as it is rendered and sorts the hashes: no strings,
+    /// no groups, one small array. Only a repeat - a real collision, or a hash that happens to
+    /// match, which the second pass then rejects - makes it group anything.
+    /// </remarks>
     private List<NameGroup> GroupByShortName(List<ITypeDefinition> written)
     {
-        var groups = new List<NameGroup>();
-
         if (!Options.AliasCollisions || written.Count < 2)
         {
-            return groups;
+            return NoGroups;
         }
 
+        var builder = new StringBuilder();
+
+        if (!MayHaveCollision(written, builder))
+        {
+            return NoGroups;
+        }
+
+        var groups = new List<NameGroup>();
         var byKey = new Dictionary<string, NameGroup>(StringComparer.Ordinal);
 
         foreach (var type in written)
         {
-            var shortName = BareName(type);
+            var shortName = BareName(type, builder);
 
             if (shortName.Length == 0)
             {
@@ -1022,6 +1039,96 @@ public class OutputContext : IOutputContext
         groups.RemoveAll(group => group.Namespaces.Count < 2);
 
         return groups;
+    }
+
+    /// <summary>
+    /// Whether two of the written types might want the same name and arity, told from a sorted array
+    /// of hashes rather than from the names themselves.
+    /// </summary>
+    /// <remarks>
+    /// One-sided on purpose. Two equal names always hash the same, so it never says no to a real
+    /// collision; two different names very occasionally hash the same, and the grouping pass that
+    /// then runs compares the names properly and finds nothing.
+    /// </remarks>
+    private static bool MayHaveCollision(List<ITypeDefinition> written, StringBuilder builder)
+    {
+        var hashes = new int[written.Count];
+
+        for (var i = 0; i < written.Count; i++)
+        {
+            var type = written[i];
+
+            builder.Length = 0;
+
+            type.WriteTypeName(builder, TypeOutputMode.ShortName);
+
+            hashes[i] = BareNameHash(builder, type.TypeArguments?.Count ?? 0);
+        }
+
+        Array.Sort(hashes);
+
+        for (var i = 1; i < hashes.Length; i++)
+        {
+            if (hashes[i] == hashes[i - 1])
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// FNV-1a over the part of a rendered name that <see cref="BareName"/> would keep, plus the arity.
+    /// </summary>
+    private static int BareNameHash(StringBuilder builder, int argumentCount)
+    {
+        var length = BareNameEnd(builder, 0);
+
+        unchecked
+        {
+            var hash = (int)2166136261;
+
+            for (var i = 0; i < length; i++)
+            {
+                hash = (hash ^ builder[i]) * 16777619;
+            }
+
+            return (hash ^ argumentCount) * 16777619;
+        }
+    }
+
+    /// <summary>
+    /// Where the name a type rendered at <paramref name="start"/> ends: before its argument list, and
+    /// before any trailing array and null marks.
+    /// </summary>
+    private static int BareNameEnd(StringBuilder builder, int start)
+    {
+        var end = builder.Length;
+
+        for (var i = start + 1; i < end; i++)
+        {
+            if (builder[i] == '<')
+            {
+                end = i;
+
+                break;
+            }
+        }
+
+        while (end > start)
+        {
+            var character = builder[end - 1];
+
+            if (character != '?' && character != '[' && character != ']')
+            {
+                break;
+            }
+
+            end--;
+        }
+
+        return end;
     }
 
     private void ResolveCollisions(NamePlan namePlan, List<NameGroup> groups)
@@ -1236,7 +1343,12 @@ public class OutputContext : IOutputContext
                 builder.Append(type.Namespace).Append('.');
             }
 
-            builder.Append(BareName(type));
+            // Rendered straight into the output and cut back, rather than through a name of its own.
+            var start = builder.Length;
+
+            type.WriteTypeName(builder, TypeOutputMode.ShortName);
+
+            builder.Length = BareNameEnd(builder, start);
         }
 
         var typeArguments = type.TypeArguments;
@@ -1295,21 +1407,19 @@ public class OutputContext : IOutputContext
     }
 
     /// <summary>The name a type wants for itself, with its arguments and its array and null marks off.</summary>
-    private static string BareName(ITypeDefinition type)
+    /// <remarks>
+    /// Cut on the builder rather than through the string, and into a builder the caller lends it
+    /// rather than one of its own: the old form built a StringBuilder, a string, a substring and a
+    /// params array for the trim, per type, per file.
+    /// </remarks>
+    private static string BareName(ITypeDefinition type, StringBuilder builder)
     {
-        var builder = new StringBuilder();
+        builder.Length = 0;
 
         type.WriteTypeName(builder, TypeOutputMode.ShortName);
 
-        var name = builder.ToString();
+        builder.Length = BareNameEnd(builder, 0);
 
-        var index = name.IndexOf('<');
-
-        if (index > 0)
-        {
-            name = name.Substring(0, index);
-        }
-
-        return name.TrimEnd('?', '[', ']');
+        return builder.ToString();
     }
 }
