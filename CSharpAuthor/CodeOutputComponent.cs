@@ -45,12 +45,10 @@ public class CodeOutputComponent : BaseOutputComponent
             return GetNewArray(values, indented);
         }
 
-        if (value is bool booleanValue)
-        {
-            return new CodeOutputComponent(booleanValue ? "true" : "false") { Indented = indented };
-        }
-        
-        return new CodeOutputComponent(value.ToString()) { Indented = indented };
+        // Every scalar goes through the one formatter: culture invariant, suffixed so the literal
+        // denotes the type it came from, and quoted where C# requires quotes. A bare `1.5` for a
+        // float is CS0664 and a bare `a` for a char is CS0103 - both were emitted here.
+        return new CodeOutputComponent(LiteralFormatter.Format(value)) { Indented = indented };
     }
 
     private static IOutputComponent GetNewStringArray(IEnumerable<string> stringValues, bool indented)

@@ -169,9 +169,18 @@ public static class SyntaxHelpers
         return new WrapStatement(new ListOutputComponent(statements.ToList()), "this(", ")");
     }
 
+    /// <summary>
+    /// <paramref name="stringValue"/> as a C# string literal.
+    /// </summary>
+    /// <remarks>
+    /// The content is escaped. Concatenating quotes around the raw value, which is what this did,
+    /// turned any value holding a quote or a backslash into a syntax error - <c>he said "hi"</c>
+    /// came out as <c>"he said "hi""</c>, CS1002 - and any value holding a newline into a file that
+    /// stopped parsing at that line.
+    /// </remarks>
     public static string QuoteString(string stringValue)
     {
-        return "\"" + stringValue + "\"";
+        return LiteralFormatter.QuoteString(stringValue);
     }
 
     public static IOutputComponent Null()

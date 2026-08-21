@@ -56,7 +56,7 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
 
                     if (statement.IndexOf(rawSwapString, StringComparison.CurrentCulture) >= 0)
                     {
-                        statement = statement.Replace(rawSwapString, value.ToString());
+                        statement = statement.Replace(rawSwapString, LiteralFormatter.Format(value));
                     }
                 }
             }
@@ -83,10 +83,10 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
 
         if (value is string stringValue)
         {
-            return "\"" + stringValue + "\"";
+            return LiteralFormatter.QuoteString(stringValue);
         }
 
-        return value.ToString();
+        return LiteralFormatter.Format(value);
     }
 
     public SwitchBlockDefinition Switch(object switchValue)
