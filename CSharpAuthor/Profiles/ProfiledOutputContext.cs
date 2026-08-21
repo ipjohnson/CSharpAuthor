@@ -34,10 +34,15 @@ public class ProfiledOutputContext : OutputContext, IProfiledOutputContext
 
     /// <summary>Continues a write under an existing session, sharing its diagnostics.</summary>
     public ProfiledOutputContext(EmitSession session)
-        : base((session ?? new EmitSession()).Profile.ToOutputContextOptions())
+        : base(OptionsFor(session))
     {
-        Session = session ?? new EmitSession();
+        Session = session;
     }
+
+    private static OutputContextOptions OptionsFor(EmitSession session) =>
+        session == null
+            ? throw new System.ArgumentNullException(nameof(session))
+            : session.Profile.ToOutputContextOptions();
 
     /// <inheritdoc />
     public EmitSession Session { get; }

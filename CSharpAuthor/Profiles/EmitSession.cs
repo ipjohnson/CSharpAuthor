@@ -354,7 +354,15 @@ public sealed class EmitSession
     public bool WasLabelUsed(string label) => _labels.Contains(label);
 
     /// <summary>Forgets a label once its declaration has been written.</summary>
-    public void ClearLabel(string label) => _labels.Remove(label);
+    public void ClearLabel(string label)
+    {
+        if (_discard)
+        {
+            return;
+        }
+
+        _labels.Remove(label);
+    }
 
     // ---- plumbing ---------------------------------------------------------------------------
 
@@ -366,8 +374,11 @@ public sealed class EmitSession
             throw new ArgumentNullException(nameof(diagnostic));
         }
 
-        if (_discard && diagnostic.Severity != EmitSeverity.Error)
+        if (_discard)
         {
+            // The shared session records nothing at all: it is a static, and a static that
+            // accumulates is a leak. An error still throws, and the exception carries the
+            // diagnostic with it.
             return;
         }
 
