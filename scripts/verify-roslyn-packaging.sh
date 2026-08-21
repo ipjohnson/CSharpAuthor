@@ -17,7 +17,11 @@ set -uo pipefail
 
 ROOT="${1:-$(cd "$(dirname "$0")/.." && pwd)}"
 WORK="$(mktemp -d)"
-VERSION="99.0.0-bridge"
+# A fixed probe version is a false pass waiting to happen: NuGet caches the extracted package
+# under ~/.nuget/packages/csharpauthor/<version>, so a second run silently builds against the
+# FIRST run's content. That is exactly how a real break here passed locally and only failed in
+# CI, on a clean runner. The version is unique per run, and the extracted copy is removed after.
+VERSION="99.0.0-bridge$$"
 CONSUMER_ROSLYN_VERSION="4.10.0"
 
 FAILURES=0
@@ -27,7 +31,13 @@ fail() { printf '  FAIL  %s\n' "$1"; FAILURES=$((FAILURES + 1)); }
 
 section() { printf '\n== %s\n' "$1"; }
 
-cleanup() { rm -rf "$WORK"; }
+cleanup() {
+    rm -rf "$WORK"
+    # The probe package extracts into the NuGet cache. Leaving it there is how a stale copy
+    # silently satisfies the next run - which is exactly how a real break passed here locally
+    # and only failed on a clean CI runner.
+    [ -n "${VERSION:-}" ] && rm -rf "$HOME/.nuget/packages/csharpauthor/$VERSION" 2>/dev/null || true
+}
 trap cleanup EXIT
 
 section "1. the library builds with no Roslyn reference"
@@ -260,20 +270,30 @@ using CSharpAuthor;
 using CSharpAuthor.Roslyn;
 using Microsoft.CodeAnalysis;
 
+// The core namespace stays public in a source-including consumer - 1.x published it and hiding
+// it now would be the breaking change - so a consumer may still expose ITypeDefinition from its
+// own public API.
 public static class UsesTheBridge
 {
     public static ITypeDefinition Convert(ITypeSymbol symbol) => symbol.GetTypeDefinition();
-
-    public static IReadOnlyList<AttributeInstance> Attributes(ISymbol symbol) =>
-        symbol.GetAttributeInstances();
 
     public static string Nested(ITypeSymbol symbol) =>
         symbol.GetTypeDefinition().GetShortName();
 
     public static bool NullableKind(ITypeSymbol symbol) =>
         symbol.GetTypeDefinition().IsNullableValueType();
+}
 
-    public static ITypeDefinition Jagged(ITypeDefinition element) =>
+// The bridge's own types are internal here, by design: CSHARPAUTHOR_PUBLIC_API is defined only
+// when CSharpAuthor builds itself, so a consumer uses them freely without republishing them as
+// part of its own surface. This half of the probe is what proves that is still usable - and
+// making either class public would be CS0050, which is the contract working.
+internal static class UsesTheBridgeInternally
+{
+    internal static IReadOnlyList<AttributeInstance> Attributes(ISymbol symbol) =>
+        symbol.GetAttributeInstances();
+
+    internal static ITypeDefinition Jagged(ITypeDefinition element) =>
         new ArrayTypeDefinition(new ArrayTypeDefinition(element, 2), 1);
 }
 EOF

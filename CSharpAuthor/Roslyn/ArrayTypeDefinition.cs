@@ -24,7 +24,10 @@ namespace CSharpAuthor.Roslyn;
 /// emitted in groups, each group ending at the annotated level that closes it.
 /// </para>
 /// </remarks>
-public sealed class ArrayTypeDefinition : ITypeDefinition
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class ArrayTypeDefinition : ITypeDefinition
 {
     private int? _hashCode;
     private string? _key;

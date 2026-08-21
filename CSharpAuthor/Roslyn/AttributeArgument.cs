@@ -4,7 +4,10 @@ using System.Collections.Generic;
 namespace CSharpAuthor.Roslyn;
 
 /// <summary>What an attribute argument turned out to be.</summary>
-public enum AttributeArgumentKind
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+enum AttributeArgumentKind
 {
     /// <summary>A <c>null</c> literal, or a default the compiler could not resolve.</summary>
     Null,
@@ -47,7 +50,10 @@ public enum AttributeArgumentKind
 /// no members falls back to a cast rather than to a bare number.
 /// </para>
 /// </remarks>
-public sealed class AttributeArgument
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class AttributeArgument
 {
     public AttributeArgument(
         AttributeArgumentKind kind,

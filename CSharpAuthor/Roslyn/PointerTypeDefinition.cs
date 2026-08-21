@@ -10,7 +10,10 @@ namespace CSharpAuthor.Roslyn;
 /// qualifies and still contributes its namespace. A pointer is never nullable and never generic;
 /// nesting one inside an array is what produces <c>int*[]</c>.
 /// </remarks>
-public sealed class PointerTypeDefinition : ITypeDefinition
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class PointerTypeDefinition : ITypeDefinition
 {
     private int? _hashCode;
     private string? _key;

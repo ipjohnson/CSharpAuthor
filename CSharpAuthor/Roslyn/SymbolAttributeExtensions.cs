@@ -14,7 +14,10 @@ namespace CSharpAuthor.Roslyn;
 /// <c>using</c> directives, an attribute on another part of a partial is invisible, and an argument
 /// referring to a <c>const</c> is copied as the constant's name rather than its value.
 /// </remarks>
-public static class SymbolAttributeExtensions
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+static class SymbolAttributeExtensions
 {
     /// <summary>Every attribute on the symbol.</summary>
     public static IReadOnlyList<AttributeInstance> GetAttributeInstances(this ISymbol symbol)

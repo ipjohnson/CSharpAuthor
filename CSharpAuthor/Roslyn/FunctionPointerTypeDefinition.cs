@@ -15,7 +15,10 @@ namespace CSharpAuthor.Roslyn;
 /// conversion produces the type either way rather than losing it, and what a target language version
 /// permits is a question for the writer.
 /// </remarks>
-public sealed class FunctionPointerTypeDefinition : ITypeDefinition
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class FunctionPointerTypeDefinition : ITypeDefinition
 {
     private readonly IReadOnlyList<ITypeDefinition> _parameterTypes;
     private int? _hashCode;

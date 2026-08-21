@@ -34,7 +34,10 @@ namespace CSharpAuthor.Roslyn;
 /// <see cref="EmitLanguageVersion.CSharp15"/>; nothing here can prove the output parses.
 /// </para>
 /// </remarks>
-public static class EmitProfileRoslynExtensions
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+static class EmitProfileRoslynExtensions
 {
     /// <summary>
     /// A profile formatted the way this file's .editorconfig says to.

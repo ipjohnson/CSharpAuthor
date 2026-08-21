@@ -5,7 +5,10 @@ using System.Text;
 namespace CSharpAuthor.Roslyn;
 
 /// <summary>One element of a tuple type: a type, and the name it was given if it was given one.</summary>
-public sealed class TupleElementDefinition
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class TupleElementDefinition
 {
     public TupleElementDefinition(ITypeDefinition type, string? name = null)
     {
@@ -30,7 +33,10 @@ public sealed class TupleElementDefinition
 /// and reads nothing like it at a call site. No namespace is contributed — tuple syntax needs no
 /// <c>using</c>, whatever the element types need is contributed by the elements themselves.
 /// </remarks>
-public sealed class TupleTypeDefinition : ITypeDefinition
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class TupleTypeDefinition : ITypeDefinition
 {
     private readonly IReadOnlyList<TupleElementDefinition> _elements;
     private readonly ITypeDefinition[] _typeArguments;

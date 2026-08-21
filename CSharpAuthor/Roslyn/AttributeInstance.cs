@@ -12,7 +12,10 @@ namespace CSharpAuthor.Roslyn;
 /// file, one inherited through metadata, or one whose arguments came from a <c>const</c> is present
 /// in the symbol and absent from the syntax node in front of the generator.
 /// </remarks>
-public sealed class AttributeInstance
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class AttributeInstance
 {
     private const string AttributeSuffix = "Attribute";
 

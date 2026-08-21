@@ -27,7 +27,10 @@ namespace CSharpAuthor.Roslyn;
 /// <c>global::</c> after the fact.
 /// </para>
 /// </remarks>
-public static class SymbolTypeExtensions
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+static class SymbolTypeExtensions
 {
     /// <summary>
     /// The type definition for a symbol, whatever kind of type it is.

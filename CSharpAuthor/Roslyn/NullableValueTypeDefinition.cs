@@ -27,7 +27,10 @@ namespace CSharpAuthor.Roslyn;
 /// hash alike.
 /// </para>
 /// </remarks>
-public sealed class NullableValueTypeDefinition : TypeDefinition
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class NullableValueTypeDefinition : TypeDefinition
 {
     private readonly ITypeDefinition[] _typeArguments;
 

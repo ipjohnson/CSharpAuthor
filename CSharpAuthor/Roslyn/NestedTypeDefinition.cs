@@ -7,7 +7,10 @@ namespace CSharpAuthor.Roslyn;
 /// <summary>
 /// One link in a nested type's name: an identifier and the type arguments that close it.
 /// </summary>
-public sealed class NestedTypeSegment
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class NestedTypeSegment
 {
     public NestedTypeSegment(string name, IReadOnlyList<ITypeDefinition>? typeArguments = null)
     {
@@ -41,7 +44,10 @@ public sealed class NestedTypeSegment
 /// symbols and renders as itself.
 /// </para>
 /// </remarks>
-public sealed class NestedTypeDefinition : ITypeDefinition
+#if CSHARPAUTHOR_PUBLIC_API
+public
+#endif
+sealed class NestedTypeDefinition : ITypeDefinition
 {
     private readonly IReadOnlyList<NestedTypeSegment> _segments;
     private int? _hashCode;
