@@ -78,7 +78,13 @@ jobs:
 
       - run: dotnet restore CSharpAuthor.sln
 
-      - run: dotnet build CSharpAuthor.sln --no-restore --configuration Release -p:ContinuousIntegrationBuild=true
+      # -p:Version here as well as on the pack below, because pack runs --no-build. Without it the
+      # assembly carries the csproj's VersionPrefix while the package carries the tag, so any tag
+      # that is not the prefix ships a package whose contents disagree with its name.
+      - run: |
+          dotnet build CSharpAuthor.sln --no-restore --configuration Release \
+            -p:ContinuousIntegrationBuild=true \
+            -p:Version=${{ steps.version.outputs.version }}
 
       # A release is the last place to skip these. The union tests are the ones that say the
       # emitted declaration is C# rather than a plausible-looking string.
