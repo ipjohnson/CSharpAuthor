@@ -13,7 +13,12 @@ before_build:
  - cmd: nuget restore CSharpAuthor.sln
 build:
   project: CSharpAuthor.sln
-  publish_nuget: true
+  # Publishing moved to .github/workflows/release.yaml, where the version comes from the release
+  # tag rather than from build_version below plus a build counter - so the published version is a
+  # property of the commit and can be read back from the repository at the version it describes.
+  #
+  # This file still builds and tests; it does not publish.
+  publish_nuget: false
   verbosity: minimal
 test:
   assemblies:

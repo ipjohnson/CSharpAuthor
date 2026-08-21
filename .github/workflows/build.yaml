@@ -1,0 +1,32 @@
+name: build
+
+# Every push and pull request. AppVeyor built and tested on push as well; this keeps that gate on
+# the same machine that cuts the release, so a tag never runs a combination nothing has built.
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Both SDKs, for the reason release.yaml gives at length: global.json selects the .NET 11
+      # preview to compile with, because the test project declares a union, and 8.0.x is the floor
+      # a consumer of this netstandard2.0 library sits on.
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            11.0.100-preview.7.26381.103
+
+      - run: dotnet restore CSharpAuthor.sln
+
+      - run: dotnet build CSharpAuthor.sln --no-restore --configuration Release -p:ContinuousIntegrationBuild=true
+
+      - run: dotnet test CSharpAuthor.sln --no-build --configuration Release

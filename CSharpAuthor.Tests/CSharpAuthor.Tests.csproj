@@ -1,7 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <!--
+      net11.0 with LangVersion preview, so the tests can compile a union.
+
+      This library emits C#; the only way to know an emitted declaration is correct is to compile
+      one, and a union needs a compiler that has the feature. The library itself stays on
+      netstandard2.0 - it writes the keyword, it never has to understand it - so nothing about a
+      consumer's target framework changes.
+
+      preview rather than the net11.0 default, which does not enable unions on preview.7.
+    -->
+    <TargetFramework>net11.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
 	  <Nullable>enable</Nullable>
   </PropertyGroup>
 
