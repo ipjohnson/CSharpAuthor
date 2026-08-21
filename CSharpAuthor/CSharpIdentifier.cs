@@ -119,6 +119,15 @@ internal static class CSharpIdentifier
             return NeedsPrefix(name, exclusions) ? "@" + name : name;
         }
 
+        // Nothing to do is the overwhelmingly common answer, and finding that out used to cost a
+        // split, a substring per segment and a rebuilt string - on every using directive of every
+        // file. A reserved word is lower-case ASCII throughout, so a name whose every segment starts
+        // with something else cannot contain one, and that is what a namespace looks like.
+        if (!MayContainReservedWord(name))
+        {
+            return name;
+        }
+
         var segments = name.Split('.');
 
         // Only a plain dotted name is rewritten. Anything else - a call, an index, a generic
@@ -149,6 +158,41 @@ internal static class CSharpIdentifier
         }
 
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// Whether any dot-separated segment of <paramref name="name"/> could be a reserved word.
+    /// </summary>
+    /// <remarks>
+    /// Conservative in the safe direction: it says yes for anything that starts a segment with a
+    /// lower-case ASCII letter, which the full check then decides properly. It never says no to
+    /// something that needed escaping, because every C# reserved word is lower-case ASCII.
+    /// </remarks>
+    private static bool MayContainReservedWord(string name)
+    {
+        var atSegmentStart = true;
+
+        for (var i = 0; i < name.Length; i++)
+        {
+            var character = name[i];
+
+            if (atSegmentStart)
+            {
+                if (character >= 'a' && character <= 'z')
+                {
+                    return true;
+                }
+
+                atSegmentStart = false;
+            }
+
+            if (character == '.')
+            {
+                atSegmentStart = true;
+            }
+        }
+
+        return false;
     }
 
     private static bool NeedsPrefix(string segment, HashSet<string>? exclusions)

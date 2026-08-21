@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace CSharpAuthor;
 
@@ -83,6 +83,7 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
         }
 
         outputContext.Write(Type);
+        outputContext.WriteSpace();
         // An indexer is declared as `this[...]`, where `this` is the keyword and not a name, so it
         // is the one property whose name must not be escaped.
         //
@@ -91,8 +92,7 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
         // (CS1519, adversary #51). Writing `this` there is blocked by an original test,
         // PropertyDefinitionTests.SimplePropertyDefinitionTests.IndexedGetSetDefinition, which
         // asserts the invalid form character for character. See docs/migration-v1-v2.md.
-        outputContext.Write(
-            " " + (IsIndexer ? Name : CSharpIdentifier.Escape(Name)));
+        outputContext.Write(IsIndexer ? Name : CSharpIdentifier.Escape(Name));
 
         if (IndexParameters.Count > 0)
         {
@@ -140,15 +140,22 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
                  Set is { StatementCount: 0 })
         {
             // writeInit, not Set.IsInit: below C#9 `init` downlevels to `set`.
-            var setterKeyword = writeInit ? "init" : "set";
             var setterAccess = Set.Modifiers.GetAccessorAccessibilityKeywords();
 
-            if (!string.IsNullOrEmpty(setterAccess))
+            if (string.IsNullOrEmpty(setterAccess))
             {
-                setterAccess += " ";
+                // The whole accessor list as one constant. It is what nearly every auto-property
+                // writes, and building it out of pieces made a string per property for no reason.
+                outputContext.Write(writeInit ? " { get; init; }" : " { get; set; }");
             }
-
-            outputContext.Write(" { get; " + setterAccess + setterKeyword + "; }");
+            else
+            {
+                outputContext.Write(" { get; ");
+                outputContext.Write(setterAccess);
+                outputContext.WriteSpace();
+                outputContext.Write(writeInit ? "init" : "set");
+                outputContext.Write("; }");
+            }
 
             if (DefaultValue != null)
             {
@@ -201,8 +208,15 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
     {
         var modifier = GetAccessModifier("public");
 
-        // The trailing space goes with the keyword. See FieldDefinition for the same case.
-        outputContext.WriteIndent(modifier.Length > 0 ? modifier + " " : "");
+        outputContext.WriteIndent(modifier);
+
+        // The space belongs to the keyword, so no keyword means no space. Writing it
+        // unconditionally is cheaper by one concat and leaves ` int P { get; set; }` when the
+        // accessibility is NoAccessibility - which ModifierAdversaryTests pins.
+        if (modifier.Length > 0)
+        {
+            outputContext.WriteSpace();
+        }
 
         outputContext.Write(
             Modifiers.GetModifierKeywords(ComponentModifierExtensions.PropertyModifiers));

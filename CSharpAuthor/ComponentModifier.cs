@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 
 namespace CSharpAuthor;
@@ -113,6 +113,14 @@ internal static class ComponentModifierExtensions
     public static string GetModifierKeywords(
         this ComponentModifier modifiers, ComponentModifier applicable)
     {
+        // Nothing applicable was asked for, which is what a plain member says: no ordered modifier
+        // can match, so there is nothing to build. Finding that out used to cost a StringBuilder
+        // per member written.
+        if ((modifiers & applicable) == ComponentModifier.None)
+        {
+            return "";
+        }
+
         var builder = new StringBuilder();
 
         foreach (var ordered in OrderedModifiers)

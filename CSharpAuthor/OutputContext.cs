@@ -86,7 +86,26 @@ public class OutputContextOptions
 /// </remarks>
 public class OutputContext : IOutputContext
 {
-    private enum SegmentKind : byte
+    // -----------------------------------------------------------------------------------------
+    // The recorded file, in two stores.
+    //
+    // A code per write - three bits saying which kind it is and, for the kinds that have one, the
+    // indent depth - and, in a store of its own, the value the two kinds that refer to something
+    // refer to: the string that was written, or the type that has not been rendered yet.
+    //
+    // One array of segment structs is the obvious shape and it is the expensive one. A struct
+    // holding a reference is sixteen bytes whatever else is in it, because the reference forces
+    // eight-byte alignment - so a line break, which needs nothing, costs as much as a string does.
+    // Four bytes for every write plus eight for the two writes in three that name something is a
+    // little over half of that, measured on this library's own payload: 15.7 KB down to 9.7 KB.
+    //
+    // Both stores grow by adding a chunk rather than by copying into a bigger array, because a
+    // List<T> that doubles allocates about twice what it ends up holding and throws half of it
+    // away.
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>The kinds of write that are recorded. Three bits of a code; do not exceed eight.</summary>
+    private enum SegmentKind
     {
         Text,
         NewLine,
@@ -96,26 +115,111 @@ public class OutputContext : IOutputContext
         TypeReference,
     }
 
+    private const int KindBits = 3;
+    private const int KindMask = (1 << KindBits) - 1;
+
     /// <summary>
-    /// One recorded write. A struct so the whole file is one array rather than one object per write.
+    /// A list that grows by adding a chunk rather than by copying everything it holds into a bigger
+    /// array, so recording an N-entry file allocates N rather than about 2N.
     /// </summary>
-    private readonly struct Segment
+    /// <remarks>
+    /// A struct, and held in a field rather than handed around, so that a context that is never
+    /// written to - and this library makes one per rendered expression - allocates nothing at all
+    /// for the two of them.
+    /// </remarks>
+    private struct ChunkChain<T>
     {
-        public Segment(SegmentKind kind, string? text, int depth, ITypeDefinition? type)
+        /// <summary>Small, because most contexts record a handful of entries and are then thrown away.</summary>
+        private const int FirstCapacity = 32;
+
+        /// <summary>
+        /// 8192 entries is 64 KB of references or 32 KB of codes - either way the largest chunk that
+        /// stays off the large object heap.
+        /// </summary>
+        private const int MaxCapacity = 8192;
+
+        private T[]? _chunk;
+        private List<T[]>? _filled;
+        private int _used;
+
+        public int Count;
+
+        /// <summary>How many chunks hold entries; only the last of them is partly filled.</summary>
+        public int ChunkCount => Count == 0 ? 0 : (_filled?.Count ?? 0) + 1;
+
+        public void Add(T value)
         {
-            Kind = kind;
-            Text = text;
-            Depth = depth;
-            Type = type;
+            var chunk = _chunk;
+            var index = _used;
+
+            if (chunk == null || index == chunk.Length)
+            {
+                chunk = Grow();
+                index = 0;
+            }
+
+            chunk[index] = value;
+            _used = index + 1;
+            Count++;
         }
 
-        public readonly SegmentKind Kind;
-        public readonly string? Text;
-        public readonly int Depth;
-        public readonly ITypeDefinition? Type;
+        /// <summary>The chunk at <paramref name="chunkIndex"/> and how many of its slots are in use.</summary>
+        public T[] ChunkAt(int chunkIndex, out int used)
+        {
+            var filled = _filled;
+
+            if (filled != null && chunkIndex < filled.Count)
+            {
+                var chunk = filled[chunkIndex];
+
+                used = chunk.Length;
+
+                return chunk;
+            }
+
+            used = _used;
+
+            return _chunk!;
+        }
+
+        private T[] Grow()
+        {
+            var current = _chunk;
+
+            if (current == null)
+            {
+                return _chunk = new T[FirstCapacity];
+            }
+
+            (_filled ??= new List<T[]>()).Add(current);
+
+            _used = 0;
+
+            // A quarter more each time rather than twice as much. Doubling overshoots: the chunk that
+            // takes the store past what it needs is as big as everything before it, so a file that
+            // ends a little over a boundary holds most of a chunk it never fills. Nothing here is
+            // copied on growth, so the only thing more chunks cost is a list entry apiece.
+            var next = current.Length + Math.Max(current.Length >> 2, 8);
+
+            return _chunk = new T[next < MaxCapacity ? next : MaxCapacity];
+        }
     }
 
-    private readonly List<Segment> _segments = new List<Segment>();
+    private ChunkChain<int> _codes;
+    private ChunkChain<object> _values;
+
+    // A running tally of how long the file will be, kept apart from the things whose width is only
+    // decided at serialization - line breaks, indents and braces are counted, not measured, because
+    // the newline string, the indent width and the brace style can all still change. It buys the
+    // output builder one allocation of the right size instead of the ten doublings a default
+    // StringBuilder does.
+    private int _textChars;
+    private int _typeNameChars;
+    private int _typeQualifierChars;
+    private int _typeRefCount;
+    private int _lineCount;
+    private int _indentUnits;
+    private int _braceCount;
 
     /// <summary>Namespaces asked for by name. User intent, not derived from anything written.</summary>
     private readonly HashSet<string> _explicitNamespaces = new HashSet<string>();
@@ -144,6 +248,17 @@ public class OutputContext : IOutputContext
     /// </remarks>
     private int _headerSegmentCount;
 
+    // The two indent strings, remembered rather than rebuilt. Both are read on every Write - that is
+    // how a component that hands over its own indent is recognised - and both used to allocate a
+    // string per read, which is a string per token written. The cache is keyed on everything they
+    // are made of, so a caller that changes the indent style half way through still gets the new
+    // one; only the depth normally moves, and only then is anything allocated.
+    private string _indentStringCache = "";
+    private string _singleIndentCache = "";
+    private char _indentCacheChar;
+    private int _indentCacheWidth = -1;
+    private int _indentCacheDepth;
+
     public OutputContextOptions Options { get; }
 
     public OutputContext(OutputContextOptions? options = null)
@@ -151,9 +266,46 @@ public class OutputContext : IOutputContext
         Options = options ?? new OutputContextOptions();
     }
 
-    public string SingleIndent => new string(Options.IndentChar, Options.IndentCharCount);
+    public string SingleIndent
+    {
+        get
+        {
+            if (_indentCacheWidth != Options.IndentCharCount || _indentCacheChar != Options.IndentChar)
+            {
+                RebuildIndentCache();
+            }
 
-    public string IndentString => new string(Options.IndentChar, Options.IndentCharCount * _indentIndex);
+            return _singleIndentCache;
+        }
+    }
+
+    public string IndentString
+    {
+        get
+        {
+            if (_indentCacheWidth != Options.IndentCharCount || _indentCacheChar != Options.IndentChar ||
+                _indentCacheDepth != _indentIndex)
+            {
+                RebuildIndentCache();
+            }
+
+            return _indentStringCache;
+        }
+    }
+
+    private void RebuildIndentCache()
+    {
+        // Built before anything is stored, so a bad depth throws exactly where it always did and
+        // leaves no half-updated cache behind.
+        var single = new string(Options.IndentChar, Options.IndentCharCount);
+        var full = new string(Options.IndentChar, Options.IndentCharCount * _indentIndex);
+
+        _singleIndentCache = single;
+        _indentStringCache = full;
+        _indentCacheChar = Options.IndentChar;
+        _indentCacheWidth = Options.IndentCharCount;
+        _indentCacheDepth = _indentIndex;
+    }
 
     /// <summary>The current indent depth, in indents rather than characters.</summary>
     public int IndentDepth => _indentIndex;
@@ -177,24 +329,30 @@ public class OutputContext : IOutputContext
 
         // A component that hands over its own indent string is describing structure, not characters.
         // Recorded as an indent so the file can still be restyled after it has been written.
-        if (_indentIndex > 0 && Options.IndentCharCount > 0)
+        // The first character is tested before the strings are, and before the indent width is even
+        // read: a token that does not begin with the indent character cannot be an indent, and that
+        // is very nearly every token in the file, so very nearly every write asks Options one
+        // question rather than two.
+        if (_indentIndex > 0 && text[0] == Options.IndentChar && Options.IndentCharCount > 0)
         {
             if (text == IndentString)
             {
-                _segments.Add(new Segment(SegmentKind.Indent, null, _indentIndex, null));
+                RecordIndent(_indentIndex);
 
                 return;
             }
 
             if (text == SingleIndent)
             {
-                _segments.Add(new Segment(SegmentKind.Indent, null, 1, null));
+                RecordIndent(1);
 
                 return;
             }
         }
 
-        _segments.Add(new Segment(SegmentKind.Text, text, 0, null));
+        _textChars += text.Length;
+
+        RecordValue(SegmentKind.Text, text);
     }
 
     /// <summary>
@@ -207,45 +365,54 @@ public class OutputContext : IOutputContext
             return;
         }
 
-        _segments.Add(new Segment(SegmentKind.TypeReference, null, 0, typeDefinition));
+        // What the name will be is not known yet - that is the point of the whole design - so the
+        // parts it could be built from are counted separately and the output mode decides, at
+        // serialization, which of them to believe.
+        _typeRefCount++;
+        _typeNameChars += NameAllowance(typeDefinition);
+        _typeQualifierChars += typeDefinition.Namespace.Length + 1;
+
+        RecordValue(SegmentKind.TypeReference, typeDefinition);
     }
 
     public void WriteLine()
     {
-        _segments.Add(new Segment(SegmentKind.NewLine, null, 0, null));
+        RecordNewLine();
     }
 
     public void WriteLine(string text)
     {
         Write(text);
 
-        _segments.Add(new Segment(SegmentKind.NewLine, null, 0, null));
+        RecordNewLine();
     }
 
     public void WriteSpace()
     {
-        _segments.Add(new Segment(SegmentKind.Text, " ", 0, null));
+        _textChars++;
+
+        RecordValue(SegmentKind.Text, " ");
     }
 
     public void WriteIndent(string text = "")
     {
-        _segments.Add(new Segment(SegmentKind.Indent, null, _indentIndex, null));
+        RecordIndent(_indentIndex);
 
         Write(text);
     }
 
     public void WriteIndentedLine(string text)
     {
-        _segments.Add(new Segment(SegmentKind.Indent, null, _indentIndex, null));
+        RecordIndent(_indentIndex);
 
         Write(text);
 
-        _segments.Add(new Segment(SegmentKind.NewLine, null, 0, null));
+        RecordNewLine();
     }
 
     public void OpenScope()
     {
-        _segments.Add(new Segment(SegmentKind.ScopeOpen, null, _indentIndex, null));
+        RecordScope(SegmentKind.ScopeOpen, _indentIndex);
 
         _indentIndex++;
     }
@@ -254,7 +421,79 @@ public class OutputContext : IOutputContext
     {
         _indentIndex--;
 
-        _segments.Add(new Segment(SegmentKind.ScopeClose, null, _indentIndex, null));
+        RecordScope(SegmentKind.ScopeClose, _indentIndex);
+    }
+
+    private void RecordIndent(int depth)
+    {
+        _indentUnits += depth;
+
+        _codes.Add(Code(SegmentKind.Indent, depth));
+    }
+
+    private void RecordNewLine()
+    {
+        _lineCount++;
+
+        _codes.Add(Code(SegmentKind.NewLine, 0));
+    }
+
+    private void RecordScope(SegmentKind kind, int depth)
+    {
+        _indentUnits += depth;
+        _braceCount++;
+        _lineCount++;
+
+        _codes.Add(Code(kind, depth));
+    }
+
+    /// <summary>
+    /// Records a write that names something. The value goes in the value store and the code says
+    /// only what kind it is: the two stores advance together, so a walk over the codes knows which
+    /// value each one meant without either of them saying so.
+    /// </summary>
+    private void RecordValue(SegmentKind kind, object value)
+    {
+        _codes.Add(Code(kind, 0));
+        _values.Add(value);
+    }
+
+    private static int Code(SegmentKind kind, int depth)
+    {
+        return (int)kind | (depth << KindBits);
+    }
+
+    private static SegmentKind KindOf(int code)
+    {
+        return (SegmentKind)(code & KindMask);
+    }
+
+    /// <summary>The indent depth a code carries. An arithmetic shift, so an unbalanced negative depth survives.</summary>
+    private static int DepthOf(int code)
+    {
+        return code >> KindBits;
+    }
+
+    /// <summary>
+    /// Room for a type's own name, its arguments included, without its namespace.
+    /// </summary>
+    private static int NameAllowance(ITypeDefinition type)
+    {
+        // 4 covers the angle brackets, a `?` and a `[]`; the arguments are counted because they are
+        // written inside this reference rather than recorded as ones of their own.
+        var allowance = type.Name.Length + 4;
+
+        var typeArguments = type.TypeArguments;
+
+        if (typeArguments != null)
+        {
+            for (var i = 0; i < typeArguments.Count; i++)
+            {
+                allowance += NameAllowance(typeArguments[i]) + 1;
+            }
+        }
+
+        return allowance;
     }
 
     public void AddImportNamespace(string ns)
@@ -338,7 +577,7 @@ public class OutputContext : IOutputContext
     /// </remarks>
     public void MarkEndOfFileHeader()
     {
-        _headerSegmentCount = _segments.Count;
+        _headerSegmentCount = _codes.Count;
     }
 
     /// <summary>
@@ -362,57 +601,85 @@ public class OutputContext : IOutputContext
     {
         get
         {
-            for (var i = _segments.Count - 1; i >= 0; i--)
+            // Backwards over the codes, and backwards over the values in step with them: a code that
+            // names something took the value before the one the code after it took.
+            var valueChunkIndex = _values.ChunkCount - 1;
+            var valueChunk = Array.Empty<object>();
+            var valueIndex = 0;
+
+            if (valueChunkIndex >= 0)
             {
-                var segment = _segments[i];
+                valueChunk = _values.ChunkAt(valueChunkIndex, out valueIndex);
+            }
 
-                switch (segment.Kind)
+            for (var chunkIndex = _codes.ChunkCount - 1; chunkIndex >= 0; chunkIndex--)
+            {
+                var chunk = _codes.ChunkAt(chunkIndex, out var used);
+
+                for (var i = used - 1; i >= 0; i--)
                 {
-                    case SegmentKind.Text:
-                        if (!string.IsNullOrEmpty(segment.Text))
-                        {
-                            return segment.Text![segment.Text!.Length - 1];
-                        }
+                    var code = chunk[i];
 
-                        break;
+                    switch (KindOf(code))
+                    {
+                        case SegmentKind.Text:
+                            if (valueIndex == 0)
+                            {
+                                valueChunk = _values.ChunkAt(--valueChunkIndex, out valueIndex);
+                            }
 
-                    case SegmentKind.NewLine:
-                        if (Options.NewLine.Length > 0)
-                        {
-                            return Options.NewLine[Options.NewLine.Length - 1];
-                        }
+                            var text = (string)valueChunk[--valueIndex];
 
-                        break;
+                            if (text.Length > 0)
+                            {
+                                return text[text.Length - 1];
+                            }
 
-                    case SegmentKind.Indent:
-                        if (segment.Depth > 0 && Options.IndentCharCount > 0)
-                        {
-                            return Options.IndentChar;
-                        }
+                            break;
 
-                        break;
+                        case SegmentKind.NewLine:
+                            if (Options.NewLine.Length > 0)
+                            {
+                                return Options.NewLine[Options.NewLine.Length - 1];
+                            }
 
-                    case SegmentKind.ScopeOpen:
-                    case SegmentKind.ScopeClose:
-                        // The scope marker writes its brace and then a line break.
-                        if (Options.NewLine.Length > 0)
-                        {
-                            return Options.NewLine[Options.NewLine.Length - 1];
-                        }
+                            break;
 
-                        return segment.Kind == SegmentKind.ScopeOpen ? '{' : '}';
+                        case SegmentKind.Indent:
+                            if (DepthOf(code) > 0 && Options.IndentCharCount > 0)
+                            {
+                                return Options.IndentChar;
+                            }
 
-                    case SegmentKind.TypeReference:
-                        var builder = new StringBuilder();
+                            break;
 
-                        segment.Type!.WriteTypeName(builder, Options.TypeOutputMode);
+                        case SegmentKind.ScopeOpen:
+                        case SegmentKind.ScopeClose:
+                            // The scope marker writes its brace and then a line break.
+                            if (Options.NewLine.Length > 0)
+                            {
+                                return Options.NewLine[Options.NewLine.Length - 1];
+                            }
 
-                        if (builder.Length > 0)
-                        {
-                            return builder[builder.Length - 1];
-                        }
+                            return KindOf(code) == SegmentKind.ScopeOpen ? '{' : '}';
 
-                        break;
+                        case SegmentKind.TypeReference:
+                            if (valueIndex == 0)
+                            {
+                                valueChunk = _values.ChunkAt(--valueChunkIndex, out valueIndex);
+                            }
+
+                            var builder = new StringBuilder();
+
+                            ((ITypeDefinition)valueChunk[--valueIndex]).WriteTypeName(builder, Options.TypeOutputMode);
+
+                            if (builder.Length > 0)
+                            {
+                                return builder[builder.Length - 1];
+                            }
+
+                            break;
+                    }
                 }
             }
 
@@ -429,9 +696,9 @@ public class OutputContext : IOutputContext
     {
         var namePlan = BuildNamePlan();
 
-        var builder = new StringBuilder();
+        var builder = new StringBuilder(EstimateOutputLength(namePlan));
 
-        var headerEnd = _headerSegmentCount > _segments.Count ? _segments.Count : _headerSegmentCount;
+        var headerEnd = _headerSegmentCount > _codes.Count ? _codes.Count : _headerSegmentCount;
 
         // The header - a leading trait, a file comment - is written before the directives it must
         // stay above, and everything else after them.
@@ -442,9 +709,49 @@ public class OutputContext : IOutputContext
             WriteUsings(builder, namePlan);
         }
 
-        Serialize(builder, namePlan, headerEnd, _segments.Count);
+        Serialize(builder, namePlan, headerEnd, _codes.Count);
 
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// Roughly how long the file will be, so the output builder is allocated once at the right size.
+    /// </summary>
+    /// <remarks>
+    /// A StringBuilder given no capacity starts at 16 characters and reaches a few thousand by
+    /// allocating a chunk per doubling, and the chunk it allocates is as long as everything written
+    /// so far - so it ends up holding about twice the file in memory it will never use. On this
+    /// library's own benchmark payload that was 16 KB of chunks for an 8.7 KB file. Nothing here has
+    /// to be exact: an estimate that is short only costs the growth it would have cost anyway.
+    /// </remarks>
+    private int EstimateOutputLength(NamePlan namePlan)
+    {
+        var estimate = _textChars + _typeNameChars
+            + _lineCount * Options.NewLine.Length
+            + _indentUnits * Options.IndentCharCount
+            + _braceCount;
+
+        // A short name carries no namespace; the other two modes write one in front of every
+        // reference, and Global writes `global::` as well.
+        if (Options.TypeOutputMode != TypeOutputMode.ShortName)
+        {
+            estimate += _typeQualifierChars;
+        }
+
+        if (Options.TypeOutputMode == TypeOutputMode.Global)
+        {
+            estimate += _typeRefCount * 8;
+        }
+
+        if (_generateUsings)
+        {
+            estimate += namePlan.UsingsLength(Options.NewLine.Length);
+        }
+
+        // A sixteenth of headroom. An estimate that is short costs a growth, and a growth allocates
+        // as much again as everything written so far, so it is worth a little slack - but only a
+        // little, because slack is memory the file never uses.
+        return estimate + (estimate >> 4) + 16;
     }
 
     private void WriteUsings(StringBuilder builder, NamePlan namePlan)
@@ -483,59 +790,128 @@ public class OutputContext : IOutputContext
         var indentWidth = Options.IndentCharCount;
         var newLine = Options.NewLine;
         var kAndR = Options.BraceStyle == BraceStyle.KAndR;
+        var typeOutputMode = Options.TypeOutputMode;
+        var hasRenames = namePlan.HasRenames;
 
-        for (var i = start; i < end; i++)
+        // The value store is walked in step with the code store rather than indexed into: the two
+        // were filled together, so the next value is always the one the next naming code meant.
+        var valueChunkIndex = -1;
+        var valueChunk = Array.Empty<object>();
+        var valueUsed = 0;
+        var valueIndex = 0;
+
+        // [start, end) is how the file header is kept above the generated usings: Output() renders
+        // the header, writes the directives, then renders the rest. A skipped code still has to
+        // consume its value, or the two stores fall out of step and every later name is the wrong
+        // one - so this skips the append, never the read.
+        var index = 0;
+
+        for (var chunkIndex = 0; chunkIndex < _codes.ChunkCount; chunkIndex++)
         {
-            var segment = _segments[i];
+            var chunk = _codes.ChunkAt(chunkIndex, out var used);
 
-            switch (segment.Kind)
+            for (var i = 0; i < used; i++)
             {
-                case SegmentKind.Text:
-                    builder.Append(segment.Text);
-                    break;
+                if (index >= end)
+                {
+                    return;
+                }
 
-                case SegmentKind.NewLine:
-                    builder.Append(newLine);
-                    break;
+                var emit = index >= start;
 
-                case SegmentKind.Indent:
-                    if (segment.Depth > 0)
-                    {
-                        builder.Append(indentChar, indentWidth * segment.Depth);
-                    }
+                index++;
 
-                    break;
+                var code = chunk[i];
 
-                case SegmentKind.ScopeOpen:
-                    if (kAndR)
-                    {
-                        TrimLineEnd(builder);
-                        builder.Append(' ').Append('{').Append(newLine);
-                    }
-                    else
-                    {
-                        builder.Append(indentChar, indentWidth * segment.Depth);
-                        builder.Append('{').Append(newLine);
-                    }
+                switch (KindOf(code))
+                {
+                    case SegmentKind.Text:
+                        if (valueIndex == valueUsed)
+                        {
+                            valueChunk = _values.ChunkAt(++valueChunkIndex, out valueUsed);
+                            valueIndex = 0;
+                        }
 
-                    break;
+                        var text = (string)valueChunk[valueIndex++];
 
-                case SegmentKind.ScopeClose:
-                    builder.Append(indentChar, indentWidth * segment.Depth);
-                    builder.Append('}').Append(newLine);
-                    break;
+                        if (emit)
+                        {
+                            builder.Append(text);
+                        }
 
-                case SegmentKind.TypeReference:
-                    if (namePlan.HasRenames)
-                    {
-                        AppendPlannedName(builder, segment.Type!, namePlan);
-                    }
-                    else
-                    {
-                        segment.Type!.WriteTypeName(builder, Options.TypeOutputMode);
-                    }
+                        break;
 
-                    break;
+                    case SegmentKind.NewLine:
+                        if (emit)
+                        {
+                            builder.Append(newLine);
+                        }
+
+                        break;
+
+                    case SegmentKind.Indent:
+                        var depth = DepthOf(code);
+
+                        if (emit && depth > 0)
+                        {
+                            builder.Append(indentChar, indentWidth * depth);
+                        }
+
+                        break;
+
+                    case SegmentKind.ScopeOpen:
+                        if (!emit)
+                        {
+                            break;
+                        }
+
+                        if (kAndR)
+                        {
+                            TrimLineEnd(builder);
+                            builder.Append(' ').Append('{').Append(newLine);
+                        }
+                        else
+                        {
+                            builder.Append(indentChar, indentWidth * DepthOf(code));
+                            builder.Append('{').Append(newLine);
+                        }
+
+                        break;
+
+                    case SegmentKind.ScopeClose:
+                        if (emit)
+                        {
+                            builder.Append(indentChar, indentWidth * DepthOf(code));
+                            builder.Append('}').Append(newLine);
+                        }
+
+                        break;
+
+                    case SegmentKind.TypeReference:
+                        if (valueIndex == valueUsed)
+                        {
+                            valueChunk = _values.ChunkAt(++valueChunkIndex, out valueUsed);
+                            valueIndex = 0;
+                        }
+
+                        var type = (ITypeDefinition)valueChunk[valueIndex++];
+
+                        if (!emit)
+                        {
+                            break;
+                        }
+
+                        if (hasRenames)
+                        {
+                            AppendPlannedName(builder, type, namePlan);
+                        }
+                        else
+                        {
+                            type.WriteTypeName(builder, typeOutputMode);
+                        }
+
+                        break;
+                }
             }
         }
     }
@@ -591,6 +967,25 @@ public class OutputContext : IOutputContext
 
         /// <summary>Whether any type is written as something other than what it writes itself as.</summary>
         public bool HasRenames => AliasFor.Count > 0 || Qualified.Count > 0;
+
+        /// <summary>How many characters the directives at the top of the file will take.</summary>
+        public int UsingsLength(int newLineLength)
+        {
+            // "using " and ";" around a namespace; " = " as well around an alias.
+            var length = 0;
+
+            foreach (var ns in Namespaces)
+            {
+                length += 7 + ns.Length + newLineLength;
+            }
+
+            foreach (var alias in Aliases)
+            {
+                length += 10 + alias.Key.Length + alias.Value.Length + newLineLength;
+            }
+
+            return length == 0 ? 0 : length + newLineLength;
+        }
     }
 
     /// <summary>One short name several types want, and the namespaces wanting it.</summary>
@@ -611,9 +1006,7 @@ public class OutputContext : IOutputContext
 
         if (Options.TypeOutputMode == TypeOutputMode.ShortName)
         {
-            var written = CollectWrittenTypes();
-
-            CollectDerivedNamespaces(namePlan);
+            var written = CollectWrittenTypes(namePlan);
 
             var groups = GroupByShortName(written);
 
@@ -656,21 +1049,101 @@ public class OutputContext : IOutputContext
         return namePlan;
     }
 
-    /// <summary>Every type written, plus every type reached as an argument of one, in write order.</summary>
-    private List<ITypeDefinition> CollectWrittenTypes()
+    /// <summary>
+    /// Every type written, plus every type reached as an argument of one, in write order - and, in
+    /// the same pass, the namespaces they bring with them.
+    /// </summary>
+    /// <remarks>
+    /// The namespaces are taken from the deduplicated list rather than from every reference.
+    /// <c>KnownNamespaces</c> is an iterator on every implementation of it, so asking a type that has
+    /// already answered allocates a state machine for an answer that is already held - and a file
+    /// writes the same handful of types over and over. Nothing declares these namespaces, so nothing
+    /// can forget to.
+    /// </remarks>
+    private List<ITypeDefinition> CollectWrittenTypes(NamePlan namePlan)
     {
         var written = new List<ITypeDefinition>();
-        var seen = new HashSet<ITypeDefinition>();
+        var seen = new HashSet<ITypeDefinition>(ReferenceComparer.Instance);
 
-        for (var i = 0; i < _segments.Count; i++)
+        // Over the codes rather than over the values, counting past the strings. Asking each value
+        // whether it is a type instead means an interface type test per written token, and five
+        // tokens in six are text.
+        var valueChunkIndex = -1;
+        var valueChunk = Array.Empty<object>();
+        var valueUsed = 0;
+        var valueIndex = 0;
+
+        for (var chunkIndex = 0; chunkIndex < _codes.ChunkCount; chunkIndex++)
         {
-            if (_segments[i].Kind == SegmentKind.TypeReference)
+            var chunk = _codes.ChunkAt(chunkIndex, out var used);
+
+            for (var i = 0; i < used; i++)
             {
-                CollectType(_segments[i].Type!, written, seen);
+                var kind = KindOf(chunk[i]);
+
+                if (kind != SegmentKind.Text && kind != SegmentKind.TypeReference)
+                {
+                    continue;
+                }
+
+                if (valueIndex == valueUsed)
+                {
+                    valueChunk = _values.ChunkAt(++valueChunkIndex, out valueUsed);
+                    valueIndex = 0;
+                }
+
+                var value = valueChunk[valueIndex++];
+
+                if (kind == SegmentKind.TypeReference)
+                {
+                    CollectType((ITypeDefinition)value, written, seen);
+                }
             }
         }
 
+        for (var i = 0; i < written.Count; i++)
+        {
+            foreach (var knownNamespace in written[i].KnownNamespaces)
+            {
+                if (!string.IsNullOrEmpty(knownNamespace))
+                {
+                    namePlan.Namespaces.Add(knownNamespace);
+                }
+            }
+        }
+
+        foreach (var ns in _typeNamespaces)
+        {
+            namePlan.Namespaces.Add(ns);
+        }
+
         return written;
+    }
+
+    /// <summary>
+    /// Identity, not equality: two type definitions that name the same type are kept apart here.
+    /// </summary>
+    /// <remarks>
+    /// The set exists only to keep the list short - everything downstream of it treats two entries
+    /// naming the same type the way it treats one, and the collision test below is written so that a
+    /// repeat is not mistaken for an ambiguity. Equality would be the wrong tool for it: hashing a
+    /// type definition builds its fully qualified name, and a generator that calls
+    /// <c>TypeDefinition.Get</c> per use hands over a fresh instance every time, so it would pay for
+    /// a name per written reference to save a list entry.
+    /// </remarks>
+    private sealed class ReferenceComparer : IEqualityComparer<ITypeDefinition>
+    {
+        public static readonly ReferenceComparer Instance = new ReferenceComparer();
+
+        public bool Equals(ITypeDefinition x, ITypeDefinition y)
+        {
+            return ReferenceEquals(x, y);
+        }
+
+        public int GetHashCode(ITypeDefinition obj)
+        {
+            return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
+        }
     }
 
     private static void CollectType(ITypeDefinition type, List<ITypeDefinition> written, HashSet<ITypeDefinition> seen)
@@ -695,53 +1168,42 @@ public class OutputContext : IOutputContext
         }
     }
 
-    /// <summary>
-    /// The namespaces the file needs, taken from the types it actually wrote. Nothing declares
-    /// them, so nothing can forget to.
-    /// </summary>
-    private void CollectDerivedNamespaces(NamePlan namePlan)
-    {
-        for (var i = 0; i < _segments.Count; i++)
-        {
-            if (_segments[i].Kind != SegmentKind.TypeReference)
-            {
-                continue;
-            }
-
-            foreach (var knownNamespace in _segments[i].Type!.KnownNamespaces)
-            {
-                if (!string.IsNullOrEmpty(knownNamespace))
-                {
-                    namePlan.Namespaces.Add(knownNamespace);
-                }
-            }
-        }
-
-        foreach (var ns in _typeNamespaces)
-        {
-            namePlan.Namespaces.Add(ns);
-        }
-    }
+    /// <summary>The answer for a file no two of whose types want the same name, which is nearly all of them.</summary>
+    private static readonly List<NameGroup> NoGroups = new List<NameGroup>();
 
     /// <summary>
     /// Groups the types by the name they compete for. Arity is part of it, because two types of the
     /// same name and different arity do not compete: <c>Box</c> and <c>Box&lt;T&gt;</c> resolve
     /// separately.
     /// </summary>
+    /// <remarks>
+    /// Two passes, because the first one nearly always ends the matter. Grouping means a group
+    /// object with two lists in it for every distinct name in the file, and a string for each - all
+    /// of it to discover, in the overwhelming majority of files, that no two names were the same.
+    /// The first pass instead hashes each name as it is rendered and sorts the hashes: no strings,
+    /// no groups, one small array. Only a repeat - a real collision, or a hash that happens to
+    /// match, which the second pass then rejects - makes it group anything.
+    /// </remarks>
     private List<NameGroup> GroupByShortName(List<ITypeDefinition> written)
     {
-        var groups = new List<NameGroup>();
-
         if (!Options.AliasCollisions || written.Count < 2)
         {
-            return groups;
+            return NoGroups;
         }
 
+        var builder = new StringBuilder();
+
+        if (!MayHaveCollision(written, builder))
+        {
+            return NoGroups;
+        }
+
+        var groups = new List<NameGroup>();
         var byKey = new Dictionary<string, NameGroup>(StringComparer.Ordinal);
 
         foreach (var type in written)
         {
-            var shortName = BareName(type);
+            var shortName = BareName(type, builder);
 
             if (shortName.Length == 0)
             {
@@ -770,6 +1232,122 @@ public class OutputContext : IOutputContext
         groups.RemoveAll(group => group.Namespaces.Count < 2);
 
         return groups;
+    }
+
+    /// <summary>
+    /// Whether two of the written types might want the same name and arity, told from a sorted array
+    /// of hashes rather than from the names themselves.
+    /// </summary>
+    /// <remarks>
+    /// One-sided on purpose. Two equal names always hash the same, so it never says no to a real
+    /// collision; two different names very occasionally hash the same, and the grouping pass that
+    /// then runs compares the names properly and finds nothing.
+    /// </remarks>
+    private static bool MayHaveCollision(List<ITypeDefinition> written, StringBuilder builder)
+    {
+        // The name and arity in the high half, the namespace in the low half. Sorting brings equal
+        // names together, and an ambiguity is two of them that disagree about the namespace - so a
+        // type written twice, which is every file, reads as the repeat it is rather than as a
+        // collision with itself.
+        var keys = new long[written.Count];
+
+        for (var i = 0; i < written.Count; i++)
+        {
+            var type = written[i];
+
+            builder.Length = 0;
+
+            type.WriteTypeName(builder, TypeOutputMode.ShortName);
+
+            var name = (long)(uint)BareNameHash(builder, type.TypeArguments?.Count ?? 0);
+            var space = (uint)StringHash(type.Namespace);
+
+            keys[i] = (name << 32) | space;
+        }
+
+        Array.Sort(keys);
+
+        for (var i = 1; i < keys.Length; i++)
+        {
+            if ((keys[i] >> 32) == (keys[i - 1] >> 32) && keys[i] != keys[i - 1])
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>FNV-1a over a string. Its own, because string.GetHashCode is randomised per process.</summary>
+    private static int StringHash(string? value)
+    {
+        unchecked
+        {
+            var hash = (int)2166136261;
+
+            if (value != null)
+            {
+                for (var i = 0; i < value.Length; i++)
+                {
+                    hash = (hash ^ value[i]) * 16777619;
+                }
+            }
+
+            return hash;
+        }
+    }
+
+    /// <summary>
+    /// FNV-1a over the part of a rendered name that <see cref="BareName"/> would keep, plus the arity.
+    /// </summary>
+    private static int BareNameHash(StringBuilder builder, int argumentCount)
+    {
+        var length = BareNameEnd(builder, 0);
+
+        unchecked
+        {
+            var hash = (int)2166136261;
+
+            for (var i = 0; i < length; i++)
+            {
+                hash = (hash ^ builder[i]) * 16777619;
+            }
+
+            return (hash ^ argumentCount) * 16777619;
+        }
+    }
+
+    /// <summary>
+    /// Where the name a type rendered at <paramref name="start"/> ends: before its argument list, and
+    /// before any trailing array and null marks.
+    /// </summary>
+    private static int BareNameEnd(StringBuilder builder, int start)
+    {
+        var end = builder.Length;
+
+        for (var i = start + 1; i < end; i++)
+        {
+            if (builder[i] == '<')
+            {
+                end = i;
+
+                break;
+            }
+        }
+
+        while (end > start)
+        {
+            var character = builder[end - 1];
+
+            if (character != '?' && character != '[' && character != ']')
+            {
+                break;
+            }
+
+            end--;
+        }
+
+        return end;
     }
 
     private void ResolveCollisions(NamePlan namePlan, List<NameGroup> groups)
@@ -984,7 +1562,12 @@ public class OutputContext : IOutputContext
                 builder.Append(type.Namespace).Append('.');
             }
 
-            builder.Append(BareName(type));
+            // Rendered straight into the output and cut back, rather than through a name of its own.
+            var start = builder.Length;
+
+            type.WriteTypeName(builder, TypeOutputMode.ShortName);
+
+            builder.Length = BareNameEnd(builder, start);
         }
 
         var typeArguments = type.TypeArguments;
@@ -1039,21 +1622,19 @@ public class OutputContext : IOutputContext
     }
 
     /// <summary>The name a type wants for itself, with its arguments and its array and null marks off.</summary>
-    private static string BareName(ITypeDefinition type)
+    /// <remarks>
+    /// Cut on the builder rather than through the string, and into a builder the caller lends it
+    /// rather than one of its own: the old form built a StringBuilder, a string, a substring and a
+    /// params array for the trim, per type, per file.
+    /// </remarks>
+    private static string BareName(ITypeDefinition type, StringBuilder builder)
     {
-        var builder = new StringBuilder();
+        builder.Length = 0;
 
         type.WriteTypeName(builder, TypeOutputMode.ShortName);
 
-        var name = builder.ToString();
+        builder.Length = BareNameEnd(builder, 0);
 
-        var index = name.IndexOf('<');
-
-        if (index > 0)
-        {
-            name = name.Substring(0, index);
-        }
-
-        return name.TrimEnd('?', '[', ']');
+        return builder.ToString();
     }
 }
