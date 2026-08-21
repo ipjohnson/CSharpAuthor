@@ -44,9 +44,10 @@ internal static class RoslynAssert
     public static void Compiles(
         string source,
         LanguageVersion languageVersion = MaxLanguageVersion,
-        bool allowUnsafe = true)
+        bool allowUnsafe = true,
+        params string[] warningsAsErrors)
     {
-        var diagnostics = Diagnose(source, languageVersion, allowUnsafe);
+        var diagnostics = Diagnose(source, languageVersion, allowUnsafe, warningsAsErrors);
 
         var errors = diagnostics
             .Where(d => d.Severity == DiagnosticSeverity.Error)
@@ -67,7 +68,8 @@ internal static class RoslynAssert
         string member,
         string? containerHeader = null,
         string preamble = "",
-        LanguageVersion languageVersion = MaxLanguageVersion)
+        LanguageVersion languageVersion = MaxLanguageVersion,
+        params string[] warningsAsErrors)
     {
         var header = containerHeader ?? "public class AdversaryHost";
 
@@ -86,7 +88,8 @@ internal static class RoslynAssert
         source.AppendLine(member);
         source.AppendLine("}");
 
-        Compiles(source.ToString(), languageVersion);
+        Compiles(source.ToString(), languageVersion, allowUnsafe: true,
+            warningsAsErrors: warningsAsErrors);
     }
 
     /// <summary>
@@ -95,12 +98,14 @@ internal static class RoslynAssert
     public static void StatementCompiles(
         string statement,
         string preamble = "",
-        LanguageVersion languageVersion = MaxLanguageVersion)
+        LanguageVersion languageVersion = MaxLanguageVersion,
+        params string[] warningsAsErrors)
     {
         MemberCompiles(
             "public void AdversaryMethod()\n{\n" + statement + "\n}",
             preamble: preamble,
-            languageVersion: languageVersion);
+            languageVersion: languageVersion,
+            warningsAsErrors: warningsAsErrors);
     }
 
     /// <summary>
@@ -110,9 +115,10 @@ internal static class RoslynAssert
     public static void ExpressionCompiles(
         string expression,
         string preamble = "",
-        LanguageVersion languageVersion = MaxLanguageVersion)
+        LanguageVersion languageVersion = MaxLanguageVersion,
+        params string[] warningsAsErrors)
     {
-        StatementCompiles("_ = " + expression + ";", preamble, languageVersion);
+        StatementCompiles("_ = " + expression + ";", preamble, languageVersion, warningsAsErrors);
     }
 
     /// <summary>
@@ -121,8 +127,9 @@ internal static class RoslynAssert
     /// </summary>
     public static IReadOnlyList<Diagnostic> Errors(
         string source,
-        LanguageVersion languageVersion = MaxLanguageVersion) =>
-        Diagnose(source, languageVersion, allowUnsafe: true)
+        LanguageVersion languageVersion = MaxLanguageVersion,
+        params string[] warningsAsErrors) =>
+        Diagnose(source, languageVersion, allowUnsafe: true, warningsAsErrors)
             .Where(d => d.Severity == DiagnosticSeverity.Error)
             .ToList();
 
@@ -130,21 +137,35 @@ internal static class RoslynAssert
     /// The parse and compile diagnostics, in that order - a parse error usually explains every
     /// binding error after it, so reporting both together reads better than either alone.
     /// </summary>
+    /// <remarks>
+    /// <paramref name="warningsAsErrors"/> is how a nullability question becomes a compile question.
+    /// <c>string[]?</c> and <c>string?[]</c> both compile, so a plain compile check cannot tell them
+    /// apart; assigning null to an element and promoting CS8625 to an error can.
+    /// </remarks>
     private static IReadOnlyList<Diagnostic> Diagnose(
-        string source, LanguageVersion languageVersion, bool allowUnsafe)
+        string source, LanguageVersion languageVersion, bool allowUnsafe,
+        string[]? warningsAsErrors = null)
     {
         var tree = CSharpSyntaxTree.ParseText(
             source,
             new CSharpParseOptions(languageVersion));
 
+        var options = new CSharpCompilationOptions(
+            OutputKind.DynamicallyLinkedLibrary,
+            allowUnsafe: allowUnsafe,
+            nullableContextOptions: NullableContextOptions.Enable);
+
+        if (warningsAsErrors is { Length: > 0 })
+        {
+            options = options.WithSpecificDiagnosticOptions(
+                warningsAsErrors.ToDictionary(id => id, _ => ReportDiagnostic.Error));
+        }
+
         var compilation = CSharpCompilation.Create(
             "AdversaryAssembly",
             new[] { tree },
             References.Value,
-            new CSharpCompilationOptions(
-                OutputKind.DynamicallyLinkedLibrary,
-                allowUnsafe: allowUnsafe,
-                nullableContextOptions: NullableContextOptions.Enable));
+            options);
 
         var result = new List<Diagnostic>();
 
