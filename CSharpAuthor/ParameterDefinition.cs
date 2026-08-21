@@ -44,8 +44,6 @@ public class ParameterDefinition : InstanceDefinition
 
     public void WriteWithSignature(IOutputContext outputContext)
     {
-        outputContext.AddImportNamespace(TypeDefinition);
-
         // Inline, because a parameter is part of a line rather than a line of its own. Attributes
         // could always be added to a parameter; they were simply never written.
         if (AttributeDefinitions != null)

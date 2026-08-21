@@ -18,8 +18,6 @@ public class FieldDefinition : BaseOutputComponent, INamedComponent
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.AddImportNamespace(TypeDefinition);
-
         var accessModifier = GetAccessModifier(KeyWords.Private);
         var readonlyString = "";
         var staticString = "";

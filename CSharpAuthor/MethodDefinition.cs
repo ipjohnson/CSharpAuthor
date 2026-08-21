@@ -111,8 +111,6 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
     
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        ProcessNamespaces(outputContext);
-
         WriteMethodSignature(outputContext);
 
         WriteMethodBody(outputContext);
@@ -143,19 +141,6 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
         {
             DocumentationComment.WriteElement(
                 outputContext.WriteIndentedLine, "<returns>", "</returns>", ReturnComment);
-        }
-    }
-
-    private void ProcessNamespaces(IOutputContext outputContext)
-    {
-        if (_returnType != null)
-        {
-            outputContext.AddImportNamespace(_returnType);
-        }
-
-        if (InterfaceImplementation != null)
-        {
-            outputContext.AddImportNamespace(InterfaceImplementation);
         }
     }
 

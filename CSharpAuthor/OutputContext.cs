@@ -256,9 +256,15 @@ public class OutputContext : IOutputContext
     /// Kept for callers written against version 1. Nothing in this library calls it: a type that is
     /// written declares its own namespace, and one that is not written does not need one.
     /// </summary>
+    /// <remarks>
+    /// It does nothing in a mode that qualifies every type it writes. A namespace derived from a
+    /// type says nothing a <c>global::</c> name has not already said, and emitting it anyway is
+    /// what let an unqualified name resolve in a file where nothing else was unqualified - the
+    /// directive and the bare name each hid the other's absence.
+    /// </remarks>
     public void AddImportNamespace(ITypeDefinition typeDefinition)
     {
-        if (typeDefinition == null)
+        if (typeDefinition == null || Options.TypeOutputMode != TypeOutputMode.ShortName)
         {
             return;
         }
@@ -460,9 +466,9 @@ public class OutputContext : IOutputContext
                     break;
 
                 case SegmentKind.TypeReference:
-                    if (namePlan.HasAliases)
+                    if (namePlan.HasRenames)
                     {
-                        AppendAliasedName(builder, segment.Type!, namePlan);
+                        AppendPlannedName(builder, segment.Type!, namePlan);
                     }
                     else
                     {
@@ -505,19 +511,37 @@ public class OutputContext : IOutputContext
     }
 
     /// <summary>
-    /// The short name each type is written with, and the aliases the collisions forced.
+    /// What each type is written as, once the whole file is known: the aliases the collisions
+    /// forced, and the types that had to be qualified because no alias could express them.
     /// </summary>
     private sealed class NamePlan
     {
+        /// <summary>Types written as an alias rather than as their own short name.</summary>
         public readonly Dictionary<ITypeDefinition, string> AliasFor =
             new Dictionary<ITypeDefinition, string>();
+
+        /// <summary>Types written with their namespace in front, because an alias cannot name them.</summary>
+        public readonly HashSet<ITypeDefinition> Qualified = new HashSet<ITypeDefinition>();
 
         public readonly SortedDictionary<string, string> Aliases =
             new SortedDictionary<string, string>(StringComparer.Ordinal);
 
         public readonly SortedSet<string> Namespaces = new SortedSet<string>();
 
-        public bool HasAliases => AliasFor.Count > 0;
+        /// <summary>Whether any type is written as something other than what it writes itself as.</summary>
+        public bool HasRenames => AliasFor.Count > 0 || Qualified.Count > 0;
+    }
+
+    /// <summary>One short name several types want, and the namespaces wanting it.</summary>
+    private sealed class NameGroup
+    {
+        public string ShortName = "";
+        public bool IsGeneric;
+        public readonly List<string> Namespaces = new List<string>();
+        public readonly List<ITypeDefinition> Types = new List<ITypeDefinition>();
+
+        /// <summary>The namespace that keeps the plain name, or null once nothing does.</summary>
+        public string? Winner;
     }
 
     private NamePlan BuildNamePlan()
@@ -528,9 +552,20 @@ public class OutputContext : IOutputContext
         {
             var written = CollectWrittenTypes();
 
-            ResolveCollisions(namePlan, written);
+            CollectDerivedNamespaces(namePlan);
 
-            CollectDerivedNamespaces(namePlan, written);
+            var groups = GroupByShortName(written);
+
+            ResolveCollisions(namePlan, groups);
+
+            DropAliasedNamespaces(namePlan, written);
+
+            // A namespace that had to stay - something else in it is still written plainly - puts
+            // the ambiguity back. The name that was left plain then has to be aliased as well.
+            if (AliasTheWinners(namePlan, groups))
+            {
+                DropAliasedNamespaces(namePlan, written);
+            }
         }
 
         // A namespace asked for by name survives a qualifying mode, because a using is the only way
@@ -592,127 +627,11 @@ public class OutputContext : IOutputContext
         }
     }
 
-    private void ResolveCollisions(NamePlan namePlan, List<ITypeDefinition> written)
-    {
-        if (!Options.AliasCollisions || written.Count < 2)
-        {
-            return;
-        }
-
-        // Group by the short name every one of them wants. Insertion order is kept so the alias a
-        // file gets does not depend on how a dictionary happened to hash it.
-        var order = new List<string>();
-        var byShortName = new Dictionary<string, List<ITypeDefinition>>(StringComparer.Ordinal);
-
-        foreach (var type in written)
-        {
-            var shortName = BareName(type);
-
-            if (shortName.Length == 0)
-            {
-                continue;
-            }
-
-            if (!byShortName.TryGetValue(shortName, out var contenders))
-            {
-                byShortName[shortName] = contenders = new List<ITypeDefinition>();
-                order.Add(shortName);
-            }
-
-            contenders.Add(type);
-        }
-
-        foreach (var shortName in order)
-        {
-            var contenders = byShortName[shortName];
-
-            if (contenders.Count < 2)
-            {
-                continue;
-            }
-
-            // A type with no namespace - a keyword type, or a generic parameter - names itself and
-            // cannot be aliased, so it always keeps the plain name.
-            var plainNamespace = FirstPlainNamespace(contenders);
-            var aliasByNamespace = new Dictionary<string, string>(StringComparer.Ordinal);
-
-            foreach (var type in contenders)
-            {
-                var ns = type.Namespace ?? "";
-
-                if (ns.Length == 0 || string.Equals(ns, plainNamespace, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                if (!aliasByNamespace.TryGetValue(ns, out var alias))
-                {
-                    alias = MakeAlias(ns, shortName, namePlan, byShortName);
-                    aliasByNamespace[ns] = alias;
-                    namePlan.Aliases[alias] = ns + "." + shortName;
-                }
-
-                namePlan.AliasFor[type] = alias;
-            }
-        }
-    }
-
-    private static string FirstPlainNamespace(List<ITypeDefinition> contenders)
-    {
-        foreach (var type in contenders)
-        {
-            if (string.IsNullOrEmpty(type.Namespace))
-            {
-                return "";
-            }
-        }
-
-        return contenders[0].Namespace;
-    }
-
     /// <summary>
-    /// An alias built out of the namespace it disambiguates, taking as few segments as it takes to
-    /// be unique - the way a reader would name it.
+    /// The namespaces the file needs, taken from the types it actually wrote. Nothing declares
+    /// them, so nothing can forget to.
     /// </summary>
-    private static string MakeAlias(
-        string ns,
-        string shortName,
-        NamePlan namePlan,
-        Dictionary<string, List<ITypeDefinition>> byShortName)
-    {
-        var segments = ns.Split('.');
-
-        for (var take = 1; take <= segments.Length; take++)
-        {
-            var builder = new StringBuilder();
-
-            for (var i = segments.Length - take; i < segments.Length; i++)
-            {
-                builder.Append(segments[i]);
-            }
-
-            builder.Append(shortName);
-
-            var candidate = builder.ToString();
-
-            if (!namePlan.Aliases.ContainsKey(candidate) && !byShortName.ContainsKey(candidate))
-            {
-                return candidate;
-            }
-        }
-
-        var fallback = shortName + "Alias";
-        var suffix = 2;
-
-        while (namePlan.Aliases.ContainsKey(fallback) || byShortName.ContainsKey(fallback))
-        {
-            fallback = shortName + "Alias" + suffix++;
-        }
-
-        return fallback;
-    }
-
-    private void CollectDerivedNamespaces(NamePlan namePlan, List<ITypeDefinition> written)
+    private void CollectDerivedNamespaces(NamePlan namePlan)
     {
         for (var i = 0; i < _segments.Count; i++)
         {
@@ -734,14 +653,213 @@ public class OutputContext : IOutputContext
         {
             namePlan.Namespaces.Add(ns);
         }
+    }
 
-        if (!namePlan.HasAliases)
+    /// <summary>
+    /// Groups the types by the name they compete for. Arity is part of it, because two types of the
+    /// same name and different arity do not compete: <c>Box</c> and <c>Box&lt;T&gt;</c> resolve
+    /// separately.
+    /// </summary>
+    private List<NameGroup> GroupByShortName(List<ITypeDefinition> written)
+    {
+        var groups = new List<NameGroup>();
+
+        if (!Options.AliasCollisions || written.Count < 2)
+        {
+            return groups;
+        }
+
+        var byKey = new Dictionary<string, NameGroup>(StringComparer.Ordinal);
+
+        foreach (var type in written)
+        {
+            var shortName = BareName(type);
+
+            if (shortName.Length == 0)
+            {
+                continue;
+            }
+
+            var argumentCount = type.TypeArguments?.Count ?? 0;
+            var key = shortName + "`" + argumentCount;
+
+            if (!byKey.TryGetValue(key, out var group))
+            {
+                byKey[key] = group = new NameGroup { ShortName = shortName, IsGeneric = argumentCount > 0 };
+                groups.Add(group);
+            }
+
+            group.Types.Add(type);
+
+            var ns = type.Namespace ?? "";
+
+            if (!group.Namespaces.Contains(ns))
+            {
+                group.Namespaces.Add(ns);
+            }
+        }
+
+        groups.RemoveAll(group => group.Namespaces.Count < 2);
+
+        return groups;
+    }
+
+    private void ResolveCollisions(NamePlan namePlan, List<NameGroup> groups)
+    {
+        foreach (var group in groups)
+        {
+            // A generic cannot be aliased: a using alias names a closed type, and closing it here
+            // would name the wrong thing everywhere else. Every contender is qualified instead.
+            if (group.IsGeneric)
+            {
+                group.Winner = null;
+
+                foreach (var type in group.Types)
+                {
+                    if (!string.IsNullOrEmpty(type.Namespace))
+                    {
+                        namePlan.Qualified.Add(type);
+                    }
+                }
+
+                continue;
+            }
+
+            // A type with no namespace names itself - a keyword type, or a generic parameter, which
+            // is in scope by declaration and wins over anything a using brings in. It cannot be
+            // aliased and does not need to be.
+            group.Winner = group.Namespaces.Contains("") ? "" : group.Namespaces[0];
+
+            foreach (var type in group.Types)
+            {
+                var ns = type.Namespace ?? "";
+
+                if (ns.Length == 0 || string.Equals(ns, group.Winner, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                namePlan.AliasFor[type] = AliasFor(namePlan, group, type, ns);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Aliases the name that was left plain, for a group whose other namespaces are still imported.
+    /// </summary>
+    /// <returns>Whether anything changed.</returns>
+    private bool AliasTheWinners(NamePlan namePlan, List<NameGroup> groups)
+    {
+        var changed = false;
+
+        foreach (var group in groups)
+        {
+            if (string.IsNullOrEmpty(group.Winner))
+            {
+                continue;
+            }
+
+            var stillAmbiguous = false;
+
+            foreach (var ns in group.Namespaces)
+            {
+                if (!string.Equals(ns, group.Winner, StringComparison.Ordinal) &&
+                    namePlan.Namespaces.Contains(ns))
+                {
+                    stillAmbiguous = true;
+                    break;
+                }
+            }
+
+            if (!stillAmbiguous)
+            {
+                continue;
+            }
+
+            foreach (var type in group.Types)
+            {
+                if (string.Equals(type.Namespace ?? "", group.Winner, StringComparison.Ordinal))
+                {
+                    namePlan.AliasFor[type] = AliasFor(namePlan, group, type, group.Winner!);
+
+                    changed = true;
+                }
+            }
+
+            group.Winner = null;
+        }
+
+        return changed;
+    }
+
+    private static string AliasFor(NamePlan namePlan, NameGroup group, ITypeDefinition type, string ns)
+    {
+        var target = ns + "." + type.Name;
+
+        foreach (var existing in namePlan.Aliases)
+        {
+            if (string.Equals(existing.Value, target, StringComparison.Ordinal))
+            {
+                return existing.Key;
+            }
+        }
+
+        var alias = MakeAlias(ns, group.ShortName, namePlan);
+
+        namePlan.Aliases[alias] = target;
+
+        return alias;
+    }
+
+    /// <summary>
+    /// An alias built out of the namespace it disambiguates, taking as few segments as it takes to
+    /// be unique - the way a reader would name it.
+    /// </summary>
+    private static string MakeAlias(string ns, string shortName, NamePlan namePlan)
+    {
+        var segments = ns.Split('.');
+
+        for (var take = 1; take <= segments.Length; take++)
+        {
+            var builder = new StringBuilder();
+
+            for (var i = segments.Length - take; i < segments.Length; i++)
+            {
+                builder.Append(segments[i]);
+            }
+
+            builder.Append(shortName);
+
+            var candidate = builder.ToString();
+
+            if (!namePlan.Aliases.ContainsKey(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        var fallback = shortName + "Alias";
+        var suffix = 2;
+
+        while (namePlan.Aliases.ContainsKey(fallback))
+        {
+            fallback = shortName + "Alias" + suffix++;
+        }
+
+        return fallback;
+    }
+
+    /// <summary>
+    /// Drops the using for a namespace every reference to which now goes through an alias.
+    /// Importing it would put back the ambiguity the alias exists to remove.
+    /// </summary>
+    private void DropAliasedNamespaces(NamePlan namePlan, List<ITypeDefinition> written)
+    {
+        if (namePlan.AliasFor.Count == 0)
         {
             return;
         }
 
-        // An aliased namespace loses its using: importing it would put back the ambiguity the alias
-        // exists to remove. It keeps it if something else in it is still written by its plain name.
         var aliasedAway = new HashSet<string>(StringComparer.Ordinal);
         var stillPlain = new HashSet<string>(StringComparer.Ordinal);
 
@@ -774,19 +892,32 @@ public class OutputContext : IOutputContext
     }
 
     /// <summary>
-    /// Writes a type by short name, substituting an alias for any part of it that got one. Only
-    /// reached when the file actually has a collision in it; otherwise the type writes itself.
+    /// Writes a type by short name, substituting whatever the plan decided for any part of it that
+    /// the plan touched. Only reached when the file has a collision in it; otherwise every type
+    /// writes itself, exactly as it always did.
     /// </summary>
-    private static void AppendAliasedName(StringBuilder builder, ITypeDefinition type, NamePlan namePlan)
+    private static void AppendPlannedName(StringBuilder builder, ITypeDefinition type, NamePlan namePlan)
     {
-        if (!NeedsAliasedName(type, namePlan))
+        if (!NeedsPlannedName(type, namePlan))
         {
             type.WriteTypeName(builder, TypeOutputMode.ShortName);
 
             return;
         }
 
-        builder.Append(namePlan.AliasFor.TryGetValue(type, out var alias) ? alias : BareName(type));
+        if (namePlan.AliasFor.TryGetValue(type, out var alias))
+        {
+            builder.Append(alias);
+        }
+        else
+        {
+            if (namePlan.Qualified.Contains(type) && !string.IsNullOrEmpty(type.Namespace))
+            {
+                builder.Append(type.Namespace).Append('.');
+            }
+
+            builder.Append(BareName(type));
+        }
 
         var typeArguments = type.TypeArguments;
 
@@ -801,7 +932,7 @@ public class OutputContext : IOutputContext
                     builder.Append(',');
                 }
 
-                AppendAliasedName(builder, typeArguments[i], namePlan);
+                AppendPlannedName(builder, typeArguments[i], namePlan);
             }
 
             builder.Append('>');
@@ -818,9 +949,9 @@ public class OutputContext : IOutputContext
         }
     }
 
-    private static bool NeedsAliasedName(ITypeDefinition type, NamePlan namePlan)
+    private static bool NeedsPlannedName(ITypeDefinition type, NamePlan namePlan)
     {
-        if (namePlan.AliasFor.ContainsKey(type))
+        if (namePlan.AliasFor.ContainsKey(type) || namePlan.Qualified.Contains(type))
         {
             return true;
         }
@@ -834,7 +965,7 @@ public class OutputContext : IOutputContext
 
         for (var i = 0; i < typeArguments.Count; i++)
         {
-            if (NeedsAliasedName(typeArguments[i], namePlan))
+            if (NeedsPlannedName(typeArguments[i], namePlan))
             {
                 return true;
             }
