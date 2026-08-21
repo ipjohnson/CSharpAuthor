@@ -132,6 +132,17 @@ public class OutputContext : IOutputContext
     private int _indentIndex;
     private bool _generateUsings;
 
+    // The two indent strings, remembered rather than rebuilt. Both are read on every Write - that is
+    // how a component that hands over its own indent is recognised - and both used to allocate a
+    // string per read, which is a string per token written. The cache is keyed on everything they
+    // are made of, so a caller that changes the indent style half way through still gets the new
+    // one; only the depth normally moves, and only then is anything allocated.
+    private string _indentStringCache = "";
+    private string _singleIndentCache = "";
+    private char _indentCacheChar;
+    private int _indentCacheWidth = -1;
+    private int _indentCacheDepth;
+
     public OutputContextOptions Options { get; }
 
     public OutputContext(OutputContextOptions? options = null)
@@ -139,9 +150,46 @@ public class OutputContext : IOutputContext
         Options = options ?? new OutputContextOptions();
     }
 
-    public string SingleIndent => new string(Options.IndentChar, Options.IndentCharCount);
+    public string SingleIndent
+    {
+        get
+        {
+            if (_indentCacheWidth != Options.IndentCharCount || _indentCacheChar != Options.IndentChar)
+            {
+                RebuildIndentCache();
+            }
 
-    public string IndentString => new string(Options.IndentChar, Options.IndentCharCount * _indentIndex);
+            return _singleIndentCache;
+        }
+    }
+
+    public string IndentString
+    {
+        get
+        {
+            if (_indentCacheWidth != Options.IndentCharCount || _indentCacheChar != Options.IndentChar ||
+                _indentCacheDepth != _indentIndex)
+            {
+                RebuildIndentCache();
+            }
+
+            return _indentStringCache;
+        }
+    }
+
+    private void RebuildIndentCache()
+    {
+        // Built before anything is stored, so a bad depth throws exactly where it always did and
+        // leaves no half-updated cache behind.
+        var single = new string(Options.IndentChar, Options.IndentCharCount);
+        var full = new string(Options.IndentChar, Options.IndentCharCount * _indentIndex);
+
+        _singleIndentCache = single;
+        _indentStringCache = full;
+        _indentCacheChar = Options.IndentChar;
+        _indentCacheWidth = Options.IndentCharCount;
+        _indentCacheDepth = _indentIndex;
+    }
 
     /// <summary>The current indent depth, in indents rather than characters.</summary>
     public int IndentDepth => _indentIndex;
@@ -165,7 +213,9 @@ public class OutputContext : IOutputContext
 
         // A component that hands over its own indent string is describing structure, not characters.
         // Recorded as an indent so the file can still be restyled after it has been written.
-        if (_indentIndex > 0 && Options.IndentCharCount > 0)
+        // The first character is tested before the strings are: a token that does not begin with the
+        // indent character cannot be an indent, and that is very nearly every token in the file.
+        if (_indentIndex > 0 && Options.IndentCharCount > 0 && text[0] == Options.IndentChar)
         {
             if (text == IndentString)
             {
