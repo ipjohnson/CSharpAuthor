@@ -1,4 +1,4 @@
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// An output context that carries the profile a write is running under.
@@ -62,9 +62,9 @@ public static class OutputContextProfileExtensions
     /// keeps emitting exactly what it emitted before.
     /// </summary>
     public static EmitSession EmitSession(this IOutputContext outputContext) =>
-        CSharpAuthor.EmitSession.For(outputContext);
+        CSharpAuthor.Profiles.EmitSession.For(outputContext);
 
     /// <summary>The profile for this write.</summary>
     public static EmitProfile EmitProfile(this IOutputContext outputContext) =>
-        CSharpAuthor.EmitSession.For(outputContext).Profile;
+        CSharpAuthor.Profiles.EmitSession.For(outputContext).Profile;
 }

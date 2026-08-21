@@ -1,6 +1,6 @@
 using System;
 
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// <c>nameof(x)</c>, or the string it would have produced on a target that predates it.

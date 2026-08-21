@@ -1,6 +1,6 @@
 using System;
 
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>Which loop keyword a labeled jump is.</summary>
 public enum LabeledJumpKind

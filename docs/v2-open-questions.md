@@ -484,6 +484,57 @@ it is written down here rather than asked about.
 - `PreferVar`, `PreferExpressionBodied`, `FieldKeyword` and `ParamsCollections` are answered
   correctly by the capability table but no writer in this slice consults them - the writers that
   own those constructs have to.
+
+### 16. The profile types live in `CSharpAuthor.Profiles`, not `CSharpAuthor`
+
+Everything under `CSharpAuthor/Profiles/` — `EmitProfile`, `EmitSession`, `EmitDiagnostic`,
+`EmitResult`, `ProfileEmitter`, `LanguageVersion`, `LanguageFeature` and the eight downlevel
+statements — is in the `CSharpAuthor.Profiles` namespace. It was in the bare `CSharpAuthor`
+namespace until an independent verifier built `DependencyModules`' benchmark harness against
+this branch:
+
+```
+DependencyModules/benchmarks/DependencyModules.Benchmarks/Program.cs(172,46): error CS0104:
+  'LanguageVersion' is an ambiguous reference between
+  'Microsoft.CodeAnalysis.CSharp.LanguageVersion' and 'CSharpAuthor.LanguageVersion'
+```
+
+Three sites in that one file — lines 172, 196 and 224 — all of them
+`new CSharpParseOptions(LanguageVersion.Latest)`, and there is a fourth in this repository's own
+`proto/deferred/Dynamic.cs:263` that nothing compiles. A source generator imports
+`Microsoft.CodeAnalysis.CSharp` and `CSharpAuthor` together as a matter of course, so this is
+not an unlucky consumer; it is the ordinary case.
+
+**Two names in the bare namespace collide with Roslyn.** Measured by intersecting every public
+type name in the library against every public type name in `Microsoft.CodeAnalysis.CSharp`
+4.10.0 and 4.14.0:
+
+| Name | Roslyn's | Seen in |
+|---|---|---|
+| `LanguageVersion` | `Microsoft.CodeAnalysis.CSharp.LanguageVersion` | 3 build sites in DM's benchmark, 1 in `proto/` |
+| `EmitResult` | `Microsoft.CodeAnalysis.Emit.EmitResult` | not yet triggered — `DependencyModules/tests/.../GeneratedAssembly.cs:90` uses Roslyn's, and is one `using CSharpAuthor;` from CS0104 |
+
+`BraceStyle` and `LanguageFeature` were checked and do **not** collide with anything in any
+`Microsoft.CodeAnalysis*` namespace, so neither moved on collision grounds. `BraceStyle` stays in
+`CSharpAuthor` for a separate reason: `OutputContextOptions.BraceStyle` is core surface, not
+profile surface.
+
+**Why a sub-namespace, and not an alias.** An alias is not a general escape. C# resolves an
+enclosing namespace's members ahead of any `using`-alias, so a consumer whose own namespace is
+nested under `CSharpAuthor` — which a generator's helper assembly commonly is — could not alias
+its way out and had to fully qualify every mention. This repository's own
+`CSharpAuthor.Tests.ProfileTests` was in exactly that position. One namespace away, both names
+arrive as usings and an alias settles it, which is what
+`CSharpAuthor/Roslyn/EmitProfileRoslynExtensions.cs` does.
+
+**Taken:** the whole folder, rather than the two colliding names. Splitting the feature across
+two namespaces would leave `EmitProfile.Target` returning a type its own namespace does not
+contain, and moving only what collides today is a promise to do this again. Folder equals
+namespace matches `CSharpAuthor.Collections`, `.Expressions`, `.Roslyn` and `.Syntax`. The
+mechanical fix for anyone already on the old names is one line per file:
+`using CSharpAuthor.Profiles;`. No V1 code can be affected — every one of these types is new in
+2.0.
+
 Defaults taken under V2-HANDOFF.md §8.4 — *when the spec is silent, choose the option
 that keeps V1 source-compatible, record it, and do not stop to ask.*
 

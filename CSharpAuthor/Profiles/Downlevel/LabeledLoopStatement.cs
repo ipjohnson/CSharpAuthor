@@ -1,6 +1,6 @@
 using System;
 
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// A loop a jump can name: <c>outer: foreach (...)</c> where the target has labeled jumps, and

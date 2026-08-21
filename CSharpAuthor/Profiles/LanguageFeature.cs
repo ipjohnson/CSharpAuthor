@@ -1,4 +1,4 @@
-namespace CSharpAuthor;
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// A C# feature a node can ask an <see cref="EmitProfile"/> about.

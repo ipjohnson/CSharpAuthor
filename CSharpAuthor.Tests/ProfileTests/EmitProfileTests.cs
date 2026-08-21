@@ -1,4 +1,5 @@
 using System;
+using CSharpAuthor.Profiles;
 using Xunit;
 
 namespace CSharpAuthor.Tests.ProfileTests;

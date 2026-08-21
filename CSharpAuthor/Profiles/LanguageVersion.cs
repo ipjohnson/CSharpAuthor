@@ -1,4 +1,17 @@
-namespace CSharpAuthor;
+// Deliberately not the bare CSharpAuthor namespace, for the same reason as
+// CSharpAuthor.Collections.EquatableArray<T>: this name already exists in
+// Microsoft.CodeAnalysis.CSharp, and a source generator imports that namespace and CSharpAuthor
+// alike. Left in the bare namespace, `new CSharpParseOptions(LanguageVersion.Latest)` - the most
+// ordinary line in a generator - is CS0104, which is exactly how this was found: three sites in
+// DependencyModules' benchmark harness, and a fourth in this repository's own
+// proto/deferred/Dynamic.cs.
+//
+// A `using X = ...` alias is not a general escape. C# resolves an enclosing namespace's members
+// ahead of any using-alias, so a consumer whose own namespace is nested under CSharpAuthor - which
+// a generator's helper assembly commonly is - could not alias its way out and had to fully qualify
+// every mention. One namespace away, both names arrive as usings and an alias settles it, which is
+// what CSharpAuthor/Roslyn/EmitProfileRoslynExtensions.cs does.
+namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// A C# language version, used as the <em>capability</em> half of an <see cref="EmitProfile"/>.
@@ -9,6 +22,10 @@ namespace CSharpAuthor;
 /// (<c>target &gt;= CSharp9</c>) mean what they read as. The type is declared here rather than
 /// taken from Roslyn because the core library targets netstandard2.0 and must compile with no
 /// Roslyn reference at all.
+/// <para>
+/// It lives in <c>CSharpAuthor.Profiles</c> rather than <c>CSharpAuthor</c> because Roslyn spells
+/// this name too - see the note above the namespace declaration.
+/// </para>
 /// <para>
 /// Known limit: the emitter can describe versions the validator cannot check.
 /// <c>Microsoft.CodeAnalysis.CSharp</c> 4.14.0 knows language versions only up to

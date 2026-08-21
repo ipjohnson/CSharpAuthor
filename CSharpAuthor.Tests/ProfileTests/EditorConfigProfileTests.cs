@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using CSharpAuthor.Profiles;
 using Xunit;
 
 namespace CSharpAuthor.Tests.ProfileTests;

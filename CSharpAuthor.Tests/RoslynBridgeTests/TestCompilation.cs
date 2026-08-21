@@ -6,9 +6,11 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-// CSharpAuthor.LanguageVersion (the profiles capability enum) shadows Roslyn's here: this
-// namespace nests under CSharpAuthor, and enclosing-namespace members outrank using-aliases,
-// so only a distinct alias name disambiguates.
+// CSharpAuthor.LanguageVersion (the profiles capability enum) used to shadow Roslyn's here: it was
+// in the bare CSharpAuthor namespace, this namespace nests under that one, and enclosing-namespace
+// members outrank using-aliases, so only a distinct alias name disambiguated. It is in
+// CSharpAuthor.Profiles now and this file does not import it, so nothing shadows anything; the
+// alias stays because it says which LanguageVersion is meant.
 using RoslynLangVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
