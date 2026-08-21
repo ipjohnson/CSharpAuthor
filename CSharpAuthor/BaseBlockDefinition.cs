@@ -136,6 +136,15 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
         AddIndentedStatement("break");
     }
 
+    /// <summary>
+    /// <c>continue;</c> - the other half of <see cref="Break"/>, which had no equivalent, so the
+    /// only way to skip an iteration was to write the statement out as text.
+    /// </summary>
+    public void Continue()
+    {
+        AddIndentedStatement("continue");
+    }
+
     public WhileDefinition While(object testStatement)
     {
         return Add(new WhileDefinition(testStatement));
@@ -144,6 +153,27 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
     public ForEachDefinition ForEach(string variable, IOutputComponent enumerableComponent)
     {
         return Add(new ForEachDefinition(variable, enumerableComponent));
+    }
+
+    /// <summary>
+    /// A counting loop, <c>for(var i = 0; i &lt; limit; i++)</c>.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="ForDefinition"/> existed but wrote nothing and nothing returned one, so a
+    /// <c>for</c> loop had to be hand-written through <see cref="AddCode(string, object[])"/>.
+    /// </remarks>
+    public ForDefinition For(string variable, object startValue, object exclusiveLimit)
+    {
+        return Add(new ForDefinition(variable, startValue, exclusiveLimit));
+    }
+
+    /// <summary>
+    /// A loop with all three clauses given directly. Any of them may be null.
+    /// </summary>
+    public ForDefinition For(
+        IOutputComponent? initializer, IOutputComponent? condition, IOutputComponent? increment)
+    {
+        return Add(new ForDefinition(initializer, condition, increment));
     }
 
     public IfElseLogicBlockDefinition If(string ifStatement)
