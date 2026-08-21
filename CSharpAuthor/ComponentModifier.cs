@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text;
 
 namespace CSharpAuthor;
@@ -122,6 +122,47 @@ public enum ComponentModifier
     /// </remarks>
     PrivateProtected = Private | Protected,
 
+    /// <summary>
+    /// <c>new</c> - this member deliberately hides an inherited one of the same name.
+    /// </summary>
+    /// <remarks>
+    /// Without it a generated member that happens to share a base member's name compiles with
+    /// CS0108 on every build, and the warning is the only thing saying whether the hiding was
+    /// meant. Saying it out loud is the difference between a decision and an accident.
+    /// </remarks>
+    New = 8192,
+
+    /// <summary>
+    /// <c>const</c>. Pair with <see cref="FieldDefinition.InitializeValue"/>, which a constant
+    /// must have.
+    /// </summary>
+    /// <remarks>
+    /// Not interchangeable with <see cref="Static"/> plus <see cref="Readonly"/>, which is the
+    /// nearest thing this enum could previously say. Only a constant can be a <c>case</c> label, an
+    /// attribute argument or a default parameter value, so a consumer that needs one of those is
+    /// not served by a static readonly field that happens to hold the same value.
+    /// </remarks>
+    Const = 16384,
+
+    /// <summary>
+    /// <c>file</c> - visible only inside the file that declares it. C# 11.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The accessibility a source generator most wants for a helper type: two generators can each
+    /// emit a <c>file class Helper</c> into the same compilation without colliding, which
+    /// <c>internal</c> cannot do.
+    /// </para>
+    /// <para>
+    /// An accessibility level rather than a modifier, so it replaces <c>public</c> or
+    /// <c>internal</c> rather than joining them. Below C# 11 there is no downlevel: writing
+    /// <c>internal</c> instead would publish the type to the whole assembly, which is the same
+    /// silent widening that <see cref="PrivateProtected"/> documents. It is reported instead - see
+    /// <see cref="LanguageFeature.FileLocalTypes"/>.
+    /// </para>
+    /// </remarks>
+    File = 32768,
+
 }
 /// <summary>
 /// Reading a <see cref="ComponentModifier"/> as the C# keywords that spell it.
@@ -145,6 +186,10 @@ internal static class ComponentModifierExtensions
     private static readonly (ComponentModifier Flag, string Keyword)[] OrderedModifiers =
     {
         (ComponentModifier.Static, "static"),
+        // `new` sits between `static` and `virtual` in csharp_preferred_modifier_order, and
+        // `const` immediately after it, which is the order `public new const int X` reads in.
+        (ComponentModifier.New, "new"),
+        (ComponentModifier.Const, "const"),
         (ComponentModifier.Virtual, "virtual"),
         (ComponentModifier.Abstract, "abstract"),
         (ComponentModifier.Sealed, "sealed"),
@@ -204,7 +249,7 @@ internal static class ComponentModifierExtensions
     /// </summary>
     public const ComponentModifier TypeModifiers =
         ComponentModifier.Static | ComponentModifier.Abstract | ComponentModifier.Sealed |
-        ComponentModifier.Readonly | ComponentModifier.Partial;
+        ComponentModifier.Readonly | ComponentModifier.Partial | ComponentModifier.New;
 
     /// <summary>
     /// What a method declaration may be marked with.
@@ -212,14 +257,27 @@ internal static class ComponentModifierExtensions
     public const ComponentModifier MethodModifiers =
         ComponentModifier.Static | ComponentModifier.Virtual | ComponentModifier.Abstract |
         ComponentModifier.Sealed | ComponentModifier.Override | ComponentModifier.Readonly |
-        ComponentModifier.Async | ComponentModifier.Partial;
+        ComponentModifier.Async | ComponentModifier.Partial | ComponentModifier.New;
 
     /// <summary>
     /// What a property or event declaration may be marked with.
     /// </summary>
     public const ComponentModifier PropertyModifiers =
         ComponentModifier.Static | ComponentModifier.Virtual | ComponentModifier.Abstract |
-        ComponentModifier.Sealed | ComponentModifier.Override | ComponentModifier.Readonly;
+        ComponentModifier.Sealed | ComponentModifier.Override | ComponentModifier.Readonly |
+        ComponentModifier.New;
+
+    /// <summary>
+    /// What a field declaration may be marked with.
+    /// </summary>
+    /// <remarks>
+    /// <c>const</c> is here rather than being inferred from <c>static readonly</c>: they are
+    /// different declarations to a consumer, and only the constant can be used where a constant is
+    /// required.
+    /// </remarks>
+    public const ComponentModifier FieldModifiers =
+        ComponentModifier.Static | ComponentModifier.Readonly | ComponentModifier.Const |
+        ComponentModifier.New;
 
     /// <summary>
     /// The accessibility keywords <paramref name="modifiers"/> declares, or
@@ -239,6 +297,14 @@ internal static class ComponentModifierExtensions
         if ((modifiers & ComponentModifier.NoAccessibility) == ComponentModifier.NoAccessibility)
         {
             return "";
+        }
+
+        // Before every other level, because `file` replaces them rather than combining with them:
+        // `file internal class` is CS9052. A caller that set both meant the narrower one, and the
+        // narrower one is the one that can still be widened later.
+        if ((modifiers & ComponentModifier.File) == ComponentModifier.File)
+        {
+            return KeyWords.File;
         }
 
         if ((modifiers & ComponentModifier.ProtectedInternal) == ComponentModifier.ProtectedInternal)

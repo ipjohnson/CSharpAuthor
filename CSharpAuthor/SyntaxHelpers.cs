@@ -358,6 +358,16 @@ public static class SyntaxHelpers
     /// <see cref="BaseBlockDefinition.Return"/> with null is a bare <c>return;</c>, not
     /// <c>return null;</c>. This is how the value is said out loud.
     /// </remarks>
+    /// <inheritdoc cref="FieldKeywordComponent"/>
+    /// <param name="backingFieldName">
+    /// What to write below C# 14, where there is no keyword. The caller declares this field.
+    /// </param>
+    /// <param name="context">The property's name, for the diagnostic.</param>
+    public static IOutputComponent Field(string backingFieldName, string? context = null)
+    {
+        return new FieldKeywordComponent(backingFieldName, context) { Indented = false };
+    }
+
     public static IOutputComponent Null()
     {
         return CodeOutputComponent.Get("null");

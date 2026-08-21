@@ -880,6 +880,18 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
 
     private void WriteClassSignature(IOutputContext outputContext, string? terminator = null)
     {
+        // Asked before the declaration line starts, because a diagnostic is a line of its own and
+        // cannot be inserted into a half-written one.
+        //
+        // The keyword is then written whatever the answer. There is no downlevel: `internal` is the
+        // nearest thing C# has and it publishes the type to the whole assembly, which is the silent
+        // widening this library exists to refuse. Writing `file` into a compilation that cannot
+        // parse it fails loudly, next to the diagnostic that says why.
+        if ((Modifiers & ComponentModifier.File) == ComponentModifier.File)
+        {
+            outputContext.EmitSession().Require(LanguageFeature.FileLocalTypes, outputContext, Name);
+        }
+
         outputContext.Write(outputContext.IndentString);
 
         var accessModifier = GetAccessModifier(KeyWords.Public);

@@ -5,8 +5,9 @@
 /// </summary>
 /// <remarks>
 /// The one declaration in this library that defaults to <c>private</c> rather than <c>public</c>,
-/// because that is what a field almost always is. Add <see cref="ComponentModifier.Readonly"/> and
-/// <see cref="ComponentModifier.Static"/> through <see cref="BaseOutputComponent.Modifiers"/>; they
+/// because that is what a field almost always is. Add <see cref="ComponentModifier.Readonly"/>,
+/// <see cref="ComponentModifier.Static"/>, <see cref="ComponentModifier.Const"/> and
+/// <see cref="ComponentModifier.New"/> through <see cref="BaseOutputComponent.Modifiers"/>; they
 /// are written in the order C# convention puts them - <c>static readonly</c> - whichever order the
 /// flags were set in.
 /// </remarks>
@@ -57,8 +58,7 @@ public class FieldDefinition : BaseOutputComponent, INamedComponent
 
         // `static readonly`, which is the order C# convention uses. This wrote `readonly static`,
         // which compiles and reads as a transcription error.
-        var modifiers = Modifiers.GetModifierKeywords(
-            ComponentModifier.Static | ComponentModifier.Readonly);
+        var modifiers = Modifiers.GetModifierKeywords(ComponentModifierExtensions.FieldModifiers);
 
         // The space belongs to the keyword, not to the position. Written unconditionally it left a
         // member declared without accessibility indented one column too far - `     int f;` - which
