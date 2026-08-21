@@ -84,7 +84,7 @@ public class IdentifierAdversaryTests
         RoslynAssert.Compiles(Emit.File(file));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: a type reference's name is never escaped - TypeDefinition.Get(\"Ns\", \"event\") writes event")]
+    [Fact]
     public void TypeReferenceNamedEvent()
     {
         var type = TypeDefinition.Get("Ns", "event");
@@ -98,7 +98,7 @@ public class IdentifierAdversaryTests
         RoslynAssert.Compiles(Emit.Component(new InterfaceDefinition("interface")));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: a type parameter name is never escaped - emits class Box<int>, CS1001")]
+    [Fact]
     public void TypeParameterNamedInt()
     {
         var classDefinition = new ClassDefinition("Box");

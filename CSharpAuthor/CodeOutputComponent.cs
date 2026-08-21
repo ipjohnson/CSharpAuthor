@@ -104,7 +104,10 @@ public class CodeOutputComponent : BaseOutputComponent
     {
         return value switch
         {
-            null => new CodeOutputComponent("") { Indented = indented },
+            // The value null is the literal `null`. Written as nothing it made an initializer
+            // `private string f = ;` - CS1525 - and a caller could not tell the two apart, because
+            // "no value" and "the value null" arrive here as the same thing.
+            null => new CodeOutputComponent(LiteralFormatter.Format(null)) { Indented = indented },
 
             IOutputComponent outputComponent => outputComponent,
 

@@ -51,7 +51,7 @@ public class TypeDefinition : BaseTypeDefinition
 
         WriteQualifier(builder, typeOutputMode);
 
-        builder.Append(Name);
+        builder.Append(WrittenName());
 
         WriteArrayRanks(builder);
 

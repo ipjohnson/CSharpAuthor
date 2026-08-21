@@ -138,7 +138,7 @@ public class LiteralAdversaryTests
     /// <c>CodeOutputComponent.Get(null)</c> returns an empty component, so an initializer written
     /// from a null value emits <c>= ;</c>.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: CodeOutputComponent.Get(null) emits the empty string, so a null value becomes 'private string f = ;' - CS1525")]
+    [Fact]
     public void NullValueBecomesTheNullLiteral()
     {
         RoslynAssert.Compiles(FieldOf(typeof(string), "f", CodeOutputComponent.Get(null)));

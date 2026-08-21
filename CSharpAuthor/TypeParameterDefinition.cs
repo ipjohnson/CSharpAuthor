@@ -64,7 +64,9 @@ public class TypeParameterDefinition : ITypeDefinition
 
     public void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
-        builder.Append(Name);
+        // Always escaped: a type parameter's name is only ever an identifier the caller chose, so
+        // there is no keyword alias to confuse it with. `class Box<int>` is CS1001.
+        builder.Append(CSharpIdentifier.Escape(Name));
 
         // T?[] is an array of nullable T; T[]? is a nullable array. The ? goes on the side the
         // caller asked for it.

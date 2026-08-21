@@ -111,7 +111,23 @@ public class GenericTypeDefinition : BaseTypeDefinition
     {
         WriteQualifier(builder, typeOutputMode);
 
-        builder.Append(Name);
+        builder.Append(WrittenName());
+
+        // An empty argument list is `Thing<>`, which is only legal inside typeof - CS1031 in a
+        // field, a parameter or a base type. A generic definition closed over nothing names the
+        // type it was built from, which is the only reading that is a type at all.
+        if (_closingTypes.Count == 0)
+        {
+            WriteArrayRanks(builder);
+
+            if (IsNullable)
+            {
+                builder.Append('?');
+            }
+
+            return;
+        }
+
         builder.Append('<');
 
         var writeComma = false;

@@ -148,6 +148,23 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     }
 
     /// <summary>
+    /// The type's own name as it has to be written: prefixed with <c>@</c> when it is a reserved
+    /// word, so a type read out of a schema and called <c>event</c> names itself rather than
+    /// producing CS1001 at every reference.
+    /// </summary>
+    /// <remarks>
+    /// Only a type that has somewhere to live - a namespace or a containing type - is escaped. A
+    /// type with neither is the shape the keyword aliases take: <c>int</c> and <c>string</c> are
+    /// held as a name with no namespace, and <c>@int</c> is not the same type as <c>int</c>.
+    /// </remarks>
+    private protected string WrittenName()
+    {
+        return Namespace.Length > 0 || ContainingType != null
+            ? CSharpIdentifier.Escape(Name)
+            : Name;
+    }
+
+    /// <summary>
     /// Writes the array specifiers, outermost first, so ranks <c>[2, 1]</c> read as <c>[,][]</c> -
     /// preceded by the element's <c>?</c> where it has one, because <c>string?[]</c> and
     /// <c>string[]?</c> are different types.
