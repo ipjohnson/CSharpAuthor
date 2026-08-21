@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Gate 9 harness (V2-HANDOFF.md §10).
+
+    Deliberately NOT in CSharpAuthor.sln and deliberately NOT under CSharpAuthor/ - the
+    library packs `**\*.cs` relative to CSharpAuthor/ and the source-include targets glob
+    `src/**/*.cs`, so nothing here can ever reach the shipping library or the test suite.
+
+    No PackageReference by default: the harness must restore and run offline. The Roslyn
+    reference point is opt-in (-p:IncludeRoslynReference=true) and lives behind #if BENCH_ROSLYN.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Bench</RootNamespace>
+    <AssemblyName>CSharpAuthor.Benchmark</AssemblyName>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+
+    <!-- Benchmark conditions: workstation GC, concurrent GC as shipped, no tiered-compilation tricks. -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!-- Which CSharpAuthor to measure. Overridden by scripts/run-benchmark.sh. -->
+  <PropertyGroup Condition="'$(CSharpAuthorProject)' == ''">
+    <CSharpAuthorProject>$(MSBuildThisFileDirectory)..\..\CSharpAuthor\CSharpAuthor.csproj</CSharpAuthorProject>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(CSharpAuthorTargetFramework)' == ''">
+    <ProjectReference Include="$(CSharpAuthorProject)" />
+  </ItemGroup>
+
+  <!-- If the measured library multi-targets, pin the TFM so V1 and V2 are compared like for like. -->
+  <ItemGroup Condition="'$(CSharpAuthorTargetFramework)' != ''">
+    <ProjectReference Include="$(CSharpAuthorProject)"
+                      SetTargetFramework="TargetFramework=$(CSharpAuthorTargetFramework)" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(IncludeRoslynReference)' == 'true'">
+    <DefineConstants>$(DefineConstants);BENCH_ROSLYN</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(IncludeRoslynReference)' == 'true'">
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
+  </ItemGroup>
+
+</Project>
