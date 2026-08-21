@@ -298,8 +298,16 @@ public class OutputContext : IOutputContext
     /// </remarks>
     private ChunkChain<long> _journal;
 
-    private bool _streaming;
-    private bool _pathChosen;
+    /// <summary>Which of the two the writes are taking, decided once at the first of them.</summary>
+    /// <remarks>
+    /// One field rather than two flags, because every write reads it: on the recording path that is
+    /// a load and a compare, which is as small as asking can be made.
+    /// </remarks>
+    private int _path;
+
+    private const int PathUndecided = 0;
+    private const int PathRecord = 1;
+    private const int PathStream = 2;
 
     /// <summary>Where the file header ended, in characters, on the fast path.</summary>
     private int _headerOffset;
@@ -481,16 +489,16 @@ public class OutputContext : IOutputContext
         // Everything the name plan will want from this type, taken while it is here. Nothing is
         // derived in a mode that qualifies, so nothing is gathered while one is in force - but the
         // mode can still change before serialization, and then the record is read instead.
-        if (Options.TypeOutputMode == TypeOutputMode.ShortName)
+        if (_typesGathered)
         {
-            if (_typesGathered)
+            if (Options.TypeOutputMode == TypeOutputMode.ShortName)
             {
                 NoteWrittenType(typeDefinition);
             }
-        }
-        else
-        {
-            _typesGathered = false;
+            else
+            {
+                _typesGathered = false;
+            }
         }
 
         RecordValue(SegmentKind.TypeReference, typeDefinition);
@@ -791,12 +799,21 @@ public class OutputContext : IOutputContext
     {
         get
         {
-            if (!_pathChosen)
+            var path = _path;
+
+            if (path == PathRecord)
             {
-                ChoosePath();
+                return false;
             }
 
-            return _streaming;
+            if (path == PathUndecided)
+            {
+                ChoosePath();
+
+                path = _path;
+            }
+
+            return path == PathStream;
         }
     }
 
@@ -817,7 +834,7 @@ public class OutputContext : IOutputContext
     /// </remarks>
     private void ChoosePath()
     {
-        _pathChosen = true;
+        _path = PathRecord;
 
         var options = Options;
 
@@ -837,7 +854,7 @@ public class OutputContext : IOutputContext
         // Small: most contexts write a handful of tokens and are thrown away, and a builder grows
         // by adding a block rather than by copying what it holds.
         _stream = new StringBuilder(256);
-        _streaming = true;
+        _path = PathStream;
 
         // Nothing was gathered for a name plan while the stream ran, so a mode that turns out to
         // need one reads the types back off the record the stream is turned into.
@@ -896,7 +913,7 @@ public class OutputContext : IOutputContext
         var streamedTypes = _values;
 
         _stream = null;
-        _streaming = false;
+        _path = PathRecord;
         _journal = default;
         _values = default;
 
@@ -1107,7 +1124,7 @@ public class OutputContext : IOutputContext
     {
         _headerSegmentCount = _codes.Count;
 
-        if (_streaming)
+        if (_path == PathStream)
         {
             _headerOffset = _stream!.Length;
         }
@@ -1134,7 +1151,7 @@ public class OutputContext : IOutputContext
     {
         get
         {
-            if (_streaming)
+            if (_path == PathStream)
             {
                 var stream = _stream!;
 
@@ -1234,7 +1251,7 @@ public class OutputContext : IOutputContext
 
     public string Output()
     {
-        if (_streaming)
+        if (_path == PathStream)
         {
             if (StyleStillSettled())
             {
