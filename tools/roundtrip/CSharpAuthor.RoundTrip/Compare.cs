@@ -129,13 +129,21 @@ public static class Compare
             found++;
         }
 
-        // Every child pair agrees, yet the parent does not: the difference is in the node
-        // itself. Naming it is still useful - it says exactly which grammar node to look at.
+        // Every child pair agrees, yet the parent does not.
+        //
+        // Measured cause, on BlockSyntax: SyntaxFactory.AreEquivalent(a.Statements,
+        // b.Statements) is false while AreEquivalent(a.Statements[0], b.Statements[0]) is
+        // true and both lists hold exactly one element - the two one-element SyntaxLists
+        // have different green representations. That is a Roslyn representational detail,
+        // not a difference the emitter produced. Rows like this are why the cross-check
+        // verdict is printed next to the headline: it accepts them, IsEquivalentTo does
+        // not, and the headline stays on the stricter of the two.
         if (found == before)
         {
             report.Add(Bucket.Structure, a.Kind().ToString(),
                 $"node differs though all {ca.Count} children are equivalent " +
-                $"[{string.Join(" ", ca.Select(Describe))}] IN <{Head(a)}> OUT <{Head(b)}>");
+                $"(one-element list representation) [{string.Join(" ", ca.Select(Describe))}] " +
+                $"IN <{Head(a)}>");
             found++;
         }
     }

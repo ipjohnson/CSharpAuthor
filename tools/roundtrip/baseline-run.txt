@@ -108,7 +108,7 @@ LAYER RT   CORPUS own (CSharpAuthor)
     (b) tree built, emitted text does not re-parse   [35 files]
             35  IdentifierName                             CS1519 Invalid token ';' in a member declaration
     (c) re-parsed tree differs structurally from the original   [2 files]
-             1  Block                                      node differs though all 3 children are equivalent [token { ReturnStatement token }] IN <{         return new TypeParameterDefinition(Name, nullable,...> OUT <{return new TypeParameterDefinition(Name , nullable , IsArra...>
+             1  Block                                      node differs though all 3 children are equivalent (one-element list representation) [token { ReturnStatement token }] IN <{         return new TypeParameterDefinition(Name, nullable,...>
              1  EnumDeclaration                            34 children in, 33 out (AttributeList token public token enum token ComponentModifier token { EnumMemberDeclaration ... -> AttributeList token public token enum token ComponentModifier token { EnumMemberDeclaration ...)
 
 --------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ LAYER RT   CORPUS DependencyModules
              6  ArrayType                                  became NullableType
              6  EnumDeclaration                            15 children in, 14 out (token public token enum token LogOutputLevel token { EnumMemberDeclaration token , ... -> token public token enum token LogOutputLevel token { EnumMemberDeclaration token , ...)
              2  ArrayInitializerExpression                 22 children in, 21 out (token { StringLiteralExpression token , StringLiteralExpression token , StringLiteralExpression ... -> token { StringLiteralExpression token , StringLiteralExpression token , StringLiteralExpression ...)
-             2  Block                                      node differs though all 3 children are equivalent [token { ExpressionStatement token }] IN <{         Assert.That(needsASingleton.SingletonService, Is.N...> OUT <{Assert .That(needsASingleton .SingletonService, Is .Not.Nul...>
+             2  Block                                      node differs though all 3 children are equivalent (one-element list representation) [token { ExpressionStatement token }] IN <{         Assert.That(needsASingleton.SingletonService, Is.N...>
              2  NullableType                               became PredefinedType
              1  ObjectInitializerExpression                36 children in, 35 out (token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , SimpleAssignmentExpression ... -> token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , SimpleAssignmentExpression ...)
              1  SwitchExpression                           10 children in, 9 out (SimpleMemberAccessExpression token switch token { SwitchExpressionArm token , SwitchExpressionArm ... -> SimpleMemberAccessExpression token switch token { SwitchExpressionArm token , SwitchExpressionArm ...)
@@ -160,7 +160,7 @@ LAYER RT   CORPUS Hardened.Framework
              1  ParameterList                              CS1001 Identifier expected
     (c) re-parsed tree differs structurally from the original   [116 files]
             70  InterpolatedStringText                     token 'LISTENING ' became 'LISTENING  '
-            28  Block                                      node differs though all 3 children are equivalent [token { ReturnStatement token }] IN <{         return Task.FromResult(new Pet("3", body.Name, bod...> OUT <{return Task .FromResult(new Pet("3", body .Name, body .Tag)...>
+            28  Block                                      node differs though all 3 children are equivalent (one-element list representation) [token { ReturnStatement token }] IN <{         return Task.FromResult(new Pet("3", body.Name, bod...>
              6  CollectionExpression                       10 children in, 9 out (token [ ExpressionElement token , ExpressionElement token , ExpressionElement ... -> token [ ExpressionElement token , ExpressionElement token , ExpressionElement ...)
              6  ObjectInitializerExpression                10 children in, 9 out (token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , SimpleAssignmentExpression ... -> token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , SimpleAssignmentExpression ...)
              5  CollectionInitializerExpression            90 children in, 89 out (token { TypeOfExpression token , TypeOfExpression token , TypeOfExpression ... -> token { TypeOfExpression token , TypeOfExpression token , TypeOfExpression ...)

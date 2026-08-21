@@ -111,7 +111,7 @@ echo "checkout under measurement : ${TARGET}"
 if [[ ${REGEN} -eq 1 || ! -f "${GEN_DIR}/roslyn-nodes.txt" ]]; then
     mkdir -p "${GEN_DIR}"
     echo -n "roslyn probe               : "
-    dotnet run -c Release --project "${PROBE_DIR}" --nologo -- "${GEN_DIR}/roslyn-nodes.txt" \
+    dotnet run -c Release --project "${PROBE_DIR}" -- "${GEN_DIR}/roslyn-nodes.txt" \
         | tail -1
 fi
 
