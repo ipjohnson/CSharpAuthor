@@ -8,11 +8,11 @@ library code. Every entry here is a test in `CSharpAuthor.Tests/Adversary/`.
 | | count |
 |---|---|
 | **found** | **170** |
-| **fixed** | **74** |
-| **outstanding** | **96** |
+| **fixed** | **77** |
+| **outstanding** | **93** |
 
-Suite: **1155 passing, 0 failing, 96 skipped, 1251 total** (measured, not projected). The 139
-pre-existing tests are unmodified and all pass. Of the adversary's own 305 cases, **209 pass and 96
+Suite: **1546 passing, 0 failing, 93 skipped, 1639 total** (measured, not projected). The 139
+pre-existing tests are unmodified and all pass. Of the adversary's own 305 cases, **212 pass and 93
 are skipped gaps**.
 
 **Reconciliation, wave 2.** The 54 findings closed by the wave-1 builders were still carrying their
@@ -22,7 +22,7 @@ judgement call: strip every skip on a throwaway branch, run the suite, and un-sk
 that passed. 170 skips stripped gave 116 failures; those kept their skips, the other 54 lost them.
 Wave 2 then closed 20 more.
 
-**The 96 that remain are not 96 units of the same work.** 61 of them are
+**The 93 that remain are not 93 units of the same work.** 61 of them are
 `Assert.True(false, "no API for …")` placeholders: they name a feature that does not exist and they
 **cannot pass however the feature is built**, because the assertion is unconditional. Implementing
 lambdas does not turn `ExpressionAdversaryTests.Lambdas` green - somebody has to write the test.
@@ -37,10 +37,10 @@ the **correct** behaviour, so when the defect is fixed the skip comes off and th
 written. Nothing here is a test that agrees with a defect - with the exceptions named under
 "Findings whose test asserts the wrong thing" below, which were found by trying to satisfy them. A
 finding that has been **fixed** is the same test with the skip removed — it is now a live regression
-guard, and the appendix names all 74.
+guard. The appendix below names the 93 that remain outstanding, not the 77 that are fixed.
 
 Every remaining gap in this document has been **verified to fail today**. Running the suite with the
-skip attributes stripped gives 96 failures — the same 96 that are still skipped. Reproduce with:
+skip attributes stripped gives 93 failures — the same 93 that are still skipped. Reproduce with:
 
 ```
 perl -0pi -e 's/\[(Fact|Theory)\(Skip\s*=\s*"(?:[^"\\]|\\.)*"\)\]/[$1]/g' CSharpAuthor.Tests/Adversary/*.cs
@@ -285,7 +285,7 @@ that work will trip over it.
 | `Adversary/TypeModelContractTests.cs` | 11 | 1 |
 | `Adversary/StructureAdversaryTests.cs` | 8 | 4 |
 | `Adversary/ValueConversionAdversaryTests.cs` | 9 | 3 |
-| **total** | **209** | **96** |
+| **total** | **212** | **93** |
 
 
 ---
@@ -491,3 +491,23 @@ Generated from the tree, not written by hand.
 - `ValueConversionAdversaryTests.EnumValueThroughAddCode`
 - `ValueConversionAdversaryTests.StringAttributeArgument`
 - `ValueConversionAdversaryTests.UnmatchedPlaceholder`
+
+---
+
+## Ledger correction, 2026-08-21
+
+An independent verifier re-ran the suite with every `Skip` stripped and got **93** failures where
+this document claimed 96. Three findings were passing with their `Skip` still attached, all closed
+by the nullable-position fix rather than by anything aimed at them:
+
+- `TypeNameAdversaryTests.NullableElementArray_WritesQuestionBeforeBrackets`
+- `TypeNameAdversaryTests.NullableElementArray_AcceptsNullElement`
+- `TypeNameAdversaryTests.NullableElementArray_OnGenericType`
+
+They are now un-skipped and are live regression guards. Final tally: **found 170 / fixed 77 /
+outstanding 93**, of which **61 are unconditional-fail placeholders** for features that do not
+exist and **32 are executable**. Re-validated: 93 skips, 93 failures when stripped, 61 placeholders
+counted per-test rather than by raw grep.
+
+The lesson is worth keeping: a ledger that is not re-validated after every merge goes stale in the
+direction that flatters the work.
