@@ -67,6 +67,17 @@ setting a flag. `MakeArray(int rank)` is new, for `int[,]`.
 `TypeDefinition.Get(..., isArray: true)` flattens a jagged or multidimensional array to a single `[]`;
 pass `ArrayRanks` to the new overload instead.
 
+### `SyntaxHelpers.Is` writes the whole type
+
+`Is(value, type)` took `type.Name` while building the tree, so it wrote a bare `Task` for
+`Task<string>`, a bare `Inner` for `Outer.Inner`, `int` for `int[][]`, and — having decided on a short
+name before any output mode was known — an unqualified name in `TypeOutputMode.Global`, propped up by
+a `using` it added itself. It now writes the type through `IOutputContext.Write(ITypeDefinition)` like
+every other construct, and the `using` follows from what was written.
+
+**Fix:** none. Output only changes where it was previously wrong; a simple named type in short-name
+mode reads exactly as before.
+
 ### `ITypeDefinition` gained three members
 
 `ContainingType`, `ArrayRanks` and `MakeArray(int rank)`. Callers are unaffected. **Anyone
