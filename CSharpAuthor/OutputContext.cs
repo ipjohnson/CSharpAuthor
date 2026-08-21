@@ -532,6 +532,7 @@ public class OutputContext : IOutputContext
         Options = options ?? new OutputContextOptions();
     }
 
+    /// <inheritdoc />
     public string SingleIndent
     {
         get
@@ -545,6 +546,7 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <inheritdoc />
     public string IndentString
     {
         get
@@ -576,16 +578,19 @@ public class OutputContext : IOutputContext
     /// <summary>The current indent depth, in indents rather than characters.</summary>
     public int IndentDepth => _indentIndex;
 
+    /// <inheritdoc />
     public void IncrementIndent()
     {
         _indentIndex++;
     }
 
+    /// <inheritdoc />
     public void DecrementIndent()
     {
         _indentIndex--;
     }
 
+    /// <inheritdoc />
     public void Write(string text)
     {
         if (string.IsNullOrEmpty(text))
@@ -756,11 +761,13 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <inheritdoc />
     public void WriteLine()
     {
         EmitNewLine();
     }
 
+    /// <inheritdoc />
     public void WriteLine(string text)
     {
         Write(text);
@@ -768,6 +775,7 @@ public class OutputContext : IOutputContext
         EmitNewLine();
     }
 
+    /// <inheritdoc />
     public void WriteSpace()
     {
         if (Streaming)
@@ -782,6 +790,7 @@ public class OutputContext : IOutputContext
         RecordValue(SegmentKind.Text, " ");
     }
 
+    /// <inheritdoc />
     public void WriteIndent(string text = "")
     {
         EmitIndent(_indentIndex);
@@ -789,6 +798,7 @@ public class OutputContext : IOutputContext
         Write(text);
     }
 
+    /// <inheritdoc />
     public void WriteIndentedLine(string text)
     {
         EmitIndent(_indentIndex);
@@ -798,6 +808,7 @@ public class OutputContext : IOutputContext
         EmitNewLine();
     }
 
+    /// <inheritdoc />
     public void OpenScope()
     {
         EmitScope(SegmentKind.ScopeOpen, _indentIndex);
@@ -805,6 +816,7 @@ public class OutputContext : IOutputContext
         _indentIndex++;
     }
 
+    /// <inheritdoc />
     public void CloseScope()
     {
         _indentIndex--;
@@ -1261,6 +1273,7 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <inheritdoc />
     public void AddImportNamespaces(IEnumerable<string> namespaces)
     {
         if (namespaces == null)
@@ -1287,6 +1300,7 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <inheritdoc />
     public void GenerateUsingStatements()
     {
         _generateUsings = true;
@@ -1329,6 +1343,7 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <inheritdoc />
     public char? LastCharacter
     {
         get

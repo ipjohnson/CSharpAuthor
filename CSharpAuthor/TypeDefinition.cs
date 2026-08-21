@@ -82,6 +82,7 @@ public class TypeDefinition : BaseTypeDefinition
 
     }
 
+    /// <inheritdoc />
     public override IEnumerable<string> KnownNamespaces
     {
         get
@@ -98,6 +99,7 @@ public class TypeDefinition : BaseTypeDefinition
         }
     }
 
+    /// <inheritdoc />
     public override void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
 
@@ -114,6 +116,7 @@ public class TypeDefinition : BaseTypeDefinition
         WriteArraySuffix(builder);
     }
 
+    /// <inheritdoc />
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
         return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanks, AnnotationsWithOuterAnnotation(nullable), ContainingType);
@@ -139,8 +142,17 @@ public class TypeDefinition : BaseTypeDefinition
         return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanksWithOuterRank(rank), AnnotationsWithOuterLevel(), ContainingType);
     }
 
+    /// <summary>
+    /// Always empty: this class models a type with no type arguments.
+    /// <see cref="GenericTypeDefinition"/> is the one that carries them.
+    /// </summary>
     public override IReadOnlyList<ITypeDefinition> TypeArguments => Array.Empty<ITypeDefinition>();
 
+    /// <summary>
+    /// Orders by the same identity equality uses, so a sorted collection of type references is
+    /// stable across runs - which is what keeps a generated using block byte-identical between
+    /// builds.
+    /// </summary>
     public override int CompareTo(ITypeDefinition other)
     {
         return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
