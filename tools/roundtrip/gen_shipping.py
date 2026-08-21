@@ -119,7 +119,10 @@ class Grammar:
 
             m = re.match(r'^(Separated)?SyntaxList<(.+)>$', ftype)
             if m:
-                yield ('list', fname, self.iface_for(m.group(2)))
+                # Mirrors gen_all.py: a SeparatedSyntaxList is emitted through a NodeList that
+                # can also carry a trailing separator, so this reads that back off Roslyn. An
+                # unseparated list has no separator to trail and gets the plain role.
+                yield ('seplist' if m.group(1) else 'list', fname, self.iface_for(m.group(2)))
                 continue
 
             if ftype in TYPE_SLOTS:
@@ -182,6 +185,11 @@ def emit_importer(grammar, names, readable, chain_depth):
                 w(f"        foreach (var __t in __n.{fname}) __r.{fname}.Add(__t.Text);")
             elif role == 'list':
                 w(f"        foreach (var __e in __n.{fname}) {{ var __v = As<G.{detail}>(Import(__e), __e, {where}); if (__v != null) __r.{fname}.Add(__v); }}")
+            elif role == 'seplist':
+                w(f"        foreach (var __e in __n.{fname}) {{ var __v = As<G.{detail}>(Import(__e), __e, {where}); if (__v != null) __r.{fname}.Add(__v); }}")
+                # `{ 1, 2, }` has as many separators as elements. Roslyn keeps that comma as a
+                # token, so the emitted tree is a different tree without it.
+                w(f"        __r.{fname}.TrailingSeparator = __n.{fname}.Count > 0 && __n.{fname}.SeparatorCount >= __n.{fname}.Count;")
             elif role == 'typeref':
                 w(f"        __r.{fname} = ImportTypeRef(__n.{fname}, {where});")
             else:

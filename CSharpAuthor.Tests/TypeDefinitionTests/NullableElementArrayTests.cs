@@ -121,6 +121,10 @@ public class NullableElementArrayTests
 
         public IReadOnlyList<int> ArrayRanks => Array.Empty<int>();
 
+        // A single element-level annotation, and MakeNullable below ignores it - which is
+        // exactly the implementation this test proves is refused.
+        public IReadOnlyList<bool> NullableAnnotations => new[] { false };
+
         public string Name => "Foreign";
 
         public string Namespace => "Ns";

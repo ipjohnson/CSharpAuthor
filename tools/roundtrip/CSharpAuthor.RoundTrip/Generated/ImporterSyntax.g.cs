@@ -303,6 +303,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.AllowsConstraintClause();
         foreach (var __e in __n.Constraints) { var __v = As<G.IAllowsConstraint>(Import(__e), __e, "AllowsConstraintClauseSyntax.Constraints"); if (__v != null) __r.Constraints.Add(__v); }
+        __r.Constraints.TrailingSeparator = __n.Constraints.Count > 0 && __n.Constraints.SeparatorCount >= __n.Constraints.Count;
         return __r;
     }
 
@@ -320,6 +321,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.AnonymousObjectCreationExpression();
         foreach (var __e in __n.Initializers) { var __v = As<G.AnonymousObjectMemberDeclarator>(Import(__e), __e, "AnonymousObjectCreationExpressionSyntax.Initializers"); if (__v != null) __r.Initializers.Add(__v); }
+        __r.Initializers.TrailingSeparator = __n.Initializers.Count > 0 && __n.Initializers.SeparatorCount >= __n.Initializers.Count;
         return __r;
     }
 
@@ -335,6 +337,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.ArgumentList();
         foreach (var __e in __n.Arguments) { var __v = As<G.Argument>(Import(__e), __e, "ArgumentListSyntax.Arguments"); if (__v != null) __r.Arguments.Add(__v); }
+        __r.Arguments.TrailingSeparator = __n.Arguments.Count > 0 && __n.Arguments.SeparatorCount >= __n.Arguments.Count;
         return __r;
     }
 
@@ -359,6 +362,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.ArrayRankSpecifier();
         foreach (var __e in __n.Sizes) { var __v = As<G.IExpression>(Import(__e), __e, "ArrayRankSpecifierSyntax.Sizes"); if (__v != null) __r.Sizes.Add(__v); }
+        __r.Sizes.TrailingSeparator = __n.Sizes.Count > 0 && __n.Sizes.SeparatorCount >= __n.Sizes.Count;
         return __r;
     }
 
@@ -390,6 +394,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.AttributeArgumentList();
         foreach (var __e in __n.Arguments) { var __v = As<G.AttributeArgument>(Import(__e), __e, "AttributeArgumentListSyntax.Arguments"); if (__v != null) __r.Arguments.Add(__v); }
+        __r.Arguments.TrailingSeparator = __n.Arguments.Count > 0 && __n.Arguments.SeparatorCount >= __n.Arguments.Count;
         return __r;
     }
 
@@ -407,6 +412,7 @@ public sealed partial class SyntaxImporter : ImporterBase
         var __r = new G.AttributeList();
         __r.Target = As<G.AttributeTargetSpecifier>(Import(__n.Target), __n.Target, "AttributeListSyntax.Target");
         foreach (var __e in __n.Attributes) { var __v = As<G.Attribute>(Import(__e), __e, "AttributeListSyntax.Attributes"); if (__v != null) __r.Attributes.Add(__v); }
+        __r.Attributes.TrailingSeparator = __n.Attributes.Count > 0 && __n.Attributes.SeparatorCount >= __n.Attributes.Count;
         return __r;
     }
 
@@ -449,6 +455,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.BaseList();
         foreach (var __e in __n.Types) { var __v = As<G.IBaseType>(Import(__e), __e, "BaseListSyntax.Types"); if (__v != null) __r.Types.Add(__v); }
+        __r.Types.TrailingSeparator = __n.Types.Count > 0 && __n.Types.SeparatorCount >= __n.Types.Count;
         return __r;
     }
 
@@ -482,6 +489,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.BracketedArgumentList();
         foreach (var __e in __n.Arguments) { var __v = As<G.Argument>(Import(__e), __e, "BracketedArgumentListSyntax.Arguments"); if (__v != null) __r.Arguments.Add(__v); }
+        __r.Arguments.TrailingSeparator = __n.Arguments.Count > 0 && __n.Arguments.SeparatorCount >= __n.Arguments.Count;
         return __r;
     }
 
@@ -489,6 +497,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.BracketedParameterList();
         foreach (var __e in __n.Parameters) { var __v = As<G.Parameter>(Import(__e), __e, "BracketedParameterListSyntax.Parameters"); if (__v != null) __r.Parameters.Add(__v); }
+        __r.Parameters.TrailingSeparator = __n.Parameters.Count > 0 && __n.Parameters.SeparatorCount >= __n.Parameters.Count;
         return __r;
     }
 
@@ -592,6 +601,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.CollectionExpression();
         foreach (var __e in __n.Elements) { var __v = As<G.ICollectionElement>(Import(__e), __e, "CollectionExpressionSyntax.Elements"); if (__v != null) __r.Elements.Add(__v); }
+        __r.Elements.TrailingSeparator = __n.Elements.Count > 0 && __n.Elements.SeparatorCount >= __n.Elements.Count;
         return __r;
     }
 
@@ -694,6 +704,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.CrefBracketedParameterList();
         foreach (var __e in __n.Parameters) { var __v = As<G.CrefParameter>(Import(__e), __e, "CrefBracketedParameterListSyntax.Parameters"); if (__v != null) __r.Parameters.Add(__v); }
+        __r.Parameters.TrailingSeparator = __n.Parameters.Count > 0 && __n.Parameters.SeparatorCount >= __n.Parameters.Count;
         return __r;
     }
 
@@ -701,6 +712,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.CrefParameterList();
         foreach (var __e in __n.Parameters) { var __v = As<G.CrefParameter>(Import(__e), __e, "CrefParameterListSyntax.Parameters"); if (__v != null) __r.Parameters.Add(__v); }
+        __r.Parameters.TrailingSeparator = __n.Parameters.Count > 0 && __n.Parameters.SeparatorCount >= __n.Parameters.Count;
         return __r;
     }
 
@@ -872,6 +884,7 @@ public sealed partial class SyntaxImporter : ImporterBase
         __r.BaseList = As<G.BaseList>(Import(__n.BaseList), __n.BaseList, "EnumDeclarationSyntax.BaseList");
         __r.OpenBraceToken = __n.OpenBraceToken.RawKind != 0;
         foreach (var __e in __n.Members) { var __v = As<G.EnumMemberDeclaration>(Import(__e), __e, "EnumDeclarationSyntax.Members"); if (__v != null) __r.Members.Add(__v); }
+        __r.Members.TrailingSeparator = __n.Members.Count > 0 && __n.Members.SeparatorCount >= __n.Members.Count;
         __r.CloseBraceToken = __n.CloseBraceToken.RawKind != 0;
         __r.SemicolonToken = __n.SemicolonToken.RawKind != 0;
         return __r;
@@ -1030,8 +1043,10 @@ public sealed partial class SyntaxImporter : ImporterBase
         foreach (var __e in __n.AttributeLists) { var __v = As<G.AttributeList>(Import(__e), __e, "ForStatementSyntax.AttributeLists"); if (__v != null) __r.AttributeLists.Add(__v); }
         __r.Declaration = As<G.VariableDeclaration>(Import(__n.Declaration), __n.Declaration, "ForStatementSyntax.Declaration");
         foreach (var __e in __n.Initializers) { var __v = As<G.IExpression>(Import(__e), __e, "ForStatementSyntax.Initializers"); if (__v != null) __r.Initializers.Add(__v); }
+        __r.Initializers.TrailingSeparator = __n.Initializers.Count > 0 && __n.Initializers.SeparatorCount >= __n.Initializers.Count;
         __r.Condition = As<G.IExpression>(Import(__n.Condition), __n.Condition, "ForStatementSyntax.Condition");
         foreach (var __e in __n.Incrementors) { var __v = As<G.IExpression>(Import(__e), __e, "ForStatementSyntax.Incrementors"); if (__v != null) __r.Incrementors.Add(__v); }
+        __r.Incrementors.TrailingSeparator = __n.Incrementors.Count > 0 && __n.Incrementors.SeparatorCount >= __n.Incrementors.Count;
         __r.Statement = As<G.IStatement>(Import(__n.Statement), __n.Statement, "ForStatementSyntax.Statement");
         return __r;
     }
@@ -1057,6 +1072,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.FunctionPointerParameterList();
         foreach (var __e in __n.Parameters) { var __v = As<G.FunctionPointerParameter>(Import(__e), __e, "FunctionPointerParameterListSyntax.Parameters"); if (__v != null) __r.Parameters.Add(__v); }
+        __r.Parameters.TrailingSeparator = __n.Parameters.Count > 0 && __n.Parameters.SeparatorCount >= __n.Parameters.Count;
         return __r;
     }
 
@@ -1081,6 +1097,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.FunctionPointerUnmanagedCallingConventionList();
         foreach (var __e in __n.CallingConventions) { var __v = As<G.FunctionPointerUnmanagedCallingConvention>(Import(__e), __e, "FunctionPointerUnmanagedCallingConventionListSyntax.CallingConventions"); if (__v != null) __r.CallingConventions.Add(__v); }
+        __r.CallingConventions.TrailingSeparator = __n.CallingConventions.Count > 0 && __n.CallingConventions.SeparatorCount >= __n.CallingConventions.Count;
         return __r;
     }
 
@@ -1219,6 +1236,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.InitializerExpression();
         foreach (var __e in __n.Expressions) { var __v = As<G.IExpression>(Import(__e), __e, "InitializerExpressionSyntax.Expressions"); if (__v != null) __r.Expressions.Add(__v); }
+        __r.Expressions.TrailingSeparator = __n.Expressions.Count > 0 && __n.Expressions.SeparatorCount >= __n.Expressions.Count;
         return __r;
     }
 
@@ -1360,6 +1378,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.ListPattern();
         foreach (var __e in __n.Patterns) { var __v = As<G.IPattern>(Import(__e), __e, "ListPatternSyntax.Patterns"); if (__v != null) __r.Patterns.Add(__v); }
+        __r.Patterns.TrailingSeparator = __n.Patterns.Count > 0 && __n.Patterns.SeparatorCount >= __n.Patterns.Count;
         __r.Designation = As<G.IVariableDesignation>(Import(__n.Designation), __n.Designation, "ListPatternSyntax.Designation");
         return __r;
     }
@@ -1554,6 +1573,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.OrderByClause();
         foreach (var __e in __n.Orderings) { var __v = As<G.Ordering>(Import(__e), __e, "OrderByClauseSyntax.Orderings"); if (__v != null) __r.Orderings.Add(__v); }
+        __r.Orderings.TrailingSeparator = __n.Orderings.Count > 0 && __n.Orderings.SeparatorCount >= __n.Orderings.Count;
         return __r;
     }
 
@@ -1569,6 +1589,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.ParameterList();
         foreach (var __e in __n.Parameters) { var __v = As<G.Parameter>(Import(__e), __e, "ParameterListSyntax.Parameters"); if (__v != null) __r.Parameters.Add(__v); }
+        __r.Parameters.TrailingSeparator = __n.Parameters.Count > 0 && __n.Parameters.SeparatorCount >= __n.Parameters.Count;
         return __r;
     }
 
@@ -1613,6 +1634,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.ParenthesizedVariableDesignation();
         foreach (var __e in __n.Variables) { var __v = As<G.IVariableDesignation>(Import(__e), __e, "ParenthesizedVariableDesignationSyntax.Variables"); if (__v != null) __r.Variables.Add(__v); }
+        __r.Variables.TrailingSeparator = __n.Variables.Count > 0 && __n.Variables.SeparatorCount >= __n.Variables.Count;
         return __r;
     }
 
@@ -1627,6 +1649,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.PositionalPatternClause();
         foreach (var __e in __n.Subpatterns) { var __v = As<G.Subpattern>(Import(__e), __e, "PositionalPatternClauseSyntax.Subpatterns"); if (__v != null) __r.Subpatterns.Add(__v); }
+        __r.Subpatterns.TrailingSeparator = __n.Subpatterns.Count > 0 && __n.Subpatterns.SeparatorCount >= __n.Subpatterns.Count;
         return __r;
     }
 
@@ -1652,6 +1675,7 @@ public sealed partial class SyntaxImporter : ImporterBase
         var __r = new G.PragmaWarningDirectiveTrivia();
         __r.DisableOrRestoreKeyword = __n.DisableOrRestoreKeyword.Text;
         foreach (var __e in __n.ErrorCodes) { var __v = As<G.IExpression>(Import(__e), __e, "PragmaWarningDirectiveTriviaSyntax.ErrorCodes"); if (__v != null) __r.ErrorCodes.Add(__v); }
+        __r.ErrorCodes.TrailingSeparator = __n.ErrorCodes.Count > 0 && __n.ErrorCodes.SeparatorCount >= __n.ErrorCodes.Count;
         return __r;
     }
 
@@ -1697,6 +1721,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.PropertyPatternClause();
         foreach (var __e in __n.Subpatterns) { var __v = As<G.Subpattern>(Import(__e), __e, "PropertyPatternClauseSyntax.Subpatterns"); if (__v != null) __r.Subpatterns.Add(__v); }
+        __r.Subpatterns.TrailingSeparator = __n.Subpatterns.Count > 0 && __n.Subpatterns.SeparatorCount >= __n.Subpatterns.Count;
         return __r;
     }
 
@@ -1962,6 +1987,7 @@ public sealed partial class SyntaxImporter : ImporterBase
         var __r = new G.SwitchExpression();
         __r.GoverningExpression = As<G.IExpression>(Import(__n.GoverningExpression), __n.GoverningExpression, "SwitchExpressionSyntax.GoverningExpression");
         foreach (var __e in __n.Arms) { var __v = As<G.SwitchExpressionArm>(Import(__e), __e, "SwitchExpressionSyntax.Arms"); if (__v != null) __r.Arms.Add(__v); }
+        __r.Arms.TrailingSeparator = __n.Arms.Count > 0 && __n.Arms.SeparatorCount >= __n.Arms.Count;
         return __r;
     }
 
@@ -2027,6 +2053,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.TupleExpression();
         foreach (var __e in __n.Arguments) { var __v = As<G.Argument>(Import(__e), __e, "TupleExpressionSyntax.Arguments"); if (__v != null) __r.Arguments.Add(__v); }
+        __r.Arguments.TrailingSeparator = __n.Arguments.Count > 0 && __n.Arguments.SeparatorCount >= __n.Arguments.Count;
         return __r;
     }
 
@@ -2034,6 +2061,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.TupleType();
         foreach (var __e in __n.Elements) { var __v = As<G.TupleElement>(Import(__e), __e, "TupleTypeSyntax.Elements"); if (__v != null) __r.Elements.Add(__v); }
+        __r.Elements.TrailingSeparator = __n.Elements.Count > 0 && __n.Elements.SeparatorCount >= __n.Elements.Count;
         return __r;
     }
 
@@ -2041,6 +2069,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.TypeArgumentList();
         foreach (var __e in __n.Arguments) { var __v = As<G.IType>(Import(__e), __e, "TypeArgumentListSyntax.Arguments"); if (__v != null) __r.Arguments.Add(__v); }
+        __r.Arguments.TrailingSeparator = __n.Arguments.Count > 0 && __n.Arguments.SeparatorCount >= __n.Arguments.Count;
         return __r;
     }
 
@@ -2070,6 +2099,7 @@ public sealed partial class SyntaxImporter : ImporterBase
         var __r = new G.TypeParameterConstraintClause();
         __r.Name = ImportTypeRef(__n.Name, "TypeParameterConstraintClauseSyntax.Name");
         foreach (var __e in __n.Constraints) { var __v = As<G.ITypeParameterConstraint>(Import(__e), __e, "TypeParameterConstraintClauseSyntax.Constraints"); if (__v != null) __r.Constraints.Add(__v); }
+        __r.Constraints.TrailingSeparator = __n.Constraints.Count > 0 && __n.Constraints.SeparatorCount >= __n.Constraints.Count;
         return __r;
     }
 
@@ -2077,6 +2107,7 @@ public sealed partial class SyntaxImporter : ImporterBase
     {
         var __r = new G.TypeParameterList();
         foreach (var __e in __n.Parameters) { var __v = As<G.TypeParameter>(Import(__e), __e, "TypeParameterListSyntax.Parameters"); if (__v != null) __r.Parameters.Add(__v); }
+        __r.Parameters.TrailingSeparator = __n.Parameters.Count > 0 && __n.Parameters.SeparatorCount >= __n.Parameters.Count;
         return __r;
     }
 
@@ -2152,6 +2183,7 @@ public sealed partial class SyntaxImporter : ImporterBase
         var __r = new G.VariableDeclaration();
         __r.Type = ImportTypeRef(__n.Type, "VariableDeclarationSyntax.Type");
         foreach (var __e in __n.Variables) { var __v = As<G.VariableDeclarator>(Import(__e), __e, "VariableDeclarationSyntax.Variables"); if (__v != null) __r.Variables.Add(__v); }
+        __r.Variables.TrailingSeparator = __n.Variables.Count > 0 && __n.Variables.SeparatorCount >= __n.Variables.Count;
         return __r;
     }
 

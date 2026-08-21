@@ -167,14 +167,21 @@ public class ArrayRankTests
     }
 
     /// <summary>
-    /// Nullability applies to the outermost array, which is where it was written before.
+    /// <c>MakeNullable</c> annotates the type it is called on, which for an array is the outermost
+    /// one - so the <c>?</c> comes after the shape, where it was written before.
     /// </summary>
+    /// <remarks>
+    /// The last line used to read <c>int[][]?</c>, which is a different type from the one the call
+    /// asks for: <c>MakeNullable</c> annotated the <c>int</c> and then <c>MakeArray</c> moved that
+    /// annotation onto the array it had just built. An array OF a nullable element now stays one.
+    /// </remarks>
     [Fact]
     public void NullableGoesAfterTheShape()
     {
         Assert.Equal("int[][]?", TypeDefinition.Get(typeof(int[][])).MakeNullable().GetShortName());
         Assert.Equal("int[,]?", TypeDefinition.Get(typeof(int)).MakeArray(2).MakeNullable().GetShortName());
-        Assert.Equal("int[][]?", TypeDefinition.Get(typeof(int)).MakeNullable().MakeArray().MakeArray().GetShortName());
+        Assert.Equal("int?[][]", TypeDefinition.Get(typeof(int)).MakeNullable().MakeArray().MakeArray().GetShortName());
+        Assert.Equal("int?[][]?", TypeDefinition.Get(typeof(int)).MakeNullable().MakeArray().MakeArray().MakeNullable().GetShortName());
     }
 
     /// <summary>

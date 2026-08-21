@@ -29,9 +29,17 @@ public class GenericTypeDefinition : BaseTypeDefinition
         _closingTypes = closingTypes;
     }
 
-    internal GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
-        IReadOnlyList<int>? arrayRanks, bool isNullable, bool isElementNullable, ITypeDefinition? containingType)
-        : base(classType, ns, name, arrayRanks, isNullable, isElementNullable, containingType)
+    /// <summary>
+    /// A closed generic with array specifiers and an annotation for each level, outermost first,
+    /// then one for the element - <c>[1]</c> with <c>[false, true]</c> is <c>Name&lt;T&gt;?[]</c>.
+    /// </summary>
+    /// <remarks>
+    /// Every parameter is required, so this cannot be reached by a call that means the
+    /// <c>bool isNullable</c> overload above.
+    /// </remarks>
+    public GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
+        IReadOnlyList<int>? arrayRanks, IReadOnlyList<bool>? nullableAnnotations, ITypeDefinition? containingType)
+        : base(classType, ns, name, arrayRanks, nullableAnnotations, containingType)
     {
         _closingTypes = closingTypes;
     }
@@ -64,12 +72,7 @@ public class GenericTypeDefinition : BaseTypeDefinition
 
         stringBuilder.Append('>');
 
-        WriteArrayRanks(stringBuilder);
-
-        if (IsNullable)
-        {
-            stringBuilder.Append('?');
-        }
+        WriteArraySuffix(stringBuilder);
 
         return stringBuilder.ToString();
     }
@@ -120,12 +123,7 @@ public class GenericTypeDefinition : BaseTypeDefinition
         // type it was built from, which is the only reading that is a type at all.
         if (_closingTypes.Count == 0)
         {
-            WriteArrayRanks(builder);
-
-            if (IsNullable)
-            {
-                builder.Append('?');
-            }
+            WriteArraySuffix(builder, ArrayRanks, NullableAnnotations);
 
             return;
         }
@@ -150,39 +148,25 @@ public class GenericTypeDefinition : BaseTypeDefinition
 
         builder.Append('>');
 
-        WriteArrayRanks(builder);
-
-        if (IsNullable)
-        {
-            builder.Append("?");
-        }
+        WriteArraySuffix(builder);
     }
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new GenericTypeDefinition(
-            TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, nullable, IsElementNullable, ContainingType);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, AnnotationsWithOuterAnnotation(nullable), ContainingType);
     }
 
     /// <inheritdoc cref="TypeDefinition.MakeArray(int)" />
     public override ITypeDefinition MakeArray(int rank)
     {
-        return new GenericTypeDefinition(
-            TypeDefinitionEnum,
-            Namespace,
-            Name,
-            _closingTypes,
-            ArrayRanksWithOuterRank(rank),
-            IsNullable,
-            IsElementNullable,
-            ContainingType);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanksWithOuterRank(rank), AnnotationsWithOuterLevel(), ContainingType);
     }
 
     public ITypeDefinition MakeOpenType()
     {
         var emptyTypes = _closingTypes.Select(_ => TypeDefinition.Get("", "")).ToArray();
 
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, ArrayRanks, IsNullable, ContainingType);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, ArrayRanks, NullableAnnotations, ContainingType);
     }
         
     public override IReadOnlyList<ITypeDefinition> TypeArguments => _closingTypes;

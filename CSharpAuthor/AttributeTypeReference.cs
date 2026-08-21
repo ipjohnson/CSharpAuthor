@@ -46,6 +46,13 @@ public sealed class AttributeTypeReference : ITypeDefinition
     public IReadOnlyList<int> ArrayRanks => _attributeType.ArrayRanks;
 
     /// <summary>
+    /// Nothing is annotated: an attribute is written <c>[Foo]</c>, never <c>[Foo?]</c>. The list is
+    /// still sized to <see cref="ArrayRanks"/>, which is the contract every reader relies on.
+    /// </summary>
+    public IReadOnlyList<bool> NullableAnnotations =>
+        BaseTypeDefinition.OuterAnnotationOnly(ArrayRanks.Count + 1, false);
+
+    /// <summary>
     /// The declared name, <em>with</em> the postfix. An alias has to name the type that exists.
     /// </summary>
     public string Name => _attributeType.Name;

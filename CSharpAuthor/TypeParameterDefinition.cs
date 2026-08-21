@@ -36,9 +36,21 @@ public class TypeParameterDefinition : ITypeDefinition
         string name, bool isNullable, bool isElementNullable, IReadOnlyList<int>? arrayRanks)
     {
         Name = name;
-        IsNullable = isNullable;
         ArrayRanks = BaseTypeDefinition.NormalizeRanks(arrayRanks);
-        IsElementNullable = isElementNullable && ArrayRanks.Count > 0;
+        NullableAnnotations = BaseTypeDefinition.OuterAnnotationOnly(ArrayRanks.Count + 1, isNullable);
+        IsNullable = isNullable;
+    }
+
+    /// <remarks>
+    /// <c>T?[]</c> is an array of nullable <c>T</c> and <c>T[]?</c> is a nullable array of
+    /// <c>T</c>; a type parameter reaches both the same way a named type does.
+    /// </remarks>
+    internal TypeParameterDefinition(string name, IReadOnlyList<int>? arrayRanks, IReadOnlyList<bool>? nullableAnnotations)
+    {
+        Name = name;
+        ArrayRanks = BaseTypeDefinition.NormalizeRanks(arrayRanks);
+        NullableAnnotations = BaseTypeDefinition.NormalizeAnnotations(nullableAnnotations, ArrayRanks.Count + 1);
+        IsNullable = NullableAnnotations[0];
     }
 
     public string Name { get; }
@@ -51,8 +63,8 @@ public class TypeParameterDefinition : ITypeDefinition
 
     public bool IsArray => ArrayRanks.Count > 0;
 
-    /// <inheritdoc cref="BaseTypeDefinition.IsElementNullable" />
-    public bool IsElementNullable { get; }
+    /// <inheritdoc />
+    public IReadOnlyList<bool> NullableAnnotations { get; }
 
     public IReadOnlyList<int> ArrayRanks { get; }
 
@@ -71,34 +83,14 @@ public class TypeParameterDefinition : ITypeDefinition
         // there is no keyword alias to confuse it with. `class Box<int>` is CS1001.
         builder.Append(CSharpIdentifier.Escape(Name));
 
-        // T?[] is an array of nullable T; T[]? is a nullable array. The ? goes on the side the
-        // caller asked for it.
-        if (IsElementNullable)
-        {
-            builder.Append('?');
-        }
-
-        for (var i = 0; i < ArrayRanks.Count; i++)
-        {
-            builder.Append('[');
-
-            for (var dimension = 1; dimension < ArrayRanks[i]; dimension++)
-            {
-                builder.Append(',');
-            }
-
-            builder.Append(']');
-        }
-
-        if (IsNullable)
-        {
-            builder.Append("?");
-        }
+        // T?[] is an array of nullable T; T[]? is a nullable array. WriteArraySuffix places each
+        // annotation at the level that carries it, so there is nothing to append here.
+        BaseTypeDefinition.WriteArraySuffix(builder, ArrayRanks, NullableAnnotations);
     }
 
     public ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new TypeParameterDefinition(Name, nullable, IsElementNullable, ArrayRanks);
+        return new TypeParameterDefinition(Name, ArrayRanks, BaseTypeDefinition.WithOuterAnnotation(NullableAnnotations, nullable));
     }
 
     public ITypeDefinition MakeArray()
@@ -110,7 +102,9 @@ public class TypeParameterDefinition : ITypeDefinition
     public ITypeDefinition MakeArray(int rank)
     {
         return new TypeParameterDefinition(
-            Name, IsNullable, IsElementNullable, BaseTypeDefinition.WithOuterRank(ArrayRanks, rank));
+            Name,
+            BaseTypeDefinition.WithOuterRank(ArrayRanks, rank),
+            BaseTypeDefinition.WithOuterLevel(NullableAnnotations));
     }
 
     /// <inheritdoc cref="BaseTypeDefinition.TypeKey" />

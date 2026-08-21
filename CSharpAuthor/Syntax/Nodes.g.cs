@@ -201,7 +201,7 @@ public
 #endif
 sealed class AccessorDeclaration : SyntaxNode, ISyntax
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // None
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // None
     public List<string> Modifiers { get; } = new();
     public string Keyword { get; set; } = "";
     public Block? Body { get; set; }
@@ -233,7 +233,7 @@ public
 #endif
 sealed class AccessorList : SyntaxNode, ISyntax
 {
-    public List<AccessorDeclaration> Accessors { get; } = new();  // Line
+    public NodeList<AccessorDeclaration> Accessors { get; } = new();  // Line
     public AccessorList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -278,7 +278,7 @@ public
 #endif
 sealed class AllowsConstraintClause : SyntaxNode, ITypeParameterConstraint
 {
-    public List<IAllowsConstraint> Constraints { get; } = new();  // Comma
+    public NodeList<IAllowsConstraint> Constraints { get; } = new();  // Comma, separated
     public AllowsConstraintClause() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -325,7 +325,7 @@ public
 #endif
 sealed class AnonymousObjectCreationExpression : SyntaxNode, IExpression
 {
-    public List<AnonymousObjectMemberDeclarator> Initializers { get; } = new();  // Comma
+    public NodeList<AnonymousObjectMemberDeclarator> Initializers { get; } = new();  // Comma, separated
     public AnonymousObjectCreationExpression() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -369,7 +369,7 @@ public
 #endif
 sealed class ArgumentList : SyntaxNode, IBaseArgumentList
 {
-    public List<Argument> Arguments { get; } = new();  // Comma
+    public NodeList<Argument> Arguments { get; } = new();  // Comma, separated
     public ArgumentList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -439,7 +439,7 @@ public
 #endif
 sealed class ArrayRankSpecifier : SyntaxNode, ISyntax
 {
-    public List<IExpression> Sizes { get; } = new();  // Comma
+    public NodeList<IExpression> Sizes { get; } = new();  // Comma, separated
     public ArrayRankSpecifier() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -459,7 +459,7 @@ public
 sealed class ArrayType : SyntaxNode, IType
 {
     public TypeRef ElementType { get; set; }
-    public List<ArrayRankSpecifier> RankSpecifiers { get; } = new();  // None
+    public NodeList<ArrayRankSpecifier> RankSpecifiers { get; } = new();  // None
     public ArrayType(TypeRef elementType)
     {
         ElementType = elementType;
@@ -533,7 +533,7 @@ public
 #endif
 sealed class AttributeArgumentList : SyntaxNode, ISyntax
 {
-    public List<AttributeArgument> Arguments { get; } = new();  // Comma
+    public NodeList<AttributeArgument> Arguments { get; } = new();  // Comma, separated
     public AttributeArgumentList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -579,7 +579,7 @@ public
 sealed class AttributeList : SyntaxNode, ISyntax
 {
     public AttributeTargetSpecifier? Target { get; set; }
-    public List<Attribute> Attributes { get; } = new();  // Comma
+    public NodeList<Attribute> Attributes { get; } = new();  // Comma, separated
     public AttributeList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -709,7 +709,7 @@ public
 #endif
 sealed class BaseList : SyntaxNode, ISyntax
 {
-    public List<IBaseType> Types { get; } = new();  // Comma
+    public NodeList<IBaseType> Types { get; } = new();  // Comma, separated
     public BaseList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -783,8 +783,8 @@ public
 #endif
 sealed class Block : SyntaxNode, IStatement, IBlockLike
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
-    public List<IStatement> Statements { get; } = new();  // Line
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<IStatement> Statements { get; } = new();  // Line
     public Block() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -804,7 +804,7 @@ public
 #endif
 sealed class BracketedArgumentList : SyntaxNode, IBaseArgumentList
 {
-    public List<Argument> Arguments { get; } = new();  // Comma
+    public NodeList<Argument> Arguments { get; } = new();  // Comma, separated
     public BracketedArgumentList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -823,7 +823,7 @@ public
 #endif
 sealed class BracketedParameterList : SyntaxNode, IBaseParameterList
 {
-    public List<Parameter> Parameters { get; } = new();  // Comma
+    public NodeList<Parameter> Parameters { get; } = new();  // Comma, separated
     public BracketedParameterList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -842,7 +842,7 @@ public
 #endif
 sealed class BreakStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public TypeRef Name { get; set; }
     public BreakStatement() { }
 
@@ -1045,7 +1045,7 @@ public
 #endif
 sealed class CheckedStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public string Keyword { get; set; } = "";
     public Block? Block { get; set; }
     public CheckedStatement(string keyword, Block block)
@@ -1072,15 +1072,15 @@ public
 #endif
 sealed class ClassDeclaration : SyntaxNode, ITypeDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public string Identifier { get; set; } = "";
     public TypeParameterList? TypeParameterList { get; set; }
     public ParameterList? ParameterList { get; set; }
     public BaseList? BaseList { get; set; }
-    public List<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
+    public NodeList<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
     public bool OpenBraceToken { get; set; } = true;
-    public List<IMemberDeclaration> Members { get; } = new();  // Blank
+    public NodeList<IMemberDeclaration> Members { get; } = new();  // Blank
     public bool CloseBraceToken { get; set; } = true;
     public bool SemicolonToken { get; set; }
     public ClassDeclaration(string identifier)
@@ -1139,7 +1139,7 @@ public
 #endif
 sealed class CollectionExpression : SyntaxNode, IExpression
 {
-    public List<ICollectionElement> Elements { get; } = new();  // Comma
+    public NodeList<ICollectionElement> Elements { get; } = new();  // Comma, separated
     public CollectionExpression() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -1158,10 +1158,10 @@ public
 #endif
 sealed class CompilationUnit : SyntaxNode, ISyntax
 {
-    public List<ExternAliasDirective> Externs { get; } = new();  // UsingBlock
-    public List<UsingDirective> Usings { get; } = new();  // UsingBlock
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
-    public List<IMemberDeclaration> Members { get; } = new();  // Blank
+    public NodeList<ExternAliasDirective> Externs { get; } = new();  // UsingBlock
+    public NodeList<UsingDirective> Usings { get; } = new();  // UsingBlock
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<IMemberDeclaration> Members { get; } = new();  // Blank
     public CompilationUnit() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -1278,7 +1278,7 @@ public
 #endif
 sealed class ConstructorDeclaration : SyntaxNode, IBaseMethodDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public string Identifier { get; set; } = "";
     public ParameterList? ParameterList { get; set; }
@@ -1341,7 +1341,7 @@ public
 #endif
 sealed class ContinueStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public TypeRef Name { get; set; }
     public ContinueStatement() { }
 
@@ -1362,7 +1362,7 @@ public
 #endif
 sealed class ConversionOperatorDeclaration : SyntaxNode, IBaseMethodDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public string ImplicitOrExplicitKeyword { get; set; } = "";
     public ExplicitInterfaceSpecifier? ExplicitInterfaceSpecifier { get; set; }
@@ -1435,7 +1435,7 @@ public
 #endif
 sealed class CrefBracketedParameterList : SyntaxNode, IBaseCrefParameterList
 {
-    public List<CrefParameter> Parameters { get; } = new();  // Comma
+    public NodeList<CrefParameter> Parameters { get; } = new();  // Comma, separated
     public CrefBracketedParameterList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -1454,7 +1454,7 @@ public
 #endif
 sealed class CrefParameterList : SyntaxNode, IBaseCrefParameterList
 {
-    public List<CrefParameter> Parameters { get; } = new();  // Comma
+    public NodeList<CrefParameter> Parameters { get; } = new();  // Comma, separated
     public CrefParameterList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -1632,13 +1632,13 @@ public
 #endif
 sealed class DelegateDeclaration : SyntaxNode, IMemberDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public TypeRef ReturnType { get; set; }
     public string Identifier { get; set; } = "";
     public TypeParameterList? TypeParameterList { get; set; }
     public ParameterList? ParameterList { get; set; }
-    public List<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
+    public NodeList<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
     public DelegateDeclaration(TypeRef returnType, string identifier, ParameterList parameterList)
     {
         ReturnType = returnType;
@@ -1670,7 +1670,7 @@ public
 #endif
 sealed class DestructorDeclaration : SyntaxNode, IBaseMethodDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public string Identifier { get; set; } = "";
     public ParameterList? ParameterList { get; set; }
@@ -1738,7 +1738,7 @@ public
 #endif
 sealed class DoStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public IStatement? Statement { get; set; }
     public IExpression? Condition { get; set; }
     public DoStatement(IStatement statement, IExpression condition)
@@ -1770,7 +1770,7 @@ public
 #endif
 sealed class DocumentationCommentTrivia : SyntaxNode, ISyntax
 {
-    public List<IXmlNode> Content { get; } = new();  // None
+    public NodeList<IXmlNode> Content { get; } = new();  // None
     public DocumentationCommentTrivia() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -1901,7 +1901,7 @@ public
 #endif
 sealed class EmptyStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public EmptyStatement() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -1955,12 +1955,12 @@ public
 #endif
 sealed class EnumDeclaration : SyntaxNode, IBaseTypeDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public string Identifier { get; set; } = "";
     public BaseList? BaseList { get; set; }
     public bool OpenBraceToken { get; set; } = true;
-    public List<EnumMemberDeclaration> Members { get; } = new();  // CommaLine
+    public NodeList<EnumMemberDeclaration> Members { get; } = new();  // CommaLine, separated
     public bool CloseBraceToken { get; set; } = true;
     public bool SemicolonToken { get; set; }
     public EnumDeclaration(string identifier)
@@ -1992,7 +1992,7 @@ public
 #endif
 sealed class EnumMemberDeclaration : SyntaxNode, IMemberDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public string Identifier { get; set; } = "";
     public EqualsValueClause? EqualsValue { get; set; }
@@ -2061,7 +2061,7 @@ public
 #endif
 sealed class EventDeclaration : SyntaxNode, IBasePropertyDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public TypeRef Type { get; set; }
     public ExplicitInterfaceSpecifier? ExplicitInterfaceSpecifier { get; set; }
@@ -2097,7 +2097,7 @@ public
 #endif
 sealed class EventFieldDeclaration : SyntaxNode, IBaseFieldDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public VariableDeclaration? Declaration { get; set; }
     public EventFieldDeclaration(VariableDeclaration declaration)
@@ -2193,7 +2193,7 @@ public
 #endif
 sealed class ExpressionStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public IExpression? Expression { get; set; }
     public ExpressionStatement(IExpression expression)
     {
@@ -2218,13 +2218,13 @@ public
 #endif
 sealed class ExtensionBlockDeclaration : SyntaxNode, ITypeDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public TypeParameterList? TypeParameterList { get; set; }
     public ParameterList? ParameterList { get; set; }
-    public List<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
+    public NodeList<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
     public bool OpenBraceToken { get; set; } = true;
-    public List<IMemberDeclaration> Members { get; } = new();  // Blank
+    public NodeList<IMemberDeclaration> Members { get; } = new();  // Blank
     public bool CloseBraceToken { get; set; } = true;
     public bool SemicolonToken { get; set; }
     public ExtensionBlockDeclaration() { }
@@ -2306,7 +2306,7 @@ public
 #endif
 sealed class FieldDeclaration : SyntaxNode, IBaseFieldDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public VariableDeclaration? Declaration { get; set; }
     public FieldDeclaration(VariableDeclaration declaration)
@@ -2349,12 +2349,12 @@ public
 #endif
 sealed class FileScopedNamespaceDeclaration : SyntaxNode, IBaseNamespaceDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public TypeRef Name { get; set; }
-    public List<ExternAliasDirective> Externs { get; } = new();  // UsingBlock
-    public List<UsingDirective> Usings { get; } = new();  // UsingBlock
-    public List<IMemberDeclaration> Members { get; } = new();  // Blank
+    public NodeList<ExternAliasDirective> Externs { get; } = new();  // UsingBlock
+    public NodeList<UsingDirective> Usings { get; } = new();  // UsingBlock
+    public NodeList<IMemberDeclaration> Members { get; } = new();  // Blank
     public FileScopedNamespaceDeclaration(TypeRef name)
     {
         Name = name;
@@ -2406,7 +2406,7 @@ public
 #endif
 sealed class FixedStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public VariableDeclaration? Declaration { get; set; }
     public IStatement? Statement { get; set; }
     public FixedStatement(VariableDeclaration declaration, IStatement statement)
@@ -2436,7 +2436,7 @@ public
 #endif
 sealed class ForEachStatement : SyntaxNode, ICommonForEachStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public bool AwaitKeyword { get; set; }
     public TypeRef Type { get; set; }
     public string Identifier { get; set; } = "";
@@ -2475,7 +2475,7 @@ public
 #endif
 sealed class ForEachVariableStatement : SyntaxNode, ICommonForEachStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public bool AwaitKeyword { get; set; }
     public IExpression? Variable { get; set; }
     public IExpression? Expression { get; set; }
@@ -2511,11 +2511,11 @@ public
 #endif
 sealed class ForStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public VariableDeclaration? Declaration { get; set; }
-    public List<IExpression> Initializers { get; } = new();  // Comma
+    public NodeList<IExpression> Initializers { get; } = new();  // Comma, separated
     public IExpression? Condition { get; set; }
-    public List<IExpression> Incrementors { get; } = new();  // Comma
+    public NodeList<IExpression> Incrementors { get; } = new();  // Comma, separated
     public IStatement? Statement { get; set; }
     public ForStatement(IStatement statement)
     {
@@ -2601,7 +2601,7 @@ public
 #endif
 sealed class FunctionPointerParameterList : SyntaxNode, ISyntax
 {
-    public List<FunctionPointerParameter> Parameters { get; } = new();  // Comma
+    public NodeList<FunctionPointerParameter> Parameters { get; } = new();  // Comma, separated
     public FunctionPointerParameterList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -2620,7 +2620,7 @@ public
 #endif
 sealed class FunctionPointerParameter : SyntaxNode, IBaseParameter
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // None
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // None
     public List<string> Modifiers { get; } = new();
     public TypeRef Type { get; set; }
     public FunctionPointerParameter(TypeRef type)
@@ -2672,7 +2672,7 @@ public
 #endif
 sealed class FunctionPointerUnmanagedCallingConventionList : SyntaxNode, ISyntax
 {
-    public List<FunctionPointerUnmanagedCallingConvention> CallingConventions { get; } = new();  // Comma
+    public NodeList<FunctionPointerUnmanagedCallingConvention> CallingConventions { get; } = new();  // Comma, separated
     public FunctionPointerUnmanagedCallingConventionList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -2738,7 +2738,7 @@ public
 #endif
 sealed class GlobalStatement : SyntaxNode, IMemberDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public IStatement? Statement { get; set; }
     public GlobalStatement(IStatement statement)
@@ -2764,7 +2764,7 @@ public
 #endif
 sealed class GotoStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public string CaseOrDefaultKeyword { get; set; } = "";
     public IExpression? Expression { get; set; }
     public GotoStatement() { }
@@ -2861,7 +2861,7 @@ public
 #endif
 sealed class IfStatement : SyntaxNode, IStatement, IElseChainable
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public IExpression? Condition { get; set; }
     public IStatement? Statement { get; set; }
     public ElseClause? Else { get; set; }
@@ -3012,7 +3012,7 @@ public
 #endif
 sealed class IncompleteMember : SyntaxNode, IMemberDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public TypeRef Type { get; set; }
     public IncompleteMember() { }
@@ -3033,7 +3033,7 @@ public
 #endif
 sealed class IndexerDeclaration : SyntaxNode, IBasePropertyDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public TypeRef Type { get; set; }
     public ExplicitInterfaceSpecifier? ExplicitInterfaceSpecifier { get; set; }
@@ -3089,7 +3089,7 @@ public
 #endif
 sealed class InitializerExpression : SyntaxNode, IExpression
 {
-    public List<IExpression> Expressions { get; } = new();  // Comma
+    public NodeList<IExpression> Expressions { get; } = new();  // Comma, separated
     public InitializerExpression() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -3108,15 +3108,15 @@ public
 #endif
 sealed class InterfaceDeclaration : SyntaxNode, ITypeDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public string Identifier { get; set; } = "";
     public TypeParameterList? TypeParameterList { get; set; }
     public ParameterList? ParameterList { get; set; }
     public BaseList? BaseList { get; set; }
-    public List<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
+    public NodeList<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
     public bool OpenBraceToken { get; set; } = true;
-    public List<IMemberDeclaration> Members { get; } = new();  // Blank
+    public NodeList<IMemberDeclaration> Members { get; } = new();  // Blank
     public bool CloseBraceToken { get; set; } = true;
     public bool SemicolonToken { get; set; }
     public InterfaceDeclaration(string identifier)
@@ -3152,7 +3152,7 @@ public
 sealed class InterpolatedStringExpression : SyntaxNode, IExpression
 {
     public string StringStartToken { get; set; } = "";
-    public List<IInterpolatedStringContent> Contents { get; } = new();  // None
+    public NodeList<IInterpolatedStringContent> Contents { get; } = new();  // None
     public string StringEndToken { get; set; } = "";
     public InterpolatedStringExpression(string stringStartToken, string stringEndToken)
     {
@@ -3387,7 +3387,7 @@ public
 #endif
 sealed class LabeledStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public string Identifier { get; set; } = "";
     public IStatement? Statement { get; set; }
     public LabeledStatement(string identifier, IStatement statement)
@@ -3531,7 +3531,7 @@ public
 #endif
 sealed class ListPattern : SyntaxNode, IPattern
 {
-    public List<IPattern> Patterns { get; } = new();  // Comma
+    public NodeList<IPattern> Patterns { get; } = new();  // Comma, separated
     public IVariableDesignation? Designation { get; set; }
     public ListPattern() { }
 
@@ -3599,7 +3599,7 @@ public
 #endif
 sealed class LocalDeclarationStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public bool AwaitKeyword { get; set; }
     public bool UsingKeyword { get; set; }
     public List<string> Modifiers { get; } = new();
@@ -3630,13 +3630,13 @@ public
 #endif
 sealed class LocalFunctionStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public TypeRef ReturnType { get; set; }
     public string Identifier { get; set; } = "";
     public TypeParameterList? TypeParameterList { get; set; }
     public ParameterList? ParameterList { get; set; }
-    public List<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
+    public NodeList<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
     public Block? Body { get; set; }
     public ArrowExpressionClause? ExpressionBody { get; set; }
     public bool SemicolonToken { get; set; }
@@ -3672,7 +3672,7 @@ public
 #endif
 sealed class LockStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public IExpression? Expression { get; set; }
     public IStatement? Statement { get; set; }
     public LockStatement(IExpression expression, IStatement statement)
@@ -3778,14 +3778,14 @@ public
 #endif
 sealed class MethodDeclaration : SyntaxNode, IBaseMethodDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public TypeRef ReturnType { get; set; }
     public ExplicitInterfaceSpecifier? ExplicitInterfaceSpecifier { get; set; }
     public string Identifier { get; set; } = "";
     public TypeParameterList? TypeParameterList { get; set; }
     public ParameterList? ParameterList { get; set; }
-    public List<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
+    public NodeList<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
     public Block? Body { get; set; }
     public ArrowExpressionClause? ExpressionBody { get; set; }
     public bool SemicolonToken { get; set; }
@@ -3892,12 +3892,12 @@ public
 #endif
 sealed class NamespaceDeclaration : SyntaxNode, IBaseNamespaceDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public TypeRef Name { get; set; }
-    public List<ExternAliasDirective> Externs { get; } = new();  // UsingBlock
-    public List<UsingDirective> Usings { get; } = new();  // UsingBlock
-    public List<IMemberDeclaration> Members { get; } = new();  // Blank
+    public NodeList<ExternAliasDirective> Externs { get; } = new();  // UsingBlock
+    public NodeList<UsingDirective> Usings { get; } = new();  // UsingBlock
+    public NodeList<IMemberDeclaration> Members { get; } = new();  // Blank
     public bool SemicolonToken { get; set; }
     public NamespaceDeclaration(TypeRef name)
     {
@@ -4032,7 +4032,7 @@ public
 #endif
 sealed class OperatorDeclaration : SyntaxNode, IBaseMethodDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public TypeRef ReturnType { get; set; }
     public ExplicitInterfaceSpecifier? ExplicitInterfaceSpecifier { get; set; }
@@ -4102,7 +4102,7 @@ public
 #endif
 sealed class OrderByClause : SyntaxNode, IQueryClause
 {
-    public List<Ordering> Orderings { get; } = new();  // Comma
+    public NodeList<Ordering> Orderings { get; } = new();  // Comma, separated
     public OrderByClause() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -4144,7 +4144,7 @@ public
 #endif
 sealed class ParameterList : SyntaxNode, IBaseParameterList
 {
-    public List<Parameter> Parameters { get; } = new();  // Comma
+    public NodeList<Parameter> Parameters { get; } = new();  // Comma, separated
     public ParameterList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -4163,7 +4163,7 @@ public
 #endif
 sealed class Parameter : SyntaxNode, IBaseParameter
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // None
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // None
     public List<string> Modifiers { get; } = new();
     public TypeRef Type { get; set; }
     public string Identifier { get; set; } = "";
@@ -4212,7 +4212,7 @@ public
 #endif
 sealed class ParenthesizedLambdaExpression : SyntaxNode, ILambdaExpression
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // None
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // None
     public List<string> Modifiers { get; } = new();
     public TypeRef ReturnType { get; set; }
     public ParameterList? ParameterList { get; set; }
@@ -4269,7 +4269,7 @@ public
 #endif
 sealed class ParenthesizedVariableDesignation : SyntaxNode, IVariableDesignation
 {
-    public List<IVariableDesignation> Variables { get; } = new();  // Comma
+    public NodeList<IVariableDesignation> Variables { get; } = new();  // Comma, separated
     public ParenthesizedVariableDesignation() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -4311,7 +4311,7 @@ public
 #endif
 sealed class PositionalPatternClause : SyntaxNode, ISyntax
 {
-    public List<Subpattern> Subpatterns { get; } = new();  // Comma
+    public NodeList<Subpattern> Subpatterns { get; } = new();  // Comma, separated
     public PositionalPatternClause() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -4388,7 +4388,7 @@ public
 sealed class PragmaWarningDirectiveTrivia : SyntaxNode, IDirectiveTrivia
 {
     public string DisableOrRestoreKeyword { get; set; } = "";
-    public List<IExpression> ErrorCodes { get; } = new();  // Comma
+    public NodeList<IExpression> ErrorCodes { get; } = new();  // Comma, separated
     public PragmaWarningDirectiveTrivia(string disableOrRestoreKeyword)
     {
         DisableOrRestoreKeyword = disableOrRestoreKeyword;
@@ -4487,7 +4487,7 @@ public
 #endif
 sealed class PropertyDeclaration : SyntaxNode, IBasePropertyDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public TypeRef Type { get; set; }
     public ExplicitInterfaceSpecifier? ExplicitInterfaceSpecifier { get; set; }
@@ -4526,7 +4526,7 @@ public
 #endif
 sealed class PropertyPatternClause : SyntaxNode, ISyntax
 {
-    public List<Subpattern> Subpatterns { get; } = new();  // Comma
+    public NodeList<Subpattern> Subpatterns { get; } = new();  // Comma, separated
     public PropertyPatternClause() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -4597,7 +4597,7 @@ public
 #endif
 sealed class QueryBody : SyntaxNode, ISyntax
 {
-    public List<IQueryClause> Clauses { get; } = new();  // Line
+    public NodeList<IQueryClause> Clauses { get; } = new();  // Line
     public ISelectOrGroupClause? SelectOrGroup { get; set; }
     public QueryContinuation? Continuation { get; set; }
     public QueryBody(ISelectOrGroupClause selectOrGroup)
@@ -4694,16 +4694,16 @@ public
 #endif
 sealed class RecordDeclaration : SyntaxNode, ITypeDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public string ClassOrStructKeyword { get; set; } = "";
     public string Identifier { get; set; } = "";
     public TypeParameterList? TypeParameterList { get; set; }
     public ParameterList? ParameterList { get; set; }
     public BaseList? BaseList { get; set; }
-    public List<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
+    public NodeList<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
     public bool OpenBraceToken { get; set; } = true;
-    public List<IMemberDeclaration> Members { get; } = new();  // Blank
+    public NodeList<IMemberDeclaration> Members { get; } = new();  // Blank
     public bool CloseBraceToken { get; set; } = true;
     public bool SemicolonToken { get; set; }
     public RecordDeclaration(string identifier)
@@ -4949,7 +4949,7 @@ public
 #endif
 sealed class ReturnStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public IExpression? Expression { get; set; }
     public ReturnStatement() { }
 
@@ -5056,7 +5056,7 @@ public
 #endif
 sealed class SimpleLambdaExpression : SyntaxNode, ILambdaExpression
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // None
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // None
     public List<string> Modifiers { get; } = new();
     public Parameter? Parameter { get; set; }
     public Block? Block { get; set; }
@@ -5217,15 +5217,15 @@ public
 #endif
 sealed class StructDeclaration : SyntaxNode, ITypeDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public string Identifier { get; set; } = "";
     public TypeParameterList? TypeParameterList { get; set; }
     public ParameterList? ParameterList { get; set; }
     public BaseList? BaseList { get; set; }
-    public List<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
+    public NodeList<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
     public bool OpenBraceToken { get; set; } = true;
-    public List<IMemberDeclaration> Members { get; } = new();  // Blank
+    public NodeList<IMemberDeclaration> Members { get; } = new();  // Blank
     public bool CloseBraceToken { get; set; } = true;
     public bool SemicolonToken { get; set; }
     public StructDeclaration(string identifier)
@@ -5313,7 +5313,7 @@ public
 sealed class SwitchExpression : SyntaxNode, IExpression
 {
     public IExpression? GoverningExpression { get; set; }
-    public List<SwitchExpressionArm> Arms { get; } = new();  // Comma
+    public NodeList<SwitchExpressionArm> Arms { get; } = new();  // Comma, separated
     public SwitchExpression(IExpression governingExpression)
     {
         GoverningExpression = governingExpression;
@@ -5339,8 +5339,8 @@ public
 #endif
 sealed class SwitchSection : SyntaxNode, ISyntax
 {
-    public List<ISwitchLabel> Labels { get; } = new();  // Line
-    public List<IStatement> Statements { get; } = new();  // IndentedLines
+    public NodeList<ISwitchLabel> Labels { get; } = new();  // Line
+    public NodeList<IStatement> Statements { get; } = new();  // IndentedLines
     public SwitchSection() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -5358,11 +5358,11 @@ public
 #endif
 sealed class SwitchStatement : SyntaxNode, IStatement, IBlockLike
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public bool OpenParenToken { get; set; } = true;
     public IExpression? Expression { get; set; }
     public bool CloseParenToken { get; set; } = true;
-    public List<SwitchSection> Sections { get; } = new();  // Line
+    public NodeList<SwitchSection> Sections { get; } = new();  // Line
     public SwitchStatement(IExpression expression)
     {
         Expression = expression;
@@ -5430,7 +5430,7 @@ public
 #endif
 sealed class ThrowStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public IExpression? Expression { get; set; }
     public ThrowStatement() { }
 
@@ -5451,9 +5451,9 @@ public
 #endif
 sealed class TryStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public Block? Block { get; set; }
-    public List<CatchClause> Catches { get; } = new();  // Line
+    public NodeList<CatchClause> Catches { get; } = new();  // Line
     public FinallyClause? Finally { get; set; }
     public TryStatement(Block block)
     {
@@ -5504,7 +5504,7 @@ public
 #endif
 sealed class TupleExpression : SyntaxNode, IExpression
 {
-    public List<Argument> Arguments { get; } = new();  // Comma
+    public NodeList<Argument> Arguments { get; } = new();  // Comma, separated
     public TupleExpression() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -5523,7 +5523,7 @@ public
 #endif
 sealed class TupleType : SyntaxNode, IType
 {
-    public List<TupleElement> Elements { get; } = new();  // Comma
+    public NodeList<TupleElement> Elements { get; } = new();  // Comma, separated
     public TupleType() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -5542,7 +5542,7 @@ public
 #endif
 sealed class TypeArgumentList : SyntaxNode, ISyntax
 {
-    public List<IType> Arguments { get; } = new();  // Comma
+    public NodeList<IType> Arguments { get; } = new();  // Comma, separated
     public TypeArgumentList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -5631,7 +5631,7 @@ public
 sealed class TypeParameterConstraintClause : SyntaxNode, ISyntax
 {
     public TypeRef Name { get; set; }
-    public List<ITypeParameterConstraint> Constraints { get; } = new();  // Comma
+    public NodeList<ITypeParameterConstraint> Constraints { get; } = new();  // Comma, separated
     public TypeParameterConstraintClause(TypeRef name)
     {
         Name = name;
@@ -5656,7 +5656,7 @@ public
 #endif
 sealed class TypeParameterList : SyntaxNode, ISyntax
 {
-    public List<TypeParameter> Parameters { get; } = new();  // Comma
+    public NodeList<TypeParameter> Parameters { get; } = new();  // Comma, separated
     public TypeParameterList() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -5675,7 +5675,7 @@ public
 #endif
 sealed class TypeParameter : SyntaxNode, ISyntax
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // None
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // None
     public string VarianceKeyword { get; set; } = "";
     public string Identifier { get; set; } = "";
     public TypeParameter(string identifier)
@@ -5771,16 +5771,16 @@ public
 #endif
 sealed class UnionDeclaration : SyntaxNode, ITypeDeclaration
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
     public string Keyword { get; set; } = "";
     public string Identifier { get; set; } = "";
     public TypeParameterList? TypeParameterList { get; set; }
     public ParameterList? ParameterList { get; set; }
     public BaseList? BaseList { get; set; }
-    public List<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
+    public NodeList<TypeParameterConstraintClause> ConstraintClauses { get; } = new();  // IndentedLines
     public bool OpenBraceToken { get; set; } = true;
-    public List<IMemberDeclaration> Members { get; } = new();  // Blank
+    public NodeList<IMemberDeclaration> Members { get; } = new();  // Blank
     public bool CloseBraceToken { get; set; } = true;
     public bool SemicolonToken { get; set; }
     public UnionDeclaration(string keyword, string identifier)
@@ -5841,7 +5841,7 @@ public
 #endif
 sealed class UnsafeStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public Block? Block { get; set; }
     public UnsafeStatement(Block block)
     {
@@ -5898,7 +5898,7 @@ public
 #endif
 sealed class UsingStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public bool AwaitKeyword { get; set; }
     public VariableDeclaration? Declaration { get; set; }
     public IExpression? Expression { get; set; }
@@ -5955,7 +5955,7 @@ public
 sealed class VariableDeclaration : SyntaxNode, ISyntax
 {
     public TypeRef Type { get; set; }
-    public List<VariableDeclarator> Variables { get; } = new();  // Comma
+    public NodeList<VariableDeclarator> Variables { get; } = new();  // Comma, separated
     public VariableDeclaration(TypeRef type)
     {
         Type = type;
@@ -6068,7 +6068,7 @@ public
 #endif
 sealed class WhileStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public IExpression? Condition { get; set; }
     public IStatement? Statement { get; set; }
     public WhileStatement(IExpression condition, IStatement statement)
@@ -6242,7 +6242,7 @@ public
 sealed class XmlElementStartTag : SyntaxNode, ISyntax
 {
     public XmlName? Name { get; set; }
-    public List<IXmlAttribute> Attributes { get; } = new();  // None
+    public NodeList<IXmlAttribute> Attributes { get; } = new();  // None
     public XmlElementStartTag(XmlName name)
     {
         Name = name;
@@ -6268,7 +6268,7 @@ public
 sealed class XmlElement : SyntaxNode, IXmlNode
 {
     public XmlElementStartTag? StartTag { get; set; }
-    public List<IXmlNode> Content { get; } = new();  // None
+    public NodeList<IXmlNode> Content { get; } = new();  // None
     public XmlElementEndTag? EndTag { get; set; }
     public XmlElement(XmlElementStartTag startTag, XmlElementEndTag endTag)
     {
@@ -6295,7 +6295,7 @@ public
 sealed class XmlEmptyElement : SyntaxNode, IXmlNode
 {
     public XmlName? Name { get; set; }
-    public List<IXmlAttribute> Attributes { get; } = new();  // None
+    public NodeList<IXmlAttribute> Attributes { get; } = new();  // None
     public XmlEmptyElement(XmlName name)
     {
         Name = name;
@@ -6473,7 +6473,7 @@ public
 #endif
 sealed class YieldStatement : SyntaxNode, IStatement
 {
-    public List<AttributeList> AttributeLists { get; } = new();  // LineEach
+    public NodeList<AttributeList> AttributeLists { get; } = new();  // LineEach
     public string ReturnOrBreakKeyword { get; set; } = "";
     public IExpression? Expression { get; set; }
     public YieldStatement(string returnOrBreakKeyword)

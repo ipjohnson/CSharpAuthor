@@ -278,7 +278,12 @@ sealed class SyntaxWriter
     // -----------------------------------------------------------------------------------
 
     /// <summary>Write a grammar list with the style the generator derived from its element type.</summary>
-    public void List<T>(List<T> items, ListStyle style) where T : ISyntax
+    /// <remarks>
+    /// A separated list may end with a separator - <c>{ 1, 2, }</c> - and that is a token in the
+    /// tree, not a formatting choice, so it is written when the list says it was there. It is
+    /// ignored for a style that has no separator: there is nothing for it to trail.
+    /// </remarks>
+    public void List<T>(NodeList<T> items, ListStyle style) where T : ISyntax
     {
         if (items.Count == 0)
         {
@@ -307,6 +312,11 @@ sealed class SyntaxWriter
             {
                 Break();
             }
+        }
+
+        if (items.TrailingSeparator && (style == ListStyle.Comma || style == ListStyle.CommaLine))
+        {
+            Token(TokenRole.Comma, ",");
         }
 
         if (style == ListStyle.IndentedLines)

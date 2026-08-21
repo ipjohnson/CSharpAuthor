@@ -10,6 +10,13 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     private static readonly IReadOnlyList<int> _notAnArray = new ReadOnlyCollection<int>(Array.Empty<int>());
     private static readonly IReadOnlyList<int> _oneDimensional = new ReadOnlyCollection<int>(new[] { 1 });
 
+    /// <summary>
+    /// The two annotation lists a type that is not an array can have. Almost every type in a
+    /// generator's model is one of these, so they are shared rather than allocated per type.
+    /// </summary>
+    private static readonly IReadOnlyList<bool> _plain = new ReadOnlyCollection<bool>(new[] { false });
+    private static readonly IReadOnlyList<bool> _annotated = new ReadOnlyCollection<bool>(new[] { true });
+
     private int? _hashCode;
     private string? _key;
 
@@ -39,9 +46,27 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     {
         Name = name;
         Namespace = ns;
-        IsNullable = isNullable;
         ArrayRanks = NormalizeRanks(arrayRanks);
-        IsElementNullable = isElementNullable && ArrayRanks.Count > 0;
+        // The 1.x meaning of the flag, kept exactly: it is the type's own annotation, and nothing
+        // inside an array it wraps is annotated.
+        NullableAnnotations = OuterAnnotationOnly(ArrayRanks.Count + 1, isNullable);
+        IsNullable = isNullable;
+        ContainingType = containingType;
+        TypeDefinitionEnum = typeDefinitionEnum;
+    }
+
+    /// <remarks>
+    /// The annotation-carrying constructor. Nullability has a position - <c>int?[]</c> and
+    /// <c>int[]?</c> are different types - so the list says where each <c>?</c> is rather than
+    /// leaving the emitter to put one wherever it writes them.
+    /// </remarks>
+    private protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, IReadOnlyList<bool>? nullableAnnotations, ITypeDefinition? containingType)
+    {
+        Name = name;
+        Namespace = ns;
+        ArrayRanks = NormalizeRanks(arrayRanks);
+        NullableAnnotations = NormalizeAnnotations(nullableAnnotations, ArrayRanks.Count + 1);
+        IsNullable = NullableAnnotations[0];
         ContainingType = containingType;
         TypeDefinitionEnum = typeDefinitionEnum;
     }
@@ -67,6 +92,7 @@ public abstract class BaseTypeDefinition : ITypeDefinition
 
     public TypeDefinitionEnum TypeDefinitionEnum { get; }
 
+    /// <inheritdoc />
     public bool IsNullable { get; }
 
     /// <summary>
@@ -93,6 +119,9 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     /// </para>
     /// </remarks>
     public bool IsElementNullable { get; }
+
+    /// <inheritdoc />
+    public IReadOnlyList<bool> NullableAnnotations { get; }
 
     /// <inheritdoc />
     public IReadOnlyList<int> ArrayRanks { get; }
@@ -178,26 +207,68 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     /// preceded by the element's <c>?</c> where it has one, because <c>string?[]</c> and
     /// <c>string[]?</c> are different types.
     /// </summary>
-    private protected void WriteArrayRanks(StringBuilder builder)
+    private protected void WriteArraySuffix(StringBuilder builder)
     {
-        if (IsElementNullable)
+        WriteArraySuffix(builder, ArrayRanks, NullableAnnotations);
+    }
+
+    /// <summary>
+    /// Ranks <c>[2, 1]</c> with no annotations read as <c>[,][]</c> - outermost first, the order C#
+    /// writes them in.
+    /// </summary>
+    /// <remarks>
+    /// An annotation breaks that run. <c>string[]?[]</c> is an array of nullable arrays: the
+    /// <c>?</c> closes off every specifier to its left before the next one wraps them, so the
+    /// specifiers come out in groups, each group ending at the annotated level that closes it and
+    /// each group written outermost-first within itself. This is the same walk
+    /// <c>CSharpAuthor.Roslyn.ArrayTypeDefinition</c> does over its nested levels; a flat pair of
+    /// lists is the same information in the shape the rest of the model already stores.
+    /// </remarks>
+    internal static void WriteArraySuffix(StringBuilder builder, IReadOnlyList<int> ranks, IReadOnlyList<bool> annotations)
+    {
+        var levels = ranks.Count;
+
+        // The last entry belongs to the element, and the element has already been written.
+        if (annotations.Count > levels && annotations[levels])
         {
             builder.Append('?');
         }
 
-        var ranks = ArrayRanks;
+        var innerEnd = levels - 1;
 
-        for (var i = 0; i < ranks.Count; i++)
+        while (innerEnd >= 0)
         {
-            builder.Append('[');
+            var outerStart = innerEnd;
 
-            for (var dimension = 1; dimension < ranks[i]; dimension++)
+            while (outerStart > 0 && !Annotated(annotations, outerStart))
             {
-                builder.Append(',');
+                outerStart--;
             }
 
-            builder.Append(']');
+            for (var i = outerStart; i <= innerEnd; i++)
+            {
+                builder.Append('[');
+
+                for (var dimension = 1; dimension < ranks[i]; dimension++)
+                {
+                    builder.Append(',');
+                }
+
+                builder.Append(']');
+            }
+
+            if (Annotated(annotations, outerStart))
+            {
+                builder.Append('?');
+            }
+
+            innerEnd = outerStart - 1;
         }
+    }
+
+    private static bool Annotated(IReadOnlyList<bool> annotations, int level)
+    {
+        return level < annotations.Count && annotations[level];
     }
 
     /// <summary>
@@ -249,6 +320,114 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     private protected IReadOnlyList<int> ArrayRanksWithOuterRank(int rank)
     {
         return WithOuterRank(ArrayRanks, rank);
+    }
+
+    /// <summary>
+    /// The annotations for an array built around this type: a new, unannotated level on the
+    /// outside, and everything that was already there one step further in.
+    /// </summary>
+    private protected IReadOnlyList<bool> AnnotationsWithOuterLevel()
+    {
+        return WithOuterLevel(NullableAnnotations);
+    }
+
+    /// <summary>This type's annotations with its own - outermost - flag set to <paramref name="nullable"/>.</summary>
+    private protected IReadOnlyList<bool> AnnotationsWithOuterAnnotation(bool nullable)
+    {
+        return WithOuterAnnotation(NullableAnnotations, nullable);
+    }
+
+    /// <inheritdoc cref="AnnotationsWithOuterLevel" />
+    internal static IReadOnlyList<bool> WithOuterLevel(IReadOnlyList<bool> annotations)
+    {
+        var result = new bool[annotations.Count + 1];
+
+        for (var i = 0; i < annotations.Count; i++)
+        {
+            result[i + 1] = annotations[i];
+        }
+
+        return new ReadOnlyCollection<bool>(result);
+    }
+
+    /// <inheritdoc cref="AnnotationsWithOuterAnnotation" />
+    internal static IReadOnlyList<bool> WithOuterAnnotation(IReadOnlyList<bool> annotations, bool nullable)
+    {
+        if (annotations.Count <= 1)
+        {
+            return nullable ? _annotated : _plain;
+        }
+
+        if (annotations[0] == nullable)
+        {
+            return annotations;
+        }
+
+        var result = new bool[annotations.Count];
+
+        result[0] = nullable;
+
+        for (var i = 1; i < annotations.Count; i++)
+        {
+            result[i] = annotations[i];
+        }
+
+        return new ReadOnlyCollection<bool>(result);
+    }
+
+    /// <summary>
+    /// The 1.x flag read as a list: the type's own annotation, and nothing inside it annotated.
+    /// </summary>
+    internal static IReadOnlyList<bool> OuterAnnotationOnly(int levelCount, bool isNullable)
+    {
+        if (levelCount <= 1)
+        {
+            return isNullable ? _annotated : _plain;
+        }
+
+        var result = new bool[levelCount];
+
+        result[0] = isNullable;
+
+        return new ReadOnlyCollection<bool>(result);
+    }
+
+    /// <summary>
+    /// Takes a copy behind a read-only view, and refuses a list that does not have one flag per
+    /// array level plus one for the element.
+    /// </summary>
+    /// <remarks>
+    /// A wrong length is not recoverable by guessing: padding it would decide, silently, which
+    /// level the caller meant to annotate, and getting that wrong produces a different type that
+    /// still compiles. That is the failure this whole property exists to remove.
+    /// </remarks>
+    internal static IReadOnlyList<bool> NormalizeAnnotations(IReadOnlyList<bool>? nullableAnnotations, int levelCount)
+    {
+        if (nullableAnnotations == null)
+        {
+            return OuterAnnotationOnly(levelCount, false);
+        }
+
+        if (nullableAnnotations.Count != levelCount)
+        {
+            throw new ArgumentException(
+                $"A type with {levelCount - 1} array level(s) has {levelCount} nullable annotations - one per level, outermost first, then one for the element. Got {nullableAnnotations.Count}.",
+                nameof(nullableAnnotations));
+        }
+
+        if (levelCount == 1)
+        {
+            return nullableAnnotations[0] ? _annotated : _plain;
+        }
+
+        var copy = new bool[levelCount];
+
+        for (var i = 0; i < levelCount; i++)
+        {
+            copy[i] = nullableAnnotations[i];
+        }
+
+        return new ReadOnlyCollection<bool>(copy);
     }
 
     /// <inheritdoc cref="ArrayRanksWithOuterRank" />
