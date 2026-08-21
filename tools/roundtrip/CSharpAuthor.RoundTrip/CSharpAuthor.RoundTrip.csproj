@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    V2-HANDOFF.md 9(b) harness - the round-trip fidelity measurement.
+
+    Deliberately NOT in CSharpAuthor.sln, and deliberately NOT under CSharpAuthor/: that
+    project packs `**\*.cs` relative to CSharpAuthor/ and the source-include targets glob
+    `src/**/*.cs`, so anything placed there would ship and be source-compiled into both
+    consumers. This references Roslyn freely precisely because nothing here can reach the
+    library (3: no new dependency in CSharpAuthor.csproj).
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>RoundTrip</RootNamespace>
+    <AssemblyName>CSharpAuthor.RoundTrip</AssemblyName>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!--
+      The generated importer passes possibly-null values into constructors whose parameters
+      the node generator declares non-nullable. That is the measurement, not a bug: a null
+      there is an absent optional child, and it must reach the emitter to be measured.
+    -->
+    <NoWarn>$(NoWarn);RSEXPERIMENTAL005;CS8600;CS8602;CS8603;CS8604;CS8618;CS8625;CS0472;CS8767;CS8769;CS8619;CS8620</NoWarn>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RoslynVersion)' == ''">
+    <RoslynVersion>4.14.0</RoslynVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" />
+  </ItemGroup>
+
+  <!-- Which CSharpAuthor checkout is under measurement. Set by scripts/run-roundtrip.sh. -->
+  <PropertyGroup Condition="'$(CSharpAuthorRepo)' == ''">
+    <CSharpAuthorRepo>$(MSBuildThisFileDirectory)..\..\..</CSharpAuthorRepo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(CSharpAuthorRepo)\CSharpAuthor\CSharpAuthor.csproj" />
+  </ItemGroup>
+
+  <!--
+    The node layer under measurement. While it lives in proto/grammar/ it has to be compiled
+    in here; once the grammar agent promotes it into CSharpAuthor/ the ProjectReference above
+    already carries it and run-roundtrip.sh clears these two properties.
+  -->
+  <PropertyGroup Condition="'$(ProtoNodesFile)' == ''">
+    <ProtoNodesFile>$(CSharpAuthorRepo)\proto\grammar\Nodes.cs</ProtoNodesFile>
+    <ProtoHandFile>$(CSharpAuthorRepo)\proto\grammar\Hand.cs</ProtoHandFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(ProtoNodesFile)' != 'none'">
+    <Compile Include="$(ProtoNodesFile)" Link="Measured\Nodes.cs" />
+    <Compile Include="$(ProtoHandFile)" Link="Measured\Hand.cs" Condition="'$(ProtoHandFile)' != ''" />
+  </ItemGroup>
+
+</Project>

@@ -184,3 +184,6 @@ $RECYCLE.BIN/
 /.vs/Grace/DesignTimeBuild/.dtbcache
 /.vs
 .idea/
+
+# round-trip harness scratch output
+/.runs/

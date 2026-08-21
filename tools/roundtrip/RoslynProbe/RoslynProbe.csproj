@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Prints every concrete *Syntax class the referenced Roslyn actually has. Syntax.xml in
+    proto/grammar/ is newer than the parser package, so some grammar nodes cannot appear in
+    a parsed tree; the importer generator must know which. Answering that by reflection
+    keeps the answer true when the Roslyn version changes.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>RoslynProbe</AssemblyName>
+    <RootNamespace>RoslynProbe</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RoslynVersion)' == ''">
+    <RoslynVersion>4.14.0</RoslynVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(RoslynVersion)" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,173 @@
+================================================================================
+CSharpAuthor 2.0 - round-trip fidelity (V2-HANDOFF.md 9(b))
+================================================================================
+Roslyn                 : Microsoft.CodeAnalysis.CSharp 4.14.0.0 (package 4.14.0)
+Language version       : CSharp13 - the ceiling this parser imposes.
+                         Nothing above C# 13 is validated by this run.
+Preprocessor symbols   : (none)
+Type import            : Model
+Emit mode              : TypeOutputMode.FullName, no using-directive generation
+Equivalence            : SyntaxNode.IsEquivalentTo(topLevel: false) - same kinds,
+                         same shape, same token text; trivia (whitespace, comments,
+                         XML docs, #region/#pragma/#nullable/#if) ignored.
+
+--------------------------------------------------------------------------------
+LAYER PROTO   CORPUS own (CSharpAuthor)
+--------------------------------------------------------------------------------
+  files round-tripping / files attempted : 0 / 76   (0.0%)
+
+  failure histogram - files affected, by node kind, per bucket
+    (a) importer could not build a tree for this node kind   [18 files]
+            17  PredefinedType                             MemberAccessExpressionSyntax.Expression: imported as PredefinedType, field needs IExpression
+             2  GenericName                                BinaryExpressionSyntax.Right: imported as GenericName, field needs IExpression
+    (b) tree built, emitted text does not re-parse   [49 files]
+            48  MethodDeclaration                          CS1597 Semicolon after method or accessor block is not valid
+            41  ConstructorDeclaration                     CS1597 Semicolon after method or accessor block is not valid
+            27  IdentifierName                             CS1519 Invalid token ';' in a member declaration
+    (c) re-parsed tree differs structurally from the original   [9 files]
+             5  InterfaceDeclaration                       7 children in, 8 out (token public token interface token IAttributeAware token { MethodDeclaration MethodDeclaration ... -> token public token interface token IAttributeAware token { MethodDeclaration MethodDeclaration ...)
+             4  UsingDirective                             3 children in, 6 out (token using IdentifierName token ; -> token global token using token static token unsafe IdentifierName token ;)
+             3  EnumDeclaration                            token ',' became '}'
+             1  ClassDeclaration                           27 children in, 28 out (token public token static token class token KeyWords token { PropertyDeclaration ... -> token public token static token class token KeyWords token { PropertyDeclaration ...)
+
+--------------------------------------------------------------------------------
+LAYER PROTO   CORPUS DependencyModules
+--------------------------------------------------------------------------------
+  files round-tripping / files attempted : 0 / 277   (0.0%)
+
+  failure histogram - files affected, by node kind, per bucket
+    (a) importer could not build a tree for this node kind   [65 files]
+            36  PredefinedType                             MemberAccessExpressionSyntax.Expression: imported as PredefinedType, field needs IExpression
+            29  GenericName                                ParameterSyntax.Type: type argument: no ITypeDefinition representation for TupleType
+            12  TupleType                                  ParameterSyntax.Type: no ITypeDefinition representation for TupleType
+             6  QualifiedName                              TypeOfExpressionSyntax.Type: type argument: no ITypeDefinition representation for OmittedTypeArgument
+             3  ArrayType                                  BinaryExpressionSyntax.Right: imported as ArrayType, field needs IExpression
+             1  AliasQualifiedName                         MemberAccessExpressionSyntax.Expression: imported as AliasQualifiedName, field needs IExpression
+             1  NullableType                               MethodDeclarationSyntax.ReturnType: type argument: no ITypeDefinition representation for TupleType
+    (b) tree built, emitted text does not re-parse   [141 files]
+           123  MethodDeclaration                          CS1597 Semicolon after method or accessor block is not valid
+            24  ConstructorDeclaration                     CS1597 Semicolon after method or accessor block is not valid
+            11  IdentifierName                             CS1519 Invalid token ';' in a member declaration
+             5  TupleType                                  CS1519 Invalid token '(' in a member declaration
+             2  IndexerDeclaration                         CS1597 Semicolon after method or accessor block is not valid
+             1  EqualsValueClause                          CS1001 Identifier expected
+             1  LocalDeclarationStatement                  CS1525 Invalid expression term 'using'
+             1  SetAccessorDeclaration                     CS1597 Semicolon after method or accessor block is not valid
+    (c) re-parsed tree differs structurally from the original   [71 files]
+            51  UsingDirective                             3 children in, 6 out (token using IdentifierName token ; -> token global token using token static token unsafe IdentifierName token ;)
+            47  ClassDeclaration                           6 children in, 7 out (AttributeList token public token class token TestExport token { token } -> AttributeList token public token class token TestExport token { token } ...)
+            27  InterfaceDeclaration                       6 children in, 7 out (token public token interface token IPackagePolicy token { PropertyDeclaration token } -> token public token interface token IPackagePolicy token { PropertyDeclaration token } ...)
+             6  RecordDeclaration                          6 children in, 8 out (AttributeList token public token partial token record token RecordModule token ; -> AttributeList token public token partial token record token RecordModule token { ...)
+             2  LocalDeclarationStatement                  2 children in, 4 out (VariableDeclaration token ; -> token await token using VariableDeclaration token ;)
+             2  StructDeclaration                          10 children in, 11 out (token public token readonly token struct token CallerInfo ParameterList token { ... -> token public token readonly token struct token CallerInfo ParameterList token { ...)
+             1  EnumDeclaration                            token ',' became '}'
+
+--------------------------------------------------------------------------------
+LAYER PROTO   CORPUS Hardened.Framework
+--------------------------------------------------------------------------------
+  files round-tripping / files attempted : 1 / 965   (0.1%)
+
+  failure histogram - files affected, by node kind, per bucket
+    (a) importer could not build a tree for this node kind   [237 files]
+           172  PredefinedType                             MemberAccessExpressionSyntax.Expression: imported as PredefinedType, field needs IExpression
+            64  GenericName                                TypeOfExpressionSyntax.Type: type argument: no ITypeDefinition representation for OmittedTypeArgument
+            29  TupleType                                  MethodDeclarationSyntax.ReturnType: no ITypeDefinition representation for TupleType
+            10  ArrayType                                  ParameterSyntax.Type: no ITypeDefinition representation for TupleType
+             7  QualifiedName                              ObjectCreationExpressionSyntax.Type: qualified name whose left side is not a plain dotted path
+             2  NullableType                               BinaryExpressionSyntax.Right: imported as NullableType, field needs IExpression
+             1  AliasQualifiedName                         MemberAccessExpressionSyntax.Expression: imported as AliasQualifiedName, field needs IExpression
+    (b) tree built, emitted text does not re-parse   [527 files]
+           463  MethodDeclaration                          CS1597 Semicolon after method or accessor block is not valid
+           135  ConstructorDeclaration                     CS1597 Semicolon after method or accessor block is not valid
+            68  IdentifierName                             CS1519 Invalid token ';' in a member declaration
+             5  TupleType                                  CS8124 Tuple must contain at least two elements.
+             4  GetAccessorDeclaration                     CS1597 Semicolon after method or accessor block is not valid
+             3  IndexerDeclaration                         CS1597 Semicolon after method or accessor block is not valid
+             2  EqualsValueClause                          CS1001 Identifier expected
+             2  SetAccessorDeclaration                     CS1597 Semicolon after method or accessor block is not valid
+             1  LocalDeclarationStatement                  CS1525 Invalid expression term 'using'
+             1  ParameterList                              CS1001 Identifier expected
+    (c) re-parsed tree differs structurally from the original   [200 files]
+           125  UsingDirective                             3 children in, 6 out (token using QualifiedName token ; -> token global token using token static token unsafe QualifiedName token ;)
+            88  ClassDeclaration                           9 children in, 10 out (token public token class token ItemResponse token { PropertyDeclaration PropertyDeclaration ... -> token public token class token ItemResponse token { PropertyDeclaration PropertyDeclaration ...)
+            79  InterfaceDeclaration                       8 children in, 9 out (token public token interface token IPipelineHarness BaseList token { PropertyDeclaration ... -> token public token interface token IPipelineHarness BaseList token { PropertyDeclaration ...)
+            13  RecordDeclaration                          5 children in, 7 out (token public token record token Echo ParameterList token ; -> token public token record token Echo ParameterList token { token } ...)
+             8  EnumDeclaration                            token ',' became '}'
+             5  LocalDeclarationStatement                  2 children in, 4 out (VariableDeclaration token ; -> token await token using VariableDeclaration token ;)
+             3  RecordStructDeclaration                    7 children in, 9 out (token public token readonly token record token struct token RateLimitPolicy ParameterList ... -> token public token readonly token record token struct token RateLimitPolicy ParameterList ...)
+
+--------------------------------------------------------------------------------
+LAYER RT   CORPUS own (CSharpAuthor)
+--------------------------------------------------------------------------------
+  files round-tripping / files attempted : 38 / 76   (50.0%)
+  cross-check verdict (same node kinds + same tokens) : 39 / 76   (51.3%)   [1 files IsEquivalentTo rejects and the cross-check does not]
+
+  failure histogram - files affected, by node kind, per bucket
+    (a) importer could not build a tree for this node kind   [1 files]
+             1  GenericName                                TypeOfExpressionSyntax.Type: type argument: no ITypeDefinition representation for OmittedTypeArgument
+    (b) tree built, emitted text does not re-parse   [35 files]
+            35  IdentifierName                             CS1519 Invalid token ';' in a member declaration
+    (c) re-parsed tree differs structurally from the original   [2 files]
+             1  Block                                      node differs though all 3 children are equivalent [token { ReturnStatement token }] IN <{         return new TypeParameterDefinition(Name, nullable,...> OUT <{return new TypeParameterDefinition(Name , nullable , IsArra...>
+             1  EnumDeclaration                            34 children in, 33 out (AttributeList token public token enum token ComponentModifier token { EnumMemberDeclaration ... -> AttributeList token public token enum token ComponentModifier token { EnumMemberDeclaration ...)
+
+--------------------------------------------------------------------------------
+LAYER RT   CORPUS DependencyModules
+--------------------------------------------------------------------------------
+  files round-tripping / files attempted : 201 / 277   (72.6%)
+  cross-check verdict (same node kinds + same tokens) : 203 / 277   (73.3%)   [2 files IsEquivalentTo rejects and the cross-check does not]
+
+  failure histogram - files affected, by node kind, per bucket
+    (a) importer could not build a tree for this node kind   [29 files]
+            18  GenericName                                ParameterSyntax.Type: type argument: no ITypeDefinition representation for TupleType
+            12  TupleType                                  ParameterSyntax.Type: no ITypeDefinition representation for TupleType
+             6  QualifiedName                              TypeOfExpressionSyntax.Type: type argument: no ITypeDefinition representation for OmittedTypeArgument
+             2  ArrayType                                  ParameterSyntax.Type: no ITypeDefinition representation for TupleType
+             1  NullableType                               MethodDeclarationSyntax.ReturnType: type argument: no ITypeDefinition representation for TupleType
+    (b) tree built, emitted text does not re-parse   [22 files]
+            18  IdentifierName                             CS1519 Invalid token ';' in a member declaration
+             5  TupleType                                  CS1519 Invalid token '(' in a member declaration
+             1  EqualsValueClause                          CS1001 Identifier expected
+             1  ParameterList                              CS1001 Identifier expected
+    (c) re-parsed tree differs structurally from the original   [25 files]
+             9  InterpolatedStringText                     token 'Apply' became 'Apply '
+             6  ArrayType                                  became NullableType
+             6  EnumDeclaration                            15 children in, 14 out (token public token enum token LogOutputLevel token { EnumMemberDeclaration token , ... -> token public token enum token LogOutputLevel token { EnumMemberDeclaration token , ...)
+             2  ArrayInitializerExpression                 22 children in, 21 out (token { StringLiteralExpression token , StringLiteralExpression token , StringLiteralExpression ... -> token { StringLiteralExpression token , StringLiteralExpression token , StringLiteralExpression ...)
+             2  Block                                      node differs though all 3 children are equivalent [token { ExpressionStatement token }] IN <{         Assert.That(needsASingleton.SingletonService, Is.N...> OUT <{Assert .That(needsASingleton .SingletonService, Is .Not.Nul...>
+             2  NullableType                               became PredefinedType
+             1  ObjectInitializerExpression                36 children in, 35 out (token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , SimpleAssignmentExpression ... -> token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , SimpleAssignmentExpression ...)
+             1  SwitchExpression                           10 children in, 9 out (SimpleMemberAccessExpression token switch token { SwitchExpressionArm token , SwitchExpressionArm ... -> SimpleMemberAccessExpression token switch token { SwitchExpressionArm token , SwitchExpressionArm ...)
+
+--------------------------------------------------------------------------------
+LAYER RT   CORPUS Hardened.Framework
+--------------------------------------------------------------------------------
+  files round-tripping / files attempted : 677 / 965   (70.2%)
+  cross-check verdict (same node kinds + same tokens) : 702 / 965   (72.7%)   [25 files IsEquivalentTo rejects and the cross-check does not]
+
+  failure histogram - files affected, by node kind, per bucket
+    (a) importer could not build a tree for this node kind   [66 files]
+            30  GenericName                                TypeOfExpressionSyntax.Type: type argument: no ITypeDefinition representation for OmittedTypeArgument
+            29  TupleType                                  MethodDeclarationSyntax.ReturnType: no ITypeDefinition representation for TupleType
+            10  ArrayType                                  ParameterSyntax.Type: no ITypeDefinition representation for TupleType
+             7  QualifiedName                              ObjectCreationExpressionSyntax.Type: qualified name whose left side is not a plain dotted path
+             1  NullableType                               MethodDeclarationSyntax.ReturnType: no ITypeDefinition representation for TupleType
+    (b) tree built, emitted text does not re-parse   [106 files]
+           103  IdentifierName                             CS1519 Invalid token ';' in a member declaration
+            12  TupleType                                  CS1031 Type expected
+             2  MethodDeclaration                          CS1519 Invalid token '}' in a member declaration
+             1  EqualsValueClause                          CS1001 Identifier expected
+             1  ParameterList                              CS1001 Identifier expected
+    (c) re-parsed tree differs structurally from the original   [116 files]
+            70  InterpolatedStringText                     token 'LISTENING ' became 'LISTENING  '
+            28  Block                                      node differs though all 3 children are equivalent [token { ReturnStatement token }] IN <{         return Task.FromResult(new Pet("3", body.Name, bod...> OUT <{return Task .FromResult(new Pet("3", body .Name, body .Tag)...>
+             6  CollectionExpression                       10 children in, 9 out (token [ ExpressionElement token , ExpressionElement token , ExpressionElement ... -> token [ ExpressionElement token , ExpressionElement token , ExpressionElement ...)
+             6  ObjectInitializerExpression                10 children in, 9 out (token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , SimpleAssignmentExpression ... -> token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , SimpleAssignmentExpression ...)
+             5  CollectionInitializerExpression            90 children in, 89 out (token { TypeOfExpression token , TypeOfExpression token , TypeOfExpression ... -> token { TypeOfExpression token , TypeOfExpression token , TypeOfExpression ...)
+             4  SwitchExpression                           34 children in, 33 out (InvocationExpression token switch token { SwitchExpressionArm token , SwitchExpressionArm ... -> InvocationExpression token switch token { SwitchExpressionArm token , SwitchExpressionArm ...)
+             3  EnumDeclaration                            13 children in, 12 out (token public token enum token AuthorizationDecision token { EnumMemberDeclaration token , ... -> token public token enum token AuthorizationDecision token { EnumMemberDeclaration token , ...)
+             2  ArrayType                                  became NullableType
+             2  Parameter                                  2 children in, 1 out (IdentifierName token _ -> token IExecutionContext_)
+             1  ArrayInitializerExpression                 6 children in, 5 out (token { ObjectCreationExpression token , ObjectCreationExpression token , token } -> token { ObjectCreationExpression token , ObjectCreationExpression token })
+             1  LocalDeclarationStatement                  became ExpressionStatement
+

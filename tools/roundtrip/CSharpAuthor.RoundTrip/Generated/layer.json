@@ -1,0 +1,61 @@
+{
+  "protoNamespace": "GeneratedGrammar.Full",
+  "protoNodesFile": "/private/tmp/claude-501/-Users-ianjohnson-CSharpAuthor/0b98eff1-0d08-4592-a92d-022647d37541/scratchpad/work/roundtrip/proto/grammar/Nodes.cs",
+  "syntaxXmlNodes": 250,
+  "nodesJsonNodes": 241,
+  "protoHandWritten": [
+    "BadDirectiveTriviaSyntax",
+    "IdentifierNameSyntax",
+    "InterpolatedStringTextSyntax",
+    "LiteralExpressionSyntax",
+    "OmittedArraySizeExpressionSyntax",
+    "OmittedTypeArgumentSyntax",
+    "XmlProcessingInstructionSyntax",
+    "XmlTextSyntax"
+  ],
+  "nodesJsonDropped": [
+    "AnonymousMethodExpressionSyntax",
+    "ClassDeclarationSyntax",
+    "EnumDeclarationSyntax",
+    "InterfaceDeclarationSyntax",
+    "ParameterSyntax",
+    "SimpleLambdaExpressionSyntax",
+    "StructDeclarationSyntax",
+    "SwitchStatementSyntax",
+    "UnionDeclarationSyntax",
+    "UnsafeExpressionSyntax"
+  ],
+  "nodesJsonDuplicateEntries": [
+    "XmlProcessingInstructionSyntax"
+  ],
+  "nodesJsonNotInSyntaxXml": [
+    "BadNamespaceMemberDeclarationSyntax"
+  ],
+  "nodesJsonOutOfStepWithSyntaxXml": [
+    "TypeArgumentListSyntax.LessThanToken: nodes.json kinds [] vs Syntax.xml ['LessThanToken']",
+    "AssignmentExpressionSyntax.OperatorToken: nodes.json kinds ['EqualsToken', 'PlusEqualsToken', 'MinusEqualsToken', 'AsteriskEqualsToken', 'SlashEqualsToken', 'PercentEqualsToken', 'AmpersandEqualsToken', 'CaretEqualsToken', 'BarEqualsToken', 'LessThanLessThanEqualsToken', 'GreaterThanGreaterThanEqualsToken', 'GreaterThanGreaterThanGreaterThanEqualsToken'] vs Syntax.xml ['EqualsToken', 'PlusEqualsToken', 'MinusEqualsToken', 'AsteriskEqualsToken', 'SlashEqualsToken', 'PercentEqualsToken', 'AmpersandEqualsToken', 'CaretEqualsToken', 'BarEqualsToken', 'LessThanLessThanEqualsToken', 'GreaterThanGreaterThanEqualsToken', 'GreaterThanGreaterThanGreaterThanEqualsToken', 'QuestionQuestionEqualsToken']",
+    "LiteralExpressionSyntax.Token: nodes.json kinds ['ArgListKeyword', 'NumericLiteralToken', 'StringLiteralToken', 'MultiLineRawStringLiteralToken', 'SingleLineRawStringLiteralToken', 'CharacterLiteralToken', 'TrueKeyword', 'FalseKeyword', 'NullKeyword', 'DefaultKeyword'] vs Syntax.xml ['ArgListKeyword', 'NumericLiteralToken', 'StringLiteralToken', 'Utf8StringLiteralToken', 'MultiLineRawStringLiteralToken', 'Utf8MultiLineRawStringLiteralToken', 'SingleLineRawStringLiteralToken', 'Utf8SingleLineRawStringLiteralToken', 'CharacterLiteralToken', 'TrueKeyword', 'FalseKeyword', 'NullKeyword', 'DefaultKeyword']",
+    "WithExpressionSyntax.WithKeyword: nodes.json kinds [] vs Syntax.xml ['WithKeyword']",
+    "PropertyDeclarationSyntax.SemicolonToken: nodes.json kinds [] vs Syntax.xml ['SemicolonToken']",
+    "ArrowExpressionClauseSyntax.ArrowToken: nodes.json kinds [] vs Syntax.xml ['EqualsGreaterThanToken']"
+  ],
+  "unreachableAtThisRoslynVersion": [
+    "ExtensionBlockDeclarationSyntax",
+    "ExtensionMemberCrefSyntax",
+    "UnionDeclarationSyntax",
+    "UnsafeExpressionSyntax",
+    "WithElementSyntax"
+  ],
+  "fieldsAbsentAtThisRoslynVersion": [
+    "BreakStatementSyntax.Name",
+    "ContinueStatementSyntax.Name",
+    "IgnoredDirectiveTriviaSyntax.Content"
+  ],
+  "rtSpacing": "gen_all",
+  "rtDelta": [
+    "every SyntaxToken field carries its source text and is nullable; an absent optional token is null and is not emitted (proto hard-codes single-kind tokens and emits them unconditionally)",
+    "SyntaxList<SyntaxToken> becomes List<string> (proto makes it List<ISyntax>)",
+    "the category interfaces follow Roslyn's real AbstractNode hierarchy, so a type is an expression (proto flattens to 18 sibling interfaces, so it is not)",
+    "all 250 Syntax.xml nodes are generated (proto generates 233)"
+  ]
+}
