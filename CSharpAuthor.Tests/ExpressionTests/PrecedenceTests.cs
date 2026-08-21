@@ -441,6 +441,29 @@ public class PrecedenceTests
     }
 
     [Fact]
+    public void InvokingALambdaThroughACastBracketsBothLayers()
+    {
+        // The form that actually compiles: a lambda literal has no type of its own, so
+        // invoking one means casting it first. Both brackets are load-bearing - the inner
+        // pair because a cast takes a unary operand, the outer because an invocation
+        // target must be a primary.
+        var funcType = TypeDefinition.Get("System", "Func<int, int>");
+        var expression = Ex.Cast(funcType, Ex.Lambda("x", Ex.Id("x"))).Invoke(Ex.Int(3));
+
+        ExAssert.Emits("((Func<int, int>)(x => x))(3)", expression);
+    }
+
+    [Fact]
+    public void ACastOfAnObjectInitializerComposes()
+    {
+        var expression = Ex.Cast(
+            ExAssert.Type("B"),
+            Ex.NewWithInitializer(ExAssert.Type("C"), null, Ex.Assign(Ex.Id("X"), Ex.Int(1))));
+
+        ExAssert.Emits("(B)new C { X = 1 }", expression);
+    }
+
+    [Fact]
     public void ALambdaPassedAsAnArgumentIsBare()
     {
         ExAssert.Emits("a(x => b)", A.Invoke(Ex.Lambda("x", B)));
