@@ -1,4 +1,4 @@
-﻿namespace CSharpAuthor;
+namespace CSharpAuthor;
 
 public class ParameterDefinition : InstanceDefinition
 {
