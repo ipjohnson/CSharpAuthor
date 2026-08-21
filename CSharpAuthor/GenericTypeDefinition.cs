@@ -67,36 +67,13 @@ public class GenericTypeDefinition : BaseTypeDefinition
         return stringBuilder.ToString();
     }
 
+    /// <summary>
+    /// The shared ordering, type arguments included - which is what the two sides used to disagree
+    /// about, because the plain definition does not know they exist.
+    /// </summary>
     public override int CompareTo(ITypeDefinition other)
     {
-        var baseCompare = BaseCompareTo(other);
-
-        if (baseCompare != 0)
-        {
-            return baseCompare;
-        }
-
-        if (other is not GenericTypeDefinition genericTypeDefinition)
-        {
-            return -1;
-        }
-
-        if (genericTypeDefinition._closingTypes.Count != _closingTypes.Count)
-        {
-            return genericTypeDefinition._closingTypes.Count - _closingTypes.Count;
-        }
-
-        for (var i = 0; i < _closingTypes.Count; i++)
-        {
-            var compareValue = _closingTypes[i].CompareTo(genericTypeDefinition._closingTypes[i]);
-
-            if (compareValue != 0)
-            {
-                return compareValue;
-            }
-        }
-
-        return 0;
+        return BaseCompareTo(other);
     }
 
     public override IEnumerable<string> KnownNamespaces

@@ -36,7 +36,7 @@ public class TypeModelContractTests
     /// arguments, so a bare <c>List</c> reports itself equal to <c>List&lt;int&gt;</c>. The generic
     /// side does check, and reports them different. The two answers disagree.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: CompareTo is asymmetric - TypeDefinition('Ns','List').CompareTo(List<int>) is 0 while the reverse is -1, so IComparable's contract is broken and any sort over a mixed list is undefined")]
+    [Fact]
     public void CompareToIsSymmetric()
     {
         var plain = Plain();
@@ -51,7 +51,7 @@ public class TypeModelContractTests
     /// The same disagreement stated the other way: <c>CompareTo</c> says equal, <c>Equals</c> says
     /// not. Whichever is right, a type cannot be both.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: CompareTo returns 0 for a pair that Equals reports as unequal, so the ordering and the equality disagree about the same two values")]
+    [Fact]
     public void CompareToAgreesWithEquals()
     {
         var plain = Plain();
@@ -65,7 +65,7 @@ public class TypeModelContractTests
     /// ordered by anything - and with a different element order the framework is entitled to throw
     /// "IComparer.Compare() method returns inconsistent results" instead.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: sorting a mixed list of ITypeDefinition produces an arbitrary order (T, Ns.List<.int>, Ns.List, .int) because the comparator is not a total order")]
+    [Fact]
     public void SortingProducesAStableOrder()
     {
         var types = new List<ITypeDefinition>

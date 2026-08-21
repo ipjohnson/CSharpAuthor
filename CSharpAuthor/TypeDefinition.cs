@@ -83,6 +83,10 @@ public class TypeDefinition : BaseTypeDefinition
     /// </remarks>
     public override string ToString()
     {
+        // The leading dot on a type with no namespace - `.int` - is part of that shape, and
+        // V1CallShapeTests.ToStringKeepsItsV1Shape pins it inside a generic argument because
+        // Hardened builds a cache key out of it. That leaves adversary #70 open; the hash it
+        // complains about no longer uses this string. See docs/migration-v1-v2.md.
         return $"{Namespace}.{Name}";
     }
 

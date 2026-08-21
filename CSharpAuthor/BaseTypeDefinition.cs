@@ -107,52 +107,13 @@ public abstract class BaseTypeDefinition : ITypeDefinition
         return builder.ToString();
     }
 
+    /// <summary>
+    /// The shared ordering, which every implementation of <see cref="ITypeDefinition"/> answers
+    /// with so that the two directions of a comparison agree. See <see cref="TypeDefinitionOrder"/>.
+    /// </summary>
     protected int BaseCompareTo(ITypeDefinition other)
     {
-        if (ReferenceEquals(null, other))
-        {
-            return 1;
-        }
-
-        if (TypeDefinitionEnum != other.TypeDefinitionEnum)
-        {
-            return TypeDefinitionEnum - other.TypeDefinitionEnum;
-        }
-
-        var nameCompare = string.Compare(Name, other.Name, StringComparison.Ordinal);
-
-        if (nameCompare != 0)
-        {
-            return nameCompare;
-        }
-
-        var namespaceCompare = string.Compare(Namespace, other.Namespace, StringComparison.Ordinal);
-
-        if (namespaceCompare != 0)
-        {
-            return namespaceCompare;
-        }
-
-        var containerCompare = CompareContainingTypes(other);
-
-        if (containerCompare != 0)
-        {
-            return containerCompare;
-        }
-
-        var rankCompare = CompareArrayRanks(other);
-
-        if (rankCompare != 0)
-        {
-            return rankCompare;
-        }
-
-        if (IsNullable != other.IsNullable)
-        {
-            return IsNullable ? 1 : -1;
-        }
-
-        return 0;
+        return TypeDefinitionOrder.Compare(this, other);
     }
 
     /// <summary>

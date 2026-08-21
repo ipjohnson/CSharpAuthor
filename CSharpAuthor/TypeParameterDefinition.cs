@@ -89,39 +89,13 @@ public class TypeParameterDefinition : ITypeDefinition
         return new TypeParameterDefinition(Name, IsNullable, BaseTypeDefinition.WithOuterRank(ArrayRanks, rank));
     }
 
+    /// <summary>
+    /// The shared ordering. Answering -1 to everything that was not another type parameter made
+    /// this smaller than every type and, read the other way, larger than none of them.
+    /// </summary>
     public int CompareTo(ITypeDefinition other)
     {
-        if (other is not TypeParameterDefinition typeParameter)
-        {
-            return -1;
-        }
-
-        var nameCompare = string.Compare(Name, typeParameter.Name, StringComparison.Ordinal);
-
-        if (nameCompare != 0)
-        {
-            return nameCompare;
-        }
-
-        if (ArrayRanks.Count != typeParameter.ArrayRanks.Count)
-        {
-            return ArrayRanks.Count - typeParameter.ArrayRanks.Count;
-        }
-
-        for (var i = 0; i < ArrayRanks.Count; i++)
-        {
-            if (ArrayRanks[i] != typeParameter.ArrayRanks[i])
-            {
-                return ArrayRanks[i] - typeParameter.ArrayRanks[i];
-            }
-        }
-
-        if (IsNullable != typeParameter.IsNullable)
-        {
-            return IsNullable ? 1 : -1;
-        }
-
-        return 0;
+        return TypeDefinitionOrder.Compare(this, other);
     }
 
     /// <summary>
