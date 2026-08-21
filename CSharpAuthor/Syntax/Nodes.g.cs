@@ -2370,7 +2370,7 @@ sealed class FileScopedNamespaceDeclaration : SyntaxNode, IBaseNamespaceDeclarat
         writer.Tokens(Modifiers, TokenRole.Word);
         writer.Token(TokenRole.Word, "namespace");
         writer.Type(Name);
-        writer.Token(TokenRole.SemiSeparator, ";");
+        writer.Token(TokenRole.SemiSection, ";");
         writer.List(Externs, ListStyle.UsingBlock);
         writer.List(Usings, ListStyle.UsingBlock);
         writer.List(Members, ListStyle.Blank);
@@ -2754,7 +2754,7 @@ sealed class GlobalStatement : SyntaxNode, IMemberDeclaration
 
         writer.List(AttributeLists, ListStyle.LineEach);
         writer.Tokens(Modifiers, TokenRole.Word);
-        writer.Embedded(Statement, false);
+        writer.Node(Statement);
     }
 }
 
@@ -5342,7 +5342,7 @@ public
 sealed class SwitchSection : SyntaxNode, ISyntax
 {
     public List<ISwitchLabel> Labels { get; } = new();  // Line
-    public List<IStatement> Statements { get; } = new();  // Line
+    public List<IStatement> Statements { get; } = new();  // IndentedLines
     public SwitchSection() { }
 
     public override void WriteOutput(IOutputContext outputContext)
@@ -5350,7 +5350,7 @@ sealed class SwitchSection : SyntaxNode, ISyntax
         var writer = SyntaxWriter.For(outputContext);
 
         writer.List(Labels, ListStyle.Line);
-        writer.List(Statements, ListStyle.Line);
+        writer.List(Statements, ListStyle.IndentedLines);
     }
 }
 

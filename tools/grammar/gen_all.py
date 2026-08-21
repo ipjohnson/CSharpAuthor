@@ -260,10 +260,18 @@ def token_role(node_name, field, index, flat, node_category, blocks):
     count = len(flat)
     text = TOKENS.get(ks[0]) if len(ks) == 1 else None
 
-    # R8: a semicolon that ends a node terminates a line. One in the middle - the
-    # two in `for (;;)` - is a separator.
+    # R8: a semicolon that ends a node terminates a line.
+    #
+    # One in the middle is either a section header's - `namespace Acme;` before the
+    # file's types - or a genuine separator, and the node's category tells them
+    # apart: only a member or a compilation unit has a body to introduce. Anywhere
+    # else, a mid-node semicolon is one of the two in `for (;;)`.
     if 'SemicolonToken' in ks:
-        return 'SemiTerminator' if index == count - 1 else 'SemiSeparator'
+        if index == count - 1:
+            return 'SemiTerminator'
+        if node_category in ('member', 'container'):
+            return 'SemiSection'
+        return 'SemiSeparator'
 
     if 'OpenBraceToken' in ks:
         return 'OpenBrace' if blocks else 'OpenBraceInline'
@@ -349,7 +357,7 @@ def token_role(node_name, field, index, flat, node_category, blocks):
 # List styles - all derived from the element type and the container's category
 # ---------------------------------------------------------------------------
 
-def list_style(element_type, separated, node_category):
+def list_style(element_type, separated, node_category, container_braced):
     if separated:
         # R12
         if element_type == 'EnumMemberDeclarationSyntax':
@@ -369,7 +377,10 @@ def list_style(element_type, separated, node_category):
     if 'MemberDeclarationSyntax' in c:
         return 'Blank'
     if 'StatementSyntax' in c:
-        return 'Line'
+        # A block's braces already opened a scope, so its statements only need a line
+        # break. A switch section has no braces of its own, so its statements have to
+        # carry the indent themselves.
+        return 'Line' if container_braced else 'IndentedLines'
     if element_type in ('SwitchSectionSyntax', 'CatchClauseSyntax', 'AccessorDeclarationSyntax',
                         'QueryClauseSyntax', 'SwitchLabelSyntax'):
         return 'Line'
@@ -463,6 +474,7 @@ for name in sorted(concrete):
     cat = category(name)
     fs = fields(el)
     blocks = block_braced(name, el)
+    braced = any('OpenBraceToken' in kinds_of(f) for f, _ in fs)
     base = base_of(name)
     parent = iface_for(base)
 
@@ -530,7 +542,7 @@ for name in sorted(concrete):
         if m:
             separated = m.group(1) is not None
             element = m.group(2)
-            style = list_style(element, separated, cat)
+            style = list_style(element, separated, cat, braced)
             elem_iface = iface_for(element)
             stats['lists'] += 1
             props.append(f'    public List<{elem_iface}> {fname} {{ get; }} = new();  // {style}')
@@ -553,8 +565,11 @@ for name in sorted(concrete):
             ctor_params.append(f'{elem_iface} {lo}')
             ctor_assign.append(f'        {fname} = {lo};')
 
-        # R10: a statement in a statement-typed slot is an embedded statement.
-        if ftype == 'StatementSyntax':
+        # R10: a statement in a statement-typed slot is an *embedded* statement - the
+        # body of an `if` or a `while`, which takes its own indented line when it is
+        # not a block. A statement slot on a member declaration is not that: a
+        # top-level statement is the member, and indenting it would be wrong.
+        if ftype == 'StatementSyntax' and cat in ('statement', 'clause'):
             chainable = 'true' if name.endswith('ClauseSyntax') else 'false'
             body.append(f'        writer.Embedded({fname}, {chainable});')
         else:

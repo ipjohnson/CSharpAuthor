@@ -198,6 +198,9 @@ sealed class SyntaxWriter
             case TokenRole.ColonLine:
                 Break();
                 break;
+            case TokenRole.SemiSection:
+                BlankLine();
+                break;
         }
     }
 
@@ -407,6 +410,7 @@ sealed class SyntaxWriter
             case TokenRole.Comma:
             case TokenRole.SemiSeparator:
             case TokenRole.SemiTerminator:
+            case TokenRole.SemiSection:
             case TokenRole.Dot:
             case TokenRole.ColonTight:
             case TokenRole.ColonLine:

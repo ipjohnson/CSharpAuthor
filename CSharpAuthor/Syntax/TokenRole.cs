@@ -76,6 +76,13 @@ enum TokenRole
     /// <summary>A semicolon that is the node's last token. Ends the line.</summary>
     SemiTerminator,
 
+    /// <summary>
+    /// A semicolon that closes a section header rather than a statement - the one in
+    /// <c>namespace Acme;</c>. Ends the line and leaves a blank one after it, because what
+    /// follows is a body, not the next statement.
+    /// </summary>
+    SemiSection,
+
     /// <summary>Member access: <c>.</c> <c>::</c> <c>-&gt;</c> <c>?.</c>. Tight both sides.</summary>
     Dot,
 
