@@ -1,0 +1,171 @@
+CSharpAuthor 2.0 migration patch — DependencyModules
+Generated 2026-08-21 by `git diff` in a clone of github.com/ipjohnson/DependencyModules
+at 642bac3 (Release 1.0.0, #39), and verified with `git apply --check`
+against a pristine clone of the same commit.
+
+Measured against CSharpAuthor `feature/v2` at 4c7dc35.
+
+Measured, 8 test assemblies, both TFMs:
+  1.1.1010 baseline   1,812 passed / 0 failed
+  2.0 unpatched         770 passed / 704 failed, and only 4 assemblies —
+                        SutProject fails to build, so SutProject.Tests and
+                        SutProject.NUnitTests never run at all
+  2.0 with this patch 1,792 passed /  20 failed, every one a snapshot pin:
+                        9 ModuleGenerationSnapshotTests + PublicApiTests.SourceGeneratorApi,
+                        each on net8.0 and net10.0. Justified one by one in
+                        docs/migration-v1-v2.md section 9.6. No snapshot was re-baselined;
+                        UPDATE_SNAPSHOTS was unset for every run.
+
+Every hunk was verified necessary by reverting it alone.
+
+NOTE ON THE VERSION LINE. The <PackageReference> bump to 2.0.0 is included because
+it is part of the migration, but CSharpAuthor 2.0.0 is not published yet, so a
+`dotnet restore` after applying this will fail with NU1102. To exercise the patch
+today, apply it, put the version line back, and point the build at a 2.0 checkout —
+see docs/migration-v1-v2.md section 9.2. Every measurement quoted above was taken
+that way, with the wiring proved on each run.
+
+diff --git a/src/DependencyModules.SourceGenerator.Impl/DecoratorFileWriter.cs b/src/DependencyModules.SourceGenerator.Impl/DecoratorFileWriter.cs
+index 9b80133..a46d351 100644
+--- a/src/DependencyModules.SourceGenerator.Impl/DecoratorFileWriter.cs
++++ b/src/DependencyModules.SourceGenerator.Impl/DecoratorFileWriter.cs
+@@ -28,6 +28,11 @@ public class DecoratorFileWriter {
+ 
+         var csharpFile = new CSharpFileDefinition(entryPointModel.EntryPointType.Namespace);
+ 
++        // GetRequiredService/GetRequiredKeyedService/GetService<T> are extension methods, and an
++        // extension method is reachable only through a using of its namespace - global:: cannot
++        // name one.
++        csharpFile.AddUsingNamespace(KnownTypes.Microsoft.DependencyInjection.Namespace);
++
+         var classDefinition = csharpFile.AddClass(entryPointModel.EntryPointType.Name);
+         classDefinition.Modifiers |= ComponentModifier.Partial;
+ 
+diff --git a/src/DependencyModules.SourceGenerator.Impl/DependencyFileWriter.cs b/src/DependencyModules.SourceGenerator.Impl/DependencyFileWriter.cs
+index cc5b72f..59e4f70 100644
+--- a/src/DependencyModules.SourceGenerator.Impl/DependencyFileWriter.cs
++++ b/src/DependencyModules.SourceGenerator.Impl/DependencyFileWriter.cs
+@@ -43,6 +43,11 @@ public class DependencyFileWriter {
+ 
+         var csharpFile = new CSharpFileDefinition(entryPointModel.EntryPointType.Namespace);
+ 
++        // An extension method is reachable only through a using of its namespace - global:: cannot
++        // name one - so the registration calls need this directive even though every type in the
++        // file is written fully qualified.
++        csharpFile.AddUsingNamespace(KnownTypes.Microsoft.DependencyInjection.Namespace);
++
+         GenerateClass(entryPointModel, configurationModel, serviceModels, csharpFile, uniqueId);
+ 
+         var output = new OutputContext(
+@@ -293,13 +298,16 @@ public class DependencyFileWriter {
+ 
+         switch (registrationModel.Lifestyle) {
+             case ServiceLifestyle.Transient:
+-                parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Transient"));
++                parameters.Add(CodeOutputComponent.Get(
++                    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Transient"));
+                 break;
+             case ServiceLifestyle.Scoped:
+-                parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Scoped"));
++                parameters.Add(CodeOutputComponent.Get(
++                    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Scoped"));
+                 break;
+             case ServiceLifestyle.Singleton:
+-                parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Singleton"));
++                parameters.Add(CodeOutputComponent.Get(
++                    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Singleton"));
+                 break;
+             default:
+                 throw new ArgumentOutOfRangeException();
+@@ -372,13 +380,16 @@ public class DependencyFileWriter {
+ 
+         switch (registrationModel.Lifestyle) {
+             case ServiceLifestyle.Transient:
+-                parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Transient"));
++                parameters.Add(CodeOutputComponent.Get(
++                    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Transient"));
+                 break;
+             case ServiceLifestyle.Scoped:
+-                parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Scoped"));
++                parameters.Add(CodeOutputComponent.Get(
++                    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Scoped"));
+                 break;
+             case ServiceLifestyle.Singleton:
+-                parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Singleton"));
++                parameters.Add(CodeOutputComponent.Get(
++                    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Singleton"));
+                 break;
+             default:
+                 throw new ArgumentOutOfRangeException();
+diff --git a/src/DependencyModules.SourceGenerator.Impl/DependencyModules.SourceGenerator.Impl.csproj b/src/DependencyModules.SourceGenerator.Impl/DependencyModules.SourceGenerator.Impl.csproj
+index 34e7c57..68b25b7 100644
+--- a/src/DependencyModules.SourceGenerator.Impl/DependencyModules.SourceGenerator.Impl.csproj
++++ b/src/DependencyModules.SourceGenerator.Impl/DependencyModules.SourceGenerator.Impl.csproj
+@@ -65,7 +65,7 @@
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+         </PackageReference>
+-        <PackageReference Include="CSharpAuthor" Version="1.1.1010">
++        <PackageReference Include="CSharpAuthor" Version="2.0.0">
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>build</IncludeAssets>
+         </PackageReference>
+diff --git a/src/DependencyModules.SourceGenerator.Impl/InterceptorRegistrationWriter.cs b/src/DependencyModules.SourceGenerator.Impl/InterceptorRegistrationWriter.cs
+index 0e86219..1aa0540 100644
+--- a/src/DependencyModules.SourceGenerator.Impl/InterceptorRegistrationWriter.cs
++++ b/src/DependencyModules.SourceGenerator.Impl/InterceptorRegistrationWriter.cs
+@@ -18,6 +18,10 @@ public class InterceptorRegistrationWriter {
+ 
+         var csharpFile = new CSharpFileDefinition(entryPointModel.EntryPointType.Namespace);
+ 
++        // GetRequiredService is an extension method, and an extension method is reachable only
++        // through a using of its namespace - global:: cannot name one.
++        csharpFile.AddUsingNamespace(KnownTypes.Microsoft.DependencyInjection.Namespace);
++
+         var classDefinition = csharpFile.AddClass(entryPointModel.EntryPointType.Name);
+         classDefinition.Modifiers |= ComponentModifier.Partial;
+ 
+diff --git a/src/DependencyModules.SourceGenerator.Impl/KnownTypes.cs b/src/DependencyModules.SourceGenerator.Impl/KnownTypes.cs
+index 36358c1..49780e7 100644
+--- a/src/DependencyModules.SourceGenerator.Impl/KnownTypes.cs
++++ b/src/DependencyModules.SourceGenerator.Impl/KnownTypes.cs
+@@ -17,6 +17,13 @@ public static class KnownTypes {
+             
+             public static readonly ITypeDefinition ServiceDescriptor = 
+                 TypeDefinition.Get(TypeDefinitionEnum.ClassDefinition, Namespace, "ServiceDescriptor");
++
++            /// <summary>
++            /// Handed to the writer as a type rather than written as the string "ServiceLifetime",
++            /// so the name is qualified in a file that qualifies and counted in the using list.
++            /// </summary>
++            public static readonly ITypeDefinition ServiceLifetime =
++                TypeDefinition.Get(TypeDefinitionEnum.EnumDefinition, Namespace, "ServiceLifetime");
+             
+             public static readonly ITypeDefinition FromKeyedServicesAttribute =
+                 TypeDefinition.Get(TypeDefinitionEnum.ClassDefinition, Namespace, "FromKeyedServicesAttribute");
+diff --git a/src/DependencyModules.SourceGenerator.Impl/Models/AttributeModel.cs b/src/DependencyModules.SourceGenerator.Impl/Models/AttributeModel.cs
+index 38cdd72..6d6ec55 100644
+--- a/src/DependencyModules.SourceGenerator.Impl/Models/AttributeModel.cs
++++ b/src/DependencyModules.SourceGenerator.Impl/Models/AttributeModel.cs
+@@ -57,7 +57,7 @@ public record AttributeModel(
+ 
+                 foreach (var objectValue in arrayValue) {
+                     if (objectValue is string stringValue) {
+-                        collectionSyntax.Add(SyntaxHelpers.QuoteString(stringValue));
++                        collectionSyntax.Add(stringValue);
+                     }
+                     else if (argument.Value is ITypeDefinition typeDefinition) {
+                         outputComponent = SyntaxHelpers.TypeOf(typeDefinition);
+diff --git a/src/DependencyModules.SourceGenerator/DependencyModules.SourceGenerator.csproj b/src/DependencyModules.SourceGenerator/DependencyModules.SourceGenerator.csproj
+index 3805258..a4456dd 100644
+--- a/src/DependencyModules.SourceGenerator/DependencyModules.SourceGenerator.csproj
++++ b/src/DependencyModules.SourceGenerator/DependencyModules.SourceGenerator.csproj
+@@ -39,7 +39,7 @@
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+         </PackageReference>
+-        <PackageReference Include="CSharpAuthor" Version="1.1.1010">
++        <PackageReference Include="CSharpAuthor" Version="2.0.0">
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>build</IncludeAssets>
+         </PackageReference>

@@ -8,29 +8,132 @@
 		<PackageId>CSharpAuthor</PackageId>
 
 		<!--
-		  The floor a local pack uses. The published version comes from the release tag, which the
-		  workflow passes as -p:Version - so this is what `dotnet pack` produces on a developer
-		  machine and never what reaches nuget.org.
+			The 2.0 line. VersionSuffix is what makes a build a prerelease; clear it to cut the
+			final. A release build overrides both from the tag.
 		-->
-		<VersionPrefix>1.2.0</VersionPrefix>
+		<VersionPrefix>2.0.0</VersionPrefix>
+		<VersionSuffix>preview1000</VersionSuffix>
 		<Authors>Ian Johnson</Authors>
 		<PackageTags>source code generation</PackageTags>
 		<PackageProjectUrl>https://github.com/ipjohnson/CSharpAuthor</PackageProjectUrl>
-		<PackageLicenseUrl>https://github.com/ipjohnson/CSharpAuthor/blob/main/LICENSE</PackageLicenseUrl>
+		<!-- PackageLicenseUrl is deprecated (NU5125); the expression is what nuget.org renders. -->
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<!-- Without this, nuget.org shows no readme at all - the first thing a prospective user sees. -->
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/ipjohnson/CSharpAuthor</RepositoryUrl>
+
+		<!--
+			CSharpAuthor.Syntax - the ~250 generated grammar nodes and the writer that
+			spaces them - is public in the assembly and internal everywhere else.
+
+			The types carry `#if CSHARPAUTHOR_PUBLIC_SYNTAX / public / #endif`. Only this
+			project defines the symbol, so a binary reference to CSharpAuthor.dll gets a
+			usable grammar API, while *any* form of source inclusion - the package's own
+			build/CSharpAuthor.targets, or a consumer that simply globs these .cs files -
+			leaves them at C#'s default accessibility for a top-level type, which is
+			internal. (V2-HANDOFF.md 3.)
+
+			The polarity matters. Defining the symbol only in the assembly build means a
+			source-including host that has never heard of it still gets the safe answer;
+			the opposite arrangement would leak 250 types into that host's public API the
+			moment anyone wired the source in by hand, which is exactly how it is wired in
+			practice.
+		-->
+		<!--
+			CSHARPAUTHOR_PUBLIC_API does for the hand-written Profiles, Expressions and Collections
+			namespaces what CSHARPAUTHOR_PUBLIC_SYNTAX does for the generated nodes: they are public
+			in this assembly, and internal in a consumer that source-includes the library.
+
+			Without it a consumer takes 47 CSharpAuthor types into its OWN published API surface and
+			has to support them forever. Internal costs that consumer nothing - under source inclusion
+			internal means internal to their assembly, so their code still uses EmitProfile and Ex
+			freely; it only stops those types leaking outward.
+
+			The core CSharpAuthor namespace is deliberately NOT guarded: 1.x already published it
+			into every source-including consumer, and hiding it now would be the breaking change.
+		-->
+		<DefineConstants>$(DefineConstants);CSHARPAUTHOR_PUBLIC_SYNTAX;CSHARPAUTHOR_PUBLIC_API</DefineConstants>
+
+		<!--
+			The XML documentation file is the input to the generated API reference on the
+			documentation site (docfx/docfx.json reads bin/$(Configuration)/netstandard2.0/CSharpAuthor.xml
+			via its `src` metadata entry). Without it DocFX emits a member list with no prose.
+
+			CS1591 - "missing XML comment for publicly visible type or member" - is suppressed,
+			and the suppression is not cosmetic. Measured on this branch: turning
+			GenerateDocumentationFile on without it produces 3,916 CS1591 warnings from this
+			project alone, because only a minority of the public surface is documented so far.
+
+			The number matters more than it looks, because of how this library is consumed.
+			CSharpAuthor is source-included: build/CSharpAuthor.targets compiles src/**/*.cs
+			straight into the consumer's assembly (V2-HANDOFF.md 3), and NoWarn set here does
+			*not* travel with those files - the consumer's own compilation settings decide. A
+			consumer that generates its own documentation file and escalates warnings to errors
+			(Hardened.Framework does the latter under ContinuousIntegrationBuild) would take
+			those 3,916 warnings as build errors in code it did not write.
+
+			Neither consumer suite hits that combination today, and this change was verified not
+			to move either of them. But the way to keep it that way is for the count to stay at
+			zero-visible here, so nobody has to discover it downstream. A source-including
+			consumer that does want a documentation file of its own suppresses CS1591 in its own
+			csproj; that is documented in docfx/docs/source-generators.md.
+
+			Only CS1591 is suppressed. The remaining doc diagnostics - CS1574/CS0419 on crefs -
+			are genuine defects in individual comments, few enough to fix, and are deliberately
+			left visible rather than silenced.
+		-->
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<NoWarn>$(NoWarn);CS1591</NoWarn>
 	</PropertyGroup>
 
+	<!--
+		The Roslyn bridge is source that this library does not compile. It is written against
+		Microsoft.CodeAnalysis, and this project deliberately has no reference to it: a netstandard2.0
+		library that takes a Roslyn dependency imposes it on everyone, and the bridge is only useful
+		inside a project that already has one. It is removed from the compile here and packed to its
+		own folder, so it reaches a consumer only through the opt-in in CSharpAuthor.targets.
+	-->
 	<ItemGroup>
+		<Compile Remove="Roslyn\**\*.cs" />
+		<None Remove="Roslyn\**\*.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Test-only. An MSBuild item rather than a source attribute, so it is generated into obj/
+		     and is not one of the .cs files a consumer source-includes. -->
+		<InternalsVisibleTo Include="CSharpAuthor.Tests" />
+		<!--
+		  The Roslyn bridge is source only. It extends EmitProfile as a partial and names Roslyn
+		  types, so it cannot be compiled into this assembly: netstandard2.0 with no Roslyn
+		  reference is the whole reason a generator can use this library without dependency grief.
+		  It ships in the same package, in its own folder, gated on its own property.
+		-->
+		<Compile Remove="Roslyn\**\*.cs" />
+		<None Include="Roslyn\**\*.cs" Visible="true" Pack="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath="\" Visible="false" />
 		<None Remove="Package\CSharpAuthor.*" />
 		<Content Include="Package\CSharpAuthor.*">
 			<Pack>true</Pack>
 			<PackagePath>build\</PackagePath>
 			<PackageCopyToOutput>true</PackageCopyToOutput>
 		</Content>
-		<Content Include="**\*.cs" Exclude="**\obj\**;**\bin\**" Visible="true">
+		<!--
+			Roslyn\** is excluded here as well as from the compile. This glob is what
+			PackageCSharpAuthorIncludeSource compiles into the consumer, so a Roslyn-dependent file
+			left in it would be compiled into every consumer that asked only for the source.
+		-->
+		<Content Include="**\*.cs" Exclude="**\obj\**;**\bin\**;Roslyn\**\*.cs" Visible="true">
 			<Pack>true</Pack>
 			<PackagePath>src\CSharpAuthor\</PackagePath>
+			<PackageCopyToOutput>true</PackageCopyToOutput>
+		</Content>
+		<Content Include="Roslyn\**\*.cs" Exclude="**\obj\**;**\bin\**" Visible="true">
+			<Pack>true</Pack>
+			<PackagePath>srcRoslyn\CSharpAuthor.Roslyn\</PackagePath>
 			<PackageCopyToOutput>true</PackageCopyToOutput>
 		</Content>
 	</ItemGroup>

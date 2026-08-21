@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace CSharpAuthor;
 
@@ -13,6 +13,11 @@ namespace CSharpAuthor;
 /// </remarks>
 public class EventDefinition : BaseOutputComponent, INamedComponent
 {
+    /// <summary>
+    /// An event of <paramref name="handlerType"/> named <paramref name="name"/>. Prefer
+    /// <see cref="ClassDefinition.AddEvent(ITypeDefinition, string)"/>, which builds one and
+    /// attaches it.
+    /// </summary>
     public EventDefinition(ITypeDefinition handlerType, string name)
     {
         HandlerType = handlerType;
@@ -22,6 +27,7 @@ public class EventDefinition : BaseOutputComponent, INamedComponent
         Remove = new PropertyMethodDefinition();
     }
 
+    /// <summary>The declared name, escaped with <c>@</c> if it is a keyword.</summary>
     public string Name { get; }
 
     /// <summary>
@@ -29,14 +35,20 @@ public class EventDefinition : BaseOutputComponent, INamedComponent
     /// </summary>
     public ITypeDefinition HandlerType { get; }
 
+    /// <summary>
+    /// The <c>add</c> accessor. Giving it statements is what turns the field-like declaration into
+    /// an accessor pair.
+    /// </summary>
     public PropertyMethodDefinition Add { get; }
 
+    /// <summary>
+    /// The <c>remove</c> accessor. C# requires both accessors or neither, so giving statements to
+    /// one means giving them to the other.
+    /// </summary>
     public PropertyMethodDefinition Remove { get; }
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.AddImportNamespace(HandlerType);
-
         var accessModifier = GetAccessModifier(KeyWords.Public);
 
         outputContext.WriteIndent();
@@ -47,26 +59,13 @@ public class EventDefinition : BaseOutputComponent, INamedComponent
             outputContext.WriteSpace();
         }
 
-        if ((Modifiers & ComponentModifier.Static) == ComponentModifier.Static)
-        {
-            outputContext.Write(KeyWords.Static);
-            outputContext.WriteSpace();
-        }
-        else if ((Modifiers & ComponentModifier.Virtual) == ComponentModifier.Virtual)
-        {
-            outputContext.Write(KeyWords.Virtual);
-            outputContext.WriteSpace();
-        }
-        else if ((Modifiers & ComponentModifier.Override) == ComponentModifier.Override)
-        {
-            outputContext.Write(KeyWords.Override);
-            outputContext.WriteSpace();
-        }
+        outputContext.Write(
+            Modifiers.GetModifierKeywords(ComponentModifierExtensions.PropertyModifiers));
 
         outputContext.Write("event ");
         outputContext.Write(HandlerType);
         outputContext.WriteSpace();
-        outputContext.Write(Name);
+        outputContext.Write(CSharpIdentifier.Escape(Name));
 
         // Without a body on either accessor this is a field-like event, which is the shape almost
         // every event is declared in.

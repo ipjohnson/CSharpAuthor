@@ -1,0 +1,102 @@
+================================================================================
+CSharpAuthor 2.0 - round-trip fidelity (V2-HANDOFF.md 9(b))
+================================================================================
+Roslyn                 : Microsoft.CodeAnalysis.CSharp 4.14.0.0 (package 4.14.0)
+Language version       : CSharp13 - the ceiling this parser imposes.
+                         Nothing above C# 13 is validated by this run.
+Preprocessor symbols   : (none)
+Type import            : Auto
+Emit mode              : TypeOutputMode.FullName, no using-directive generation
+Equivalence            : SyntaxNode.IsEquivalentTo(topLevel: false) - same kinds,
+                         same shape, same token text; trivia (whitespace, comments,
+                         XML docs, #region/#pragma/#nullable/#if) ignored.
+
+--------------------------------------------------------------------------------
+LAYER SYNTAX   CORPUS own (CSharpAuthor)
+--------------------------------------------------------------------------------
+  files round-tripping / files attempted : 101 / 117   (86.3%)
+  cross-check verdict (same node kinds + same tokens) : 104 / 117   (88.9%)   [3 files IsEquivalentTo rejects and the cross-check does not]
+
+  failure histogram - files affected, by node kind, per bucket
+    (a) importer could not build a tree for this node kind   [0 files]
+        (none)
+    (b) tree built, emitted text does not re-parse   [0 files]
+        (none)
+    (c) re-parsed tree differs structurally from the original   [16 files]
+             5  EnumDeclaration                            9 children in, 8 out (token public token enum token BraceStyle token { EnumMemberDeclaration token , ... -> token public token enum token BraceStyle token { EnumMemberDeclaration token , ...)
+             4  ArrayType                                  became NullableType
+             4  CollectionInitializerExpression            156 children in, 155 out (token { StringLiteralExpression token , StringLiteralExpression token , StringLiteralExpression ... -> token { StringLiteralExpression token , StringLiteralExpression token , StringLiteralExpression ...)
+             3  UsingDirective                             node differs though all 3 children are equivalent (one-element list representation) [token using QualifiedName token ;] IN <using System.Collections.Generic;>
+             2  FileScopedNamespaceDeclaration             node differs though all 4 children are equivalent (one-element list representation) [token namespace QualifiedName token ; ClassDeclaration] IN <namespace CSharpAuthor.Syntax;  /// <summary> /// The base o...>
+             1  ArrayInitializerExpression                 18 children in, 17 out (token { TupleExpression token , TupleExpression token , TupleExpression ... -> token { TupleExpression token , TupleExpression token , TupleExpression ...)
+             1  Block                                      node differs though all 3 children are equivalent (one-element list representation) [token { ReturnStatement token }] IN <{         return new KeyValuePair<ITypeDefinition, string>(t...>
+             1  NullableType                               became PredefinedType
+
+--------------------------------------------------------------------------------
+LAYER SYNTAX   CORPUS DependencyModules
+--------------------------------------------------------------------------------
+  files round-tripping / files attempted : 227 / 277   (81.9%)
+
+  failure histogram - files affected, by node kind, per bucket
+    (a) importer could not build a tree for this node kind   [0 files]
+        (none)
+    (b) tree built, emitted text does not re-parse   [17 files]
+            13  Block                                      CS1022 Type or namespace definition, or end-of-file expected
+             8  IdentifierName                             CS0116 A namespace cannot directly contain members such as fields, methods or statements
+             5  PropertyDeclaration                        CS1022 Type or namespace definition, or end-of-file expected
+             3  MethodDeclaration                          CS1022 Type or namespace definition, or end-of-file expected
+             2  ArgumentList                               CS1002 ; expected
+             2  PredefinedType                             CS1525 Invalid expression term 'bool'
+             1  AttributeList                              CS1513 } expected
+             1  ConstructorDeclaration                     CS1519 Invalid token '}' in a member declaration
+    (c) re-parsed tree differs structurally from the original   [33 files]
+            12  InterpolatedStringExpression               5 children in, 3 out (token $$"""
+ InterpolatedStringText Interpolation InterpolatedStringText token 
+""" -> token $$"""
+ InterpolatedStringText token 
+""")
+             8  RecordDeclaration                          became ConstructorDeclaration
+             7  ArrayType                                  became NullableType
+             5  ArrayInitializerExpression                 8 children in, 7 out (token { InvocationExpression token , InvocationExpression token , InvocationExpression ... -> token { InvocationExpression token , InvocationExpression token , InvocationExpression ...)
+             3  ObjectInitializerExpression                6 children in, 5 out (token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , token } -> token { SimpleAssignmentExpression token , SimpleAssignmentExpression token })
+             3  SwitchExpression                           10 children in, 9 out (SimpleMemberAccessExpression token switch token { SwitchExpressionArm token , SwitchExpressionArm ... -> SimpleMemberAccessExpression token switch token { SwitchExpressionArm token , SwitchExpressionArm ...)
+             2  EnumDeclaration                            15 children in, 14 out (token public token enum token LogOutputLevel token { EnumMemberDeclaration token , ... -> token public token enum token LogOutputLevel token { EnumMemberDeclaration token , ...)
+             2  NullableType                               became PredefinedType
+             1  WithInitializerExpression                  12 children in, 11 out (token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , SimpleAssignmentExpression ... -> token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , SimpleAssignmentExpression ...)
+
+--------------------------------------------------------------------------------
+LAYER SYNTAX   CORPUS Hardened.Framework
+--------------------------------------------------------------------------------
+  files round-tripping / files attempted : 842 / 965   (87.3%)
+
+  failure histogram - files affected, by node kind, per bucket
+    (a) importer could not build a tree for this node kind   [0 files]
+        (none)
+    (b) tree built, emitted text does not re-parse   [23 files]
+            16  Block                                      CS1513 } expected
+             8  MethodDeclaration                          CS1022 Type or namespace definition, or end-of-file expected
+             4  ConstructorDeclaration                     CS1519 Invalid token '}' in a member declaration
+             2  ClassDeclaration                           CS1022 Type or namespace definition, or end-of-file expected
+             2  FieldDeclaration                           CS1002 ; expected
+             2  TupleType                                  CS1026 ) expected
+             1  FileScopedNamespaceDeclaration             CS0116 A namespace cannot directly contain members such as fields, methods or statements
+             1  IdentifierName                             CS1018 Keyword 'this' or 'base' expected
+             1  PredefinedType                             CS1001 Identifier expected
+             1  PropertyDeclaration                        CS1022 Type or namespace definition, or end-of-file expected
+             1  TypeArgumentList                           CS0116 A namespace cannot directly contain members such as fields, methods or statements
+    (c) re-parsed tree differs structurally from the original   [100 files]
+            36  InterpolatedStringExpression               5 children in, 3 out (token $$""" InterpolatedStringText Interpolation InterpolatedStringText token """ -> token $$""" InterpolatedStringText token """)
+            26  RecordDeclaration                          became ConstructorDeclaration
+            12  ObjectInitializerExpression                8 children in, 7 out (token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , SimpleAssignmentExpression ... -> token { SimpleAssignmentExpression token , SimpleAssignmentExpression token , SimpleAssignmentExpression ...)
+             7  CollectionInitializerExpression            90 children in, 89 out (token { TypeOfExpression token , TypeOfExpression token , TypeOfExpression ... -> token { TypeOfExpression token , TypeOfExpression token , TypeOfExpression ...)
+             6  CollectionExpression                       10 children in, 9 out (token [ ExpressionElement token , ExpressionElement token , ExpressionElement ... -> token [ ExpressionElement token , ExpressionElement token , ExpressionElement ...)
+             5  ArrayType                                  became NullableType
+             4  ArrayCreationExpression                    became ObjectCreationExpression
+             4  EnumDeclaration                            13 children in, 12 out (token public token enum token AuthorizationDecision token { EnumMemberDeclaration token , ... -> token public token enum token AuthorizationDecision token { EnumMemberDeclaration token , ...)
+             3  SwitchExpression                           34 children in, 33 out (InvocationExpression token switch token { SwitchExpressionArm token , SwitchExpressionArm ... -> InvocationExpression token switch token { SwitchExpressionArm token , SwitchExpressionArm ...)
+             2  ArrayInitializerExpression                 6 children in, 5 out (token { ObjectCreationExpression token , ObjectCreationExpression token , token } -> token { ObjectCreationExpression token , ObjectCreationExpression token })
+             1  Block                                      node differs though all 3 children are equivalent (one-element list representation) [token { LockStatement token }] IN <{         lock (_names) {             _names.Add(name);     ...>
+             1  InterpolatedStringText                     token '
+' became '
+            '
+

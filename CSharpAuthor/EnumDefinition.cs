@@ -4,18 +4,45 @@ using System.Text;
 
 namespace CSharpAuthor;
 
+/// <summary>
+/// An enum and its members: <c>public enum Level { Low, High = 10, }</c>.
+/// </summary>
+/// <remarks>
+/// Members are written in the order they are added, each terminated with a comma - the trailing one
+/// included, which C# allows and which keeps a one-member diff to one line.
+/// </remarks>
 public class EnumDefinition : BaseOutputComponent, INamedComponent
 {
     private readonly List<EnumValueDefinition> _enumValueDefinitions = new ();
     private readonly string _enumName;
 
+    /// <summary>
+    /// An enum named <paramref name="enumName"/>. Prefer
+    /// <see cref="CSharpFileDefinition.AddEnum"/>, which builds one and attaches it to a file.
+    /// </summary>
     public EnumDefinition(string enumName)
     {
         _enumName = enumName;
     }
 
+    /// <summary>
+    /// The underlying type: <c>public enum Level : byte</c>. <c>int</c> when left unset, which is
+    /// what C# defaults to.
+    /// </summary>
+    /// <remarks>
+    /// Worth setting where the numbers are part of a wire format or match a native definition,
+    /// because the default is a silent four bytes per value.
+    /// </remarks>
     public ITypeDefinition? BaseType { get; set; }
 
+    /// <summary>
+    /// Adds <c>[Flags]</c>, returning the enum so the call chains.
+    /// </summary>
+    /// <remarks>
+    /// Shorthand for <c>AddAttribute(typeof(FlagsAttribute))</c>. It marks the enum; assigning the
+    /// powers of two is still the caller's, through
+    /// <see cref="AddValue(string, object)"/>.
+    /// </remarks>
     public EnumDefinition AddFlags()
     {
         AddAttribute(TypeDefinition.Get(typeof(FlagsAttribute)));
@@ -23,6 +50,14 @@ public class EnumDefinition : BaseOutputComponent, INamedComponent
         return this;
     }
 
+    /// <summary>
+    /// A member with no explicit value, numbered by the compiler: <c>Low,</c>.
+    /// </summary>
+    /// <remarks>
+    /// Returns the member, which is where its <see cref="BaseOutputComponent.Comment"/> and any
+    /// attributes go. Use <see cref="AddValue(string, object)"/> wherever the number is part of the
+    /// contract - a flags enum, or anything serialized by value.
+    /// </remarks>
     public EnumValueDefinition AddValue(string enumValueName)
     {
         var enumValueDefinition = new EnumValueDefinition(enumValueName);
@@ -32,6 +67,13 @@ public class EnumDefinition : BaseOutputComponent, INamedComponent
         return enumValueDefinition;
     }
 
+    /// <summary>
+    /// A member with an explicit value: <c>High = 10,</c>.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="value"/> goes through the same literal formatter every other value does, so
+    /// it is written as the C# that denotes it rather than as <c>ToString()</c>.
+    /// </remarks>
     public EnumValueDefinition AddValue(string enumValueName, object value)
     {
         var enumValueDefinition = AddValue(enumValueName);
@@ -70,7 +112,7 @@ public class EnumDefinition : BaseOutputComponent, INamedComponent
         var modifier =  GetAccessModifier("public");
 
         outputContext.WriteIndent();
-        outputContext.Write($"{modifier} enum {_enumName}");
+        outputContext.Write($"{modifier} enum {CSharpIdentifier.Escape(_enumName)}");
 
         if (BaseType != null)
         {
@@ -81,5 +123,6 @@ public class EnumDefinition : BaseOutputComponent, INamedComponent
         outputContext.WriteLine();
     }
 
+    /// <summary>The declared name, escaped with <c>@</c> if it is a keyword.</summary>
     public string Name => _enumName;
 }

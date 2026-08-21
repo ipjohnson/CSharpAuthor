@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""
+The importer for the SHIPPING node layer, CSharpAuthor.Syntax.
+
+tools/grammar/gen_all.py walks the fields of a node in Syntax.xml order and writes each
+one through SyntaxWriter. This walks the same fields in the same order and READS each one
+off the Roslyn node. Every classification rule below is copied from that generator, in the
+same order, with the same constants - if the two disagree the importer will not compile
+against the layer, which is the failure mode you want.
+
+Imported by gen_roundtrip.py; not run on its own.
+"""
+
+import json, re
+import xml.etree.ElementTree as ET
+
+ROOTS = {'CSharpSyntaxNode', 'SyntaxNode', 'StructuredTriviaSyntax'}
+
+# gen_all.py, verbatim.
+PAIRED_DELIMITERS = {
+    'OpenBraceToken', 'CloseBraceToken', 'OpenParenToken', 'CloseParenToken',
+    'OpenBracketToken', 'CloseBracketToken', 'LessThanToken', 'GreaterThanToken',
+}
+
+ZERO_WIDTH = {
+    'EndOfFileToken': 'break',
+    'EndOfDirectiveToken': 'break',
+    'EndOfDocumentationCommentToken': 'break',
+    'OmittedTypeArgumentToken': 'none',
+    'OmittedArraySizeExpressionToken': 'none',
+}
+
+TYPE_SLOTS = {'TypeSyntax', 'NameSyntax', 'SimpleNameSyntax', 'IdentifierNameSyntax', 'ArrayTypeSyntax'}
+
+
+class Grammar:
+    def __init__(self, syntax_xml, tokens_json):
+        self.tokens = json.load(open(tokens_json))
+        root = ET.parse(syntax_xml).getroot()
+        self.concrete, self.abstract = {}, {}
+        for el in root:
+            if el.tag == 'Node':
+                self.concrete[el.get('Name')] = el
+            elif el.tag == 'AbstractNode':
+                self.abstract[el.get('Name')] = el
+
+    # -- gen_all.py helpers, verbatim ------------------------------------
+    @staticmethod
+    def iface_name(n):
+        return 'I' + re.sub(r'Syntax$', '', n)
+
+    @staticmethod
+    def class_name(n):
+        return re.sub(r'Syntax$', '', n)
+
+    def iface_for(self, n):
+        if n is None or n in ROOTS:
+            return 'ISyntax'
+        if n in self.abstract:
+            return self.iface_name(n)
+        if n in self.concrete:
+            return self.class_name(n)
+        return 'ISyntax'
+
+    @staticmethod
+    def fields(el):
+        """Document order, descending into <Choice>/<Sequence>; anything inside one is
+        optional whatever the XML says. Returns (element, forced_optional)."""
+        result = []
+
+        def walk(node, forced):
+            for child in node:
+                if child.tag == 'Field':
+                    result.append((child, forced))
+                elif child.tag in ('Choice', 'Sequence'):
+                    walk(child, True)
+
+        walk(el, False)
+        return result
+
+    def kinds_of(self, field):
+        kinds = [k.get('Name') for k in field.findall('Kind')]
+        # Mirrors gen_all.py: RecordDeclarationSyntax.Keyword declares <ContextualKind>
+        # rather than <Kind>, and is the only field in the grammar that does.
+        if not kinds:
+            kinds = [k.get('Name') for k in field.findall('ContextualKind')]
+        if not kinds and field.get('Name') in self.tokens:
+            return [field.get('Name')]
+        return kinds
+
+    # -- the inversion ----------------------------------------------------
+    def walk(self, name):
+        """Yield (role, field_name, detail) for every field that carries state, in emit
+        order. Roles mirror the property gen_all.py emits for that field."""
+        el = self.concrete[name]
+        for f, forced in self.fields(el):
+            fname = f.get('Name')
+            ftype = f.get('Type')
+            optional = forced or f.get('Optional') == 'true'
+            ks = self.kinds_of(f)
+
+            if ftype == 'bool':
+                continue                                          # directive bookkeeping
+
+            if ftype == 'SyntaxToken':
+                if len(ks) == 1 and ks[0] in ZERO_WIDTH:
+                    continue                                      # no spelling at all
+                text = self.tokens.get(ks[0]) if len(ks) == 1 else None
+                if text is not None:
+                    if optional:
+                        yield ('presence', fname, ks[0] in PAIRED_DELIMITERS)
+                    continue                                      # fixed and always emitted
+                yield ('value', fname, None)
+                continue
+
+            if ftype == 'SyntaxList<SyntaxToken>':
+                yield ('tokenlist', fname, None)
+                continue
+
+            m = re.match(r'^(Separated)?SyntaxList<(.+)>$', ftype)
+            if m:
+                # Mirrors gen_all.py: a SeparatedSyntaxList is emitted through a NodeList that
+                # can also carry a trailing separator, so this reads that back off Roslyn. An
+                # unseparated list has no separator to trail and gets the plain role.
+                yield ('seplist' if m.group(1) else 'list', fname, self.iface_for(m.group(2)))
+                continue
+
+            if ftype in TYPE_SLOTS:
+                yield ('typeref', fname, None)
+                continue
+
+            yield ('node', fname, self.iface_for(ftype))
+
+
+def emit_importer(grammar, names, readable, chain_depth):
+    """The inverted walk, as one C# partial class."""
+    out = []
+    w = out.append
+    w("// <auto-generated> The Syntax.xml field walk, inverted, for CSharpAuthor.Syntax.")
+    w("// tools/grammar/gen_all.py writes each field through SyntaxWriter, in grammar order.")
+    w("// This reads each field off the Roslyn node, in the same order, into the same class.")
+    w("// Generated by tools/roundtrip/gen_roundtrip.py. Do not edit by hand.")
+    w("#nullable enable")
+    w("using System.Collections.Generic;")
+    w("using CSharpAuthor;")
+    w("using Microsoft.CodeAnalysis;")
+    w("using Microsoft.CodeAnalysis.CSharp;")
+    w("using R = Microsoft.CodeAnalysis.CSharp.Syntax;")
+    w("using G = CSharpAuthor.Syntax;")
+    w("")
+    w("namespace RoundTrip;")
+    w("")
+    w("public sealed partial class SyntaxImporter : ImporterBase")
+    w("{")
+    w("    public SyntaxImporter(ImportReport report, TypeImportMode typeMode) : base(report, typeMode) { }")
+    w("")
+    w("    public G.ISyntax? Import(SyntaxNode? __node)")
+    w("    {")
+    w("        if (__node == null) return null;")
+    w("        switch (__node)")
+    w("        {")
+    for name in sorted(names, key=lambda n: -chain_depth.get(n, 0)):
+        w(f"            case R.{name} __n: return Import_{grammar.class_name(name)}(__n);")
+    w("            default:")
+    w("                Report.Unsupported(__node.Kind().ToString(), \"no importer case for this node kind\");")
+    w("                return null;")
+    w("        }")
+    w("    }")
+    w("")
+
+    for name in sorted(names):
+        cls = grammar.class_name(name)
+        w(f"    private G.ISyntax? Import_{cls}(R.{name} __n)")
+        w("    {")
+        w(f"        var __r = new G.{cls}();")
+        for role, fname, detail in grammar.walk(name):
+            if not readable(name, fname):
+                continue                                  # grammar this parser does not have
+            where = f'"{name}.{fname}"'
+            if role == 'presence':
+                w(f"        __r.{fname} = __n.{fname}.RawKind != 0;")
+            elif role == 'value':
+                w(f"        __r.{fname} = __n.{fname}.Text;")
+            elif role == 'tokenlist':
+                w(f"        foreach (var __t in __n.{fname}) __r.{fname}.Add(__t.Text);")
+            elif role == 'list':
+                w(f"        foreach (var __e in __n.{fname}) {{ var __v = As<G.{detail}>(Import(__e), __e, {where}); if (__v != null) __r.{fname}.Add(__v); }}")
+            elif role == 'seplist':
+                w(f"        foreach (var __e in __n.{fname}) {{ var __v = As<G.{detail}>(Import(__e), __e, {where}); if (__v != null) __r.{fname}.Add(__v); }}")
+                # `{ 1, 2, }` has as many separators as elements. Roslyn keeps that comma as a
+                # token, so the emitted tree is a different tree without it.
+                w(f"        __r.{fname}.TrailingSeparator = __n.{fname}.Count > 0 && __n.{fname}.SeparatorCount >= __n.{fname}.Count;")
+            elif role == 'typeref':
+                w(f"        __r.{fname} = ImportTypeRef(__n.{fname}, {where});")
+            else:
+                w(f"        __r.{fname} = As<G.{detail}>(Import(__n.{fname}), __n.{fname}, {where});")
+        w("        return __r;")
+        w("    }")
+        w("")
+    w("}")
+    return '\n'.join(out)

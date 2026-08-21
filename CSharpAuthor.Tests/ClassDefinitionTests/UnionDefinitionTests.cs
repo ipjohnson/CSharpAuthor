@@ -26,9 +26,10 @@ public class UnionDefinitionTests
         union.AddUnionCase(TypeDefinition.Get("TestNamespace", "Circle"));
         union.AddUnionCase(TypeDefinition.Get("TestNamespace", "Square"));
 
-        // The redundant `using TestNamespace;` is what every type reference in this library emits
-        // for its own namespace, not something the union keyword introduces. Asserted rather than
-        // trimmed, so a change to that behaviour is visible here too.
+        // 1.x emitted a redundant `using TestNamespace;` here - every type reference asked for
+        // its own namespace, including the file's. This test asserted it deliberately so that a
+        // change would show up, and 2.0 is that change: CSharpFileDefinition declares its
+        // containing namespace, and a file no longer imports itself.
 
         var context = new OutputContext();
         file.WriteOutput(context);
@@ -37,9 +38,7 @@ public class UnionDefinitionTests
     }
 
     private const string UnionOutput =
-        @"using TestNamespace;
-
-namespace TestNamespace;
+        @"namespace TestNamespace;
 
 public union Shape(Circle, Square);
 ";
@@ -178,5 +177,22 @@ public union Result(Pet, NotFound);
         record.WriteOutput(context);
 
         Assert.Contains("record Pet(string Name);", context.Output());
+    }
+
+    /// <summary>
+    /// A union has no downlevel form, so a profile that cannot reach C# 15 refuses rather than
+    /// emitting something that is not a union.
+    /// </summary>
+    /// <remarks>
+    /// 2.0 only. 1.2.0 shipped the keyword with no capability gate at all, so a profile targeting
+    /// an older language version emitted a union anyway and the consumer found out at compile time.
+    /// </remarks>
+    [Fact]
+    public void ATargetBelowCSharp15CannotEmitOne()
+    {
+        var info = CSharpAuthor.Profiles.LanguageFeatures.Get(CSharpAuthor.Profiles.LanguageFeature.Unions);
+
+        Assert.Equal(CSharpAuthor.Profiles.LanguageVersion.CSharp15, info.MinimumVersion);
+        Assert.Equal(CSharpAuthor.Profiles.FeatureCategory.Impossible, info.Category);
     }
 }

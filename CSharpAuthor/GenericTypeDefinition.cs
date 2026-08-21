@@ -7,7 +7,6 @@ namespace CSharpAuthor;
 
 public class GenericTypeDefinition : BaseTypeDefinition
 {
-    private int? _hashCode;
     private readonly IReadOnlyList<ITypeDefinition> _closingTypes;
 
     public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray = false,
@@ -23,22 +22,29 @@ public class GenericTypeDefinition : BaseTypeDefinition
         _closingTypes = closingTypes;
     }
 
-    public override bool Equals(object obj)
+    public GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
+        IReadOnlyList<int>? arrayRanks, bool isNullable = false, ITypeDefinition? containingType = null)
+        : base(classType, ns, name, arrayRanks, isNullable, containingType)
     {
-        if (obj is GenericTypeDefinition genericTypeDefinition)
-        {
-            return CompareTo(genericTypeDefinition) == 0;
-        }
-
-        return false;
+        _closingTypes = closingTypes;
     }
 
-    public override int GetHashCode()
+    /// <summary>
+    /// A closed generic with array specifiers and an annotation for each level, outermost first,
+    /// then one for the element - <c>[1]</c> with <c>[false, true]</c> is <c>Name&lt;T&gt;?[]</c>.
+    /// </summary>
+    /// <remarks>
+    /// Every parameter is required, so this cannot be reached by a call that means the
+    /// <c>bool isNullable</c> overload above.
+    /// </remarks>
+    public GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
+        IReadOnlyList<int>? arrayRanks, IReadOnlyList<bool>? nullableAnnotations, ITypeDefinition? containingType)
+        : base(classType, ns, name, arrayRanks, nullableAnnotations, containingType)
     {
-        // ReSharper disable once NonReadonlyMemberInGetHashCode
-        return _hashCode ??= ToString().GetHashCode(); 
+        _closingTypes = closingTypes;
     }
 
+    /// <inheritdoc cref="TypeDefinition.ToString" />
     public override string ToString()
     {
         var stringBuilder = new StringBuilder();
@@ -47,6 +53,7 @@ public class GenericTypeDefinition : BaseTypeDefinition
         stringBuilder.Append('.');
         stringBuilder.Append(Name);
         stringBuilder.Append('<');
+
         var comma = false;
 
         foreach (var closingType in _closingTypes)
@@ -59,54 +66,26 @@ public class GenericTypeDefinition : BaseTypeDefinition
             {
                 comma = true;
             }
+
             stringBuilder.Append(closingType);
         }
 
         stringBuilder.Append('>');
 
-        if (IsArray)
-        {
-            stringBuilder.Append("[]");
-        }
-
-        if (IsNullable)
-        {
-            stringBuilder.Append('?');
-        }
+        WriteArraySuffix(stringBuilder);
 
         return stringBuilder.ToString();
     }
 
+    /// <summary>
+    /// The arguments are part of the value, and they are compared where every other part of it is -
+    /// in the name the type writes. Walking <c>_closingTypes</c> here could only ever answer for a
+    /// second <see cref="GenericTypeDefinition"/>, so a closed generic arriving from anywhere else
+    /// was reported different from an identical one built by hand.
+    /// </summary>
     public override int CompareTo(ITypeDefinition other)
     {
-        var baseCompare = BaseCompareTo(other);
-
-        if (baseCompare != 0)
-        {
-            return baseCompare;
-        }
-
-        if (other is not GenericTypeDefinition genericTypeDefinition)
-        {
-            return -1;
-        }
-
-        if (genericTypeDefinition._closingTypes.Count != _closingTypes.Count)
-        {
-            return genericTypeDefinition._closingTypes.Count - _closingTypes.Count;
-        }
-
-        for (var i = 0; i < _closingTypes.Count; i++)
-        {
-            var compareValue = _closingTypes[i].CompareTo(genericTypeDefinition._closingTypes[i]);
-
-            if (compareValue != 0)
-            {
-                return compareValue;
-            }
-        }
-
-        return 0;
+        return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }
 
     public override IEnumerable<string> KnownNamespaces
@@ -121,29 +100,34 @@ public class GenericTypeDefinition : BaseTypeDefinition
                 }
             }
 
+            if (ContainingType != null)
+            {
+                foreach (var knownNamespace in ContainingType.KnownNamespaces)
+                {
+                    yield return knownNamespace;
+                }
+            }
+
             yield return Namespace;
         }
     }
-    
+
     public override void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
-        if (!string.IsNullOrEmpty(Namespace))
-        {
-            if (typeOutputMode == TypeOutputMode.Global)
-            {
-                builder.Append("global::");
-                builder.Append(Namespace);
-                builder.Append('.');
+        WriteQualifier(builder, typeOutputMode);
 
-            }
-            else if (typeOutputMode == TypeOutputMode.FullName)
-            {
-                builder.Append(Namespace);
-                builder.Append('.');
-            }
+        builder.Append(WrittenName());
+
+        // An empty argument list is `Thing<>`, which is only legal inside typeof - CS1031 in a
+        // field, a parameter or a base type. A generic definition closed over nothing names the
+        // type it was built from, which is the only reading that is a type at all.
+        if (_closingTypes.Count == 0)
+        {
+            WriteArraySuffix(builder, ArrayRanks, NullableAnnotations);
+
+            return;
         }
 
-        builder.Append(Name);
         builder.Append('<');
 
         var writeComma = false;
@@ -164,32 +148,25 @@ public class GenericTypeDefinition : BaseTypeDefinition
 
         builder.Append('>');
 
-        if (IsArray)
-        {
-            builder.Append("[]");
-        }
-
-        if (IsNullable)
-        {
-            builder.Append("?");
-        }   
+        WriteArraySuffix(builder);
     }
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, IsArray, nullable);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, AnnotationsWithOuterAnnotation(nullable), ContainingType);
     }
 
-    public override ITypeDefinition MakeArray()
+    /// <inheritdoc cref="TypeDefinition.MakeArray(int)" />
+    public override ITypeDefinition MakeArray(int rank)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, true, IsNullable);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanksWithOuterRank(rank), AnnotationsWithOuterLevel(), ContainingType);
     }
 
     public ITypeDefinition MakeOpenType()
     {
         var emptyTypes = _closingTypes.Select(_ => TypeDefinition.Get("", "")).ToArray();
 
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, IsArray, IsNullable);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, ArrayRanks, NullableAnnotations, ContainingType);
     }
         
     public override IReadOnlyList<ITypeDefinition> TypeArguments => _closingTypes;

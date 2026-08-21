@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -36,19 +36,18 @@ public static class IEnumerableExtensions
             context.IncrementIndent();
         }
 
-        var writeSeparator = false;
+        // The line break already separates the items, so the separator does not also pad the end of
+        // the line it terminates. Trimmed once rather than once per item: TrimEnd builds a string,
+        // and a twenty-five parameter list was building twenty-four identical ones.
+        var itemSeparator = breakLines ? separator.TrimEnd() : separator;
 
-        foreach (var tValue in list)
+        // Indexed rather than foreach: the list is behind IReadOnlyList<T>, so its enumerator is
+        // reached through the interface and allocated, once per list written.
+        for (var i = 0; i < list.Count; i++)
         {
-            if (writeSeparator)
+            if (i > 0)
             {
-                // The line break already separates the items, so the separator does not also pad
-                // the end of the line it terminates.
-                context.Write(breakLines ? separator.TrimEnd() : separator);
-            }
-            else
-            {
-                writeSeparator = true;
+                context.Write(itemSeparator);
             }
 
             if (breakLines)
@@ -57,7 +56,7 @@ public static class IEnumerableExtensions
                 context.WriteIndent();
             }
 
-            writeAction(context, tValue);
+            writeAction(context, list[i]);
         }
 
         if (breakLines)

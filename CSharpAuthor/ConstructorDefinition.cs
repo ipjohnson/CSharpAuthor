@@ -1,9 +1,32 @@
 ﻿namespace CSharpAuthor;
 
+/// <summary>
+/// A constructor: a <see cref="MethodDefinition"/> named after its type and with no return type.
+/// </summary>
+/// <remarks>
+/// Parameters and a body are added the same way a method's are. The two things a constructor has
+/// that a method does not are the initialiser - <see cref="Base"/> - and
+/// <see cref="IsPrimary"/>, which moves the parameter list into the type header.
+/// </remarks>
 public class ConstructorDefinition : MethodDefinition
 {
+    /// <summary>
+    /// The initialiser written after the signature: <c>: base(name)</c> or <c>: this(name)</c>.
+    /// </summary>
+    /// <remarks>
+    /// Set through the constructor rather than assignable, and built with
+    /// <see cref="SyntaxHelpers.Base"/> or <see cref="SyntaxHelpers.This"/>. A record passing
+    /// arguments to a positional base uses
+    /// <see cref="ClassDefinition.AddBaseType(ITypeDefinition, IOutputComponent[])"/> instead -
+    /// the arguments belong to the base type clause there, not to a constructor.
+    /// </remarks>
     public IOutputComponent? Base { get; }
 
+    /// <summary>
+    /// A constructor for the type named <paramref name="name"/>. Prefer
+    /// <see cref="ClassDefinition.AddConstructor"/>, which builds one with the right name and
+    /// attaches it.
+    /// </summary>
     public ConstructorDefinition(string name, IOutputComponent? @base = null) : base(name)
     {
         Base = @base;

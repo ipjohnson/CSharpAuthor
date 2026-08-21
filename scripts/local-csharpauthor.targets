@@ -1,0 +1,59 @@
+<Project>
+  <!--
+    Injected into DependencyModules' generator projects via
+    /p:CustomAfterMicrosoftCommonTargets so a scratch clone can be built against a local
+    CSharpAuthor checkout WITHOUT modifying a single file in that repository.
+    (V2-HANDOFF.md 8.2: never commit to the consumer repositories. The cheapest way to keep
+    that true under a script that runs dozens of times is to never dirty their tree at all.)
+
+    It reproduces exactly what the published package's build/CSharpAuthor.targets does:
+
+        <Compile Include="$(MSBuildThisFileDirectory)../src/**/*.cs" Visible="false"/>
+
+    The package's src/CSharpAuthor/ is packed from the repository's CSharpAuthor/**/*.cs
+    (Exclude **/obj/**;**/bin/**), so the same glob against a working tree is the same set
+    of files. This is the identical arrangement Hardened.Framework's
+    src/SourceGenerators/CSharpAuthor.props already uses for its own local-checkout mode.
+
+    The caller must pass all three:
+      /p:PackageCSharpAuthorIncludeSource=false   - stop the 1.1.1010 package compiling its
+                                                    own (V1) copy of the same sources in.
+                                                    A command-line property is global and
+                                                    cannot be overridden by the csproj body,
+                                                    which is what makes this work with no edit.
+      /p:LocalCSharpAuthorRoot=<abs path>         - the checkout to compile instead.
+      /p:LocalCSharpAuthorProjects=|A|B|          - pipe-delimited, pipe-fenced list
+                                                    of the project names that consume
+                                                    CSharpAuthor. The caller discovers these
+                                                    by grepping the consumer's csproj files,
+                                                    so a new generator project is picked up
+                                                    without editing this file.
+  -->
+
+  <PropertyGroup>
+    <_LocalCSharpAuthorSrc Condition="'$(LocalCSharpAuthorRoot)' != ''">$(LocalCSharpAuthorRoot)/CSharpAuthor</_LocalCSharpAuthorSrc>
+
+    <_LocalCSharpAuthorWanted>false</_LocalCSharpAuthorWanted>
+    <_LocalCSharpAuthorWanted Condition="'$(LocalCSharpAuthorProjects)' != '' And $(LocalCSharpAuthorProjects.Contains('|$(MSBuildProjectName)|'))">true</_LocalCSharpAuthorWanted>
+
+    <_LocalCSharpAuthorActive>false</_LocalCSharpAuthorActive>
+    <_LocalCSharpAuthorActive Condition="'$(_LocalCSharpAuthorWanted)' == 'true' And Exists('$(_LocalCSharpAuthorSrc)/CSharpAuthor.csproj')">true</_LocalCSharpAuthorActive>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(_LocalCSharpAuthorActive)' == 'true'">
+    <Compile Include="$(_LocalCSharpAuthorSrc)/**/*.cs"
+             Exclude="$(_LocalCSharpAuthorSrc)/obj/**/*.cs;$(_LocalCSharpAuthorSrc)/bin/**/*.cs;$(_LocalCSharpAuthorSrc)/Roslyn/**/*.cs"
+             Visible="false"/>
+  </ItemGroup>
+
+  <!--
+    Loud failure beats a silent fallback to the published package: if the wiring stops
+    working, the suite would go green against V1 and the whole oracle is worthless.
+  -->
+  <Target Name="_VerifyLocalCSharpAuthor" BeforeTargets="CoreCompile">
+    <Error Condition="'$(_LocalCSharpAuthorWanted)' == 'true' And '$(_LocalCSharpAuthorActive)' != 'true'"
+           Text="local-csharpauthor: $(MSBuildProjectName) consumes CSharpAuthor but '$(_LocalCSharpAuthorSrc)/CSharpAuthor.csproj' does not exist. Refusing to fall back to the published package." />
+    <Message Condition="'$(_LocalCSharpAuthorActive)' == 'true'" Importance="high"
+             Text="local-csharpauthor: $(MSBuildProjectName) &lt;- $(_LocalCSharpAuthorSrc)" />
+  </Target>
+</Project>

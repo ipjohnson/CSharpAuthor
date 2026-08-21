@@ -1,0 +1,389 @@
+CSharpAuthor 2.0 migration patch — Hardened.Framework
+Generated 2026-08-21 by `git diff` in a clone of github.com/ipjohnson/Hardened.Framework
+at a90d24d (Generic problem types…, #175), and verified with `git apply --check`
+against a pristine clone of the same commit.
+
+Measured against CSharpAuthor `feature/v2` at 4c7dc35.
+
+Measured, 27 test assemblies:
+  1.2.0 baseline      4,787 passed / 0 failed
+  2.0 unpatched       2,437 passed / 359 failed, and only 16 assemblies
+  2.0 with this patch 4,787 passed /   0 failed — back to baseline exactly.
+                      None of the 13 .approved.txt snapshots moved.
+
+REQUIRES a 2.0 that has ClassKeyword.Union and ClassDefinition.AddUnionCase. Both
+shipped in the published 1.2.0 that this repository pins; the 2.0 branch was cut before
+that release and did not have them, and Hardened.Idl.Emit's UnionResponseEmitter uses
+both with no consumer-side alternative. Fixed on the branch by 51386a0, which also gates
+a union on LanguageFeature.Unions (C# 15) — measured here as tripping nothing in this
+repository. See docs/migration-v1-v2.md section 9.7.
+
+Every generator-side hunk was verified necessary: reverting four of them costs 209
+failures and three assemblies. The changed assertions in the six *.Tests files are inline
+Assert.Contains on generated text, not snapshot files; each is listed in section 9.8.
+
+NOTE ON THE VERSION LINE. The <PackageReference> bump to 2.0.0 is included because
+it is part of the migration, but CSharpAuthor 2.0.0 is not published yet, so a
+`dotnet restore` after applying this will fail with NU1102. To exercise the patch
+today, apply it, put the version line back, and point the build at a 2.0 checkout —
+see docs/migration-v1-v2.md section 9.2. Every measurement quoted above was taken
+that way, with the wiring proved on each run.
+
+diff --git a/src/SourceGenerators/CSharpAuthor.props b/src/SourceGenerators/CSharpAuthor.props
+index 512b4cb..6dfbc7b 100644
+--- a/src/SourceGenerators/CSharpAuthor.props
++++ b/src/SourceGenerators/CSharpAuthor.props
+@@ -48,7 +48,7 @@
+     </PropertyGroup>
+ 
+     <ItemGroup>
+-        <PackageReference Condition="'$(UseLocalCSharpAuthor)' != 'true'" Include="CSharpAuthor" Version="1.2.0">
++        <PackageReference Condition="'$(UseLocalCSharpAuthor)' != 'true'" Include="CSharpAuthor" Version="2.0.0">
+             <PrivateAssets>all</PrivateAssets>
+             <IncludeAssets>build</IncludeAssets>
+         </PackageReference>
+@@ -57,9 +57,37 @@
+             The same glob build/CSharpAuthor.targets applies to the package's src/ folder, against
+             the checkout instead. bin and obj are excluded because this points at a working tree
+             rather than at package content.
++
++            Roslyn/ is excluded for the same reason it is absent from the package's src/ folder:
++            from CSharpAuthor 2.0 the library ships a second, opt-in source root written against
++            Microsoft.CodeAnalysis, and the package gates it behind
++            PackageCSharpAuthorIncludeRoslyn. It lives *inside* <root>/CSharpAuthor/, so an
++            unqualified recursive glob picks it up - and Hardened.Idl.Emit, Hardened.Idl.Shared and
++            the three build tasks (Hardened.Idl.BuildTask, Hardened.OpenApi.BuildTask,
++            Hardened.Smithy.BuildTask) consume CSharpAuthor with no Roslyn reference at all.
++            Compiling it unconditionally is
++
++                CSharpAuthor/Roslyn/EmitProfileRoslynExtensions.cs(6,54): error CS0234:
++                The type or namespace name 'CSharp' does not exist in the namespace
++                'Microsoft.CodeAnalysis'
++
++            on net472 and net8.0 alike - 720 errors across eight project/TFM combinations, which
++            takes their dependent test assemblies down with them. Excluding it here is what makes
++            the local-checkout glob equal the package's src/ folder again.
+         -->
+         <Compile Condition="'$(UseLocalCSharpAuthor)' == 'true'"
+                  Include="$(CSharpAuthorRoot)/CSharpAuthor/**/*.cs"
++                 Exclude="$(CSharpAuthorRoot)/CSharpAuthor/obj/**/*.cs;$(CSharpAuthorRoot)/CSharpAuthor/bin/**/*.cs;$(CSharpAuthorRoot)/CSharpAuthor/Roslyn/**/*.cs"
++                 Visible="false"/>
++
++        <!--
++            The package's srcRoslyn/ folder, against the checkout, gated on the property the
++            package gates it on. A project that asks for the bridge already references Roslyn, or
++            it could not have asked; a project that does not ask never sees the folder. Without
++            this the opt-in simply would not exist in local-checkout mode.
++        -->
++        <Compile Condition="'$(UseLocalCSharpAuthor)' == 'true' AND '$(PackageCSharpAuthorIncludeRoslyn)' == 'true'"
++                 Include="$(CSharpAuthorRoot)/CSharpAuthor/Roslyn/**/*.cs"
+                  Exclude="$(CSharpAuthorRoot)/CSharpAuthor/obj/**/*.cs;$(CSharpAuthorRoot)/CSharpAuthor/bin/**/*.cs"
+                  Visible="false"/>
+     </ItemGroup>
+diff --git a/src/SourceGenerators/Hardened.Idl.SourceGenerator/SpecRoutingTableGenerator.cs b/src/SourceGenerators/Hardened.Idl.SourceGenerator/SpecRoutingTableGenerator.cs
+index f1fd082..3d65a36 100644
+--- a/src/SourceGenerators/Hardened.Idl.SourceGenerator/SpecRoutingTableGenerator.cs
++++ b/src/SourceGenerators/Hardened.Idl.SourceGenerator/SpecRoutingTableGenerator.cs
+@@ -54,6 +54,10 @@ internal static class SpecRoutingTableGenerator {
+ 
+         var applicationFile = new CSharpFileDefinition(appModel.EntryPointType.Namespace);
+ 
++        // AddSingleton/AddTransient are extension methods, and an extension method is reachable
++        // only through a using of its namespace - global:: cannot name one.
++        applicationFile.AddUsingNamespace(KnownTypes.Namespace.Microsoft.Extensions.DependencyInjection);
++
+         CreateRoutingTable(appModel, handlers, handlerInfos, specRegistrations, applicationFile, cancellationToken, excludeFromCoverage);
+ 
+         var outputContext = new OutputContext(
+diff --git a/src/SourceGenerators/Hardened.OpenApi.BuildTask.Tests/JsonTypeInfoEmitterTests.cs b/src/SourceGenerators/Hardened.OpenApi.BuildTask.Tests/JsonTypeInfoEmitterTests.cs
+index 855f3ac..7d29cc7 100644
+--- a/src/SourceGenerators/Hardened.OpenApi.BuildTask.Tests/JsonTypeInfoEmitterTests.cs
++++ b/src/SourceGenerators/Hardened.OpenApi.BuildTask.Tests/JsonTypeInfoEmitterTests.cs
+@@ -24,7 +24,8 @@ public class JsonTypeInfoEmitterTests {
+ 
+         Assert.Contains("namespace Test.Api.Models\n{", result);
+         Assert.Contains("class PetstoreJsonTypeInfoResolver : IJsonTypeInfoResolver", result);
+-        Assert.Contains("public readonly static PetstoreJsonTypeInfoResolver Instance = new();", result);
++        // static readonly, not readonly static: the conventional order, which V1 wrote backwards.
++        Assert.Contains("public static readonly PetstoreJsonTypeInfoResolver Instance = new();", result);
+         Assert.Contains("if (type == typeof(global::Test.Api.Models.Pet)) return CreatePetTypeInfo(options);", result);
+         Assert.Contains("ObjectWithParameterizedConstructorCreator", result);
+         Assert.Contains("(string)args[0]", result);
+@@ -109,13 +110,15 @@ public class JsonTypeInfoEmitterTests {
+         Assert.Contains("CreatePropertyInfo<string>(options", result);
+         Assert.Contains("CreatePropertyInfo<int>(options", result);
+         Assert.Contains("CreatePropertyInfo<long>(options", result);
+-        Assert.Contains("CreatePropertyInfo<global::System.Single>(options", result);
++        // float, not global::System.Single. V1's keyword table listed double but not float, so the
++        // one type here whose keyword was missing came out under its reflection name.
++        Assert.Contains("CreatePropertyInfo<float>(options", result);
+         Assert.Contains("CreatePropertyInfo<double>(options", result);
+         Assert.Contains("CreatePropertyInfo<bool>(options", result);
+         Assert.Contains("(string)args[0]", result);
+         Assert.Contains("(int)args[1]", result);
+         Assert.Contains("(long)args[2]", result);
+-        Assert.Contains("(global::System.Single)args[3]", result);
++        Assert.Contains("(float)args[3]", result);
+         Assert.Contains("(double)args[4]", result);
+         Assert.Contains("(bool)args[5]", result);
+     }
+diff --git a/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratedCodeCompilesTests.cs b/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratedCodeCompilesTests.cs
+index 2097de3..b0cecc1 100644
+--- a/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratedCodeCompilesTests.cs
++++ b/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratedCodeCompilesTests.cs
+@@ -193,13 +193,13 @@ public class GeneratedCodeCompilesTests {
+ 
+         // property:, or the attribute lands on a positional record's parameter and the generator
+         // reading properties never sees it.
+-        Assert.Contains("[property: Required]", emitted);
+-        Assert.Contains("[property: StringLength(", emitted);
+-        Assert.Contains("[property: Range(", emitted);
++        Assert.Contains("[property: global::ValidationModules.Constraints.Required]", emitted);
++        Assert.Contains("[property: global::ValidationModules.Constraints.StringLength(", emitted);
++        Assert.Contains("[property: global::ValidationModules.Constraints.Range(", emitted);
+ 
+         // The reference form, pointing at a [GeneratedRegex] member the task also emits. The inline
+         // form would root the regex engine at 448 KB on an AOT publish.
+-        Assert.Contains("[property: Pattern(typeof(", emitted);
++        Assert.Contains("[property: global::ValidationModules.Constraints.Pattern(typeof(", emitted);
+         Assert.Contains("GeneratedRegex(", emitted);
+         Assert.DoesNotContain("new Regex(", emitted);
+     }
+diff --git a/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratorConfigurationTests.cs b/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratorConfigurationTests.cs
+index bf7c15e..5af66a9 100644
+--- a/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratorConfigurationTests.cs
++++ b/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratorConfigurationTests.cs
+@@ -101,7 +101,7 @@ public class GeneratorConfigurationTests {
+     public void GeneratedRecordsAreExcludedFromCoverageByDefault() {
+         var result = OpenApiGenerator.Run(Specs.EveryValidationConstraint).AssertNoErrors();
+ 
+-        Assert.Contains("[ExcludeFromCodeCoverage]",
++        Assert.Contains("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]",
+             result.SourceContaining("petstore.g.cs"));
+     }
+ 
+@@ -109,7 +109,7 @@ public class GeneratorConfigurationTests {
+     public void TheGeneratedJsonResolverIsExcludedFromCoverageByDefault() {
+         var result = OpenApiGenerator.Run(Specs.Minimal).AssertNoErrors();
+ 
+-        Assert.Contains("[ExcludeFromCodeCoverage]",
++        Assert.Contains("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]",
+             result.SourceContaining("petstore.g.cs"));
+     }
+ 
+@@ -117,14 +117,14 @@ public class GeneratorConfigurationTests {
+     public void TheGeneratedRoutingTableIsExcludedFromCoverageByDefault() {
+         var result = OpenApiGenerator.Run(Specs.Minimal).AssertNoErrors();
+ 
+-        Assert.Contains("[ExcludeFromCodeCoverage]", result.SourceContaining("SpecRouting"));
++        Assert.Contains("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]", result.SourceContaining("SpecRouting"));
+     }
+ 
+     [Fact]
+     public void GeneratedFilterAttributesAreExcludedFromCoverageByDefault() {
+         var result = OpenApiGenerator.Run(Specs.FilterTypes).AssertNoErrors();
+ 
+-        Assert.Contains("[ExcludeFromCodeCoverage]",
++        Assert.Contains("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]",
+             result.SourceContaining("petstore.g.cs"));
+     }
+ 
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator.Tests/Function/FunctionHandlerProviderTests.cs b/src/SourceGenerators/Hardened.SourceGenerator.Tests/Function/FunctionHandlerProviderTests.cs
+index 635c2d3..82fb2e2 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator.Tests/Function/FunctionHandlerProviderTests.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator.Tests/Function/FunctionHandlerProviderTests.cs
+@@ -89,7 +89,7 @@ public class FunctionHandlerProviderTests {
+         var provider = Provider(OneHandler);
+ 
+         Assert.Contains("DependencyRegistry<TestApplication>.Add(FunctionHandlersDI)", provider);
+-        Assert.Contains("[DynamicDependency(nameof(FunctionHandlersDI))]", provider);
++        Assert.Contains("[global::System.Diagnostics.CodeAnalysis.DynamicDependency(nameof(FunctionHandlersDI))]", provider);
+     }
+ 
+     /// <summary>
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator.Tests/Requests/GeneratedCodeRegressionTests.cs b/src/SourceGenerators/Hardened.SourceGenerator.Tests/Requests/GeneratedCodeRegressionTests.cs
+index 479f992..c5c83ca 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator.Tests/Requests/GeneratedCodeRegressionTests.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator.Tests/Requests/GeneratedCodeRegressionTests.cs
+@@ -112,7 +112,7 @@ public class GeneratedCodeRegressionTests {
+         var source = result.SourceContaining("Health");
+ 
+         Assert.Contains(
+-            "new ExecutionRequestHandlerInfo(\"/health\", \"GET\", typeof(HealthController), \"Health\", null, _metadata)",
++            "new global::Hardened.Requests.Runtime.Execution.ExecutionRequestHandlerInfo(\"/health\", \"GET\", typeof(global::TestApp.HealthController), \"Health\", null, _metadata)",
+             source);
+     }
+ 
+@@ -137,7 +137,7 @@ public class GeneratedCodeRegressionTests {
+         var source = result.SourceContaining("GetOrder");
+ 
+         Assert.Contains(
+-            "new ExecutionRequestHandlerInfo(\"/orders/{id}\", \"GET\", typeof(OrderController), \"GetOrder\", _parameterInfo)",
++            "new global::Hardened.Requests.Runtime.Execution.ExecutionRequestHandlerInfo(\"/orders/{id}\", \"GET\", typeof(global::TestApp.OrderController), \"GetOrder\", _parameterInfo)",
+             source);
+         Assert.DoesNotContain("_metadata", source);
+     }
+@@ -183,7 +183,7 @@ public class GeneratedCodeRegressionTests {
+             """).AssertNoErrors();
+ 
+         Assert.Contains(
+-            "new ExecutionRequestHandlerInfo(\"/health\", \"GET\", typeof(HealthController), \"Health\")",
++            "new global::Hardened.Requests.Runtime.Execution.ExecutionRequestHandlerInfo(\"/health\", \"GET\", typeof(global::TestApp.HealthController), \"Health\")",
+             result.SourceContaining("Health"));
+     }
+ 
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator.Tests/Shared/ApplicationRootEmitTests.cs b/src/SourceGenerators/Hardened.SourceGenerator.Tests/Shared/ApplicationRootEmitTests.cs
+index 61accf6..2e58b01 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator.Tests/Shared/ApplicationRootEmitTests.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator.Tests/Shared/ApplicationRootEmitTests.cs
+@@ -41,7 +41,7 @@ public class ApplicationRootEmitTests {
+         var root = ApplicationRootHarness.Generate(ApplicationRootHarness.Application());
+ 
+         Assert.Contains("Hardened.Shared.Runtime.Application.IApplicationRoot", root);
+-        Assert.Contains("RootServiceProvider ?? throw new Exception", root);
++        Assert.Contains("RootServiceProvider ?? throw new global::System.Exception", root);
+         Assert.Contains("DisposeAsync", root);
+     }
+ 
+@@ -266,8 +266,15 @@ public class ApplicationRootEmitTests {
+ 
+             var handler = appClass.AddField(KnownTypes.Requests.IMiddlewareService, "_handler");
+ 
+-            constructor.Assign(provider.InvokeGeneric("GetRequiredService",
+-                new[] { KnownTypes.Requests.IMiddlewareService })).To(handler.Instance);
++            var resolve = provider.InvokeGeneric("GetRequiredService",
++                new[] { KnownTypes.Requests.IMiddlewareService });
++
++            // GetRequiredService is an extension method, and an extension method is reachable only
++            // through a using of its namespace - global:: cannot name one. Every derived writer that
++            // resolves a service has to say this, the four in Hardened.Amz included.
++            resolve.AddUsingNamespace(KnownTypes.Namespace.Microsoft.Extensions.DependencyInjection);
++
++            constructor.Assign(resolve).To(handler.Instance);
+         }
+ 
+         protected override void CreateDomainMethods(
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator/Configuration/ConfigurationEntryPointGenerator.cs b/src/SourceGenerators/Hardened.SourceGenerator/Configuration/ConfigurationEntryPointGenerator.cs
+index 9349c90..279651a 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator/Configuration/ConfigurationEntryPointGenerator.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator/Configuration/ConfigurationEntryPointGenerator.cs
+@@ -13,6 +13,10 @@ public static class ConfigurationEntryPointGenerator {
+             ConfigFiles) arg2) {
+         var cSharpFile = new CSharpFileDefinition(arg2.AppModel.EntryPointType.Namespace);
+ 
++        // AddSingleton is an extension method, and an extension method is reachable only through a
++        // using of its namespace - global:: cannot name one.
++        cSharpFile.AddUsingNamespace(KnownTypes.Namespace.Microsoft.Extensions.DependencyInjection);
++
+         var classDefinition = cSharpFile.AddClass(arg2.AppModel.EntryPointType.Name);
+ 
+         classDefinition.Modifiers = ComponentModifier.Public | ComponentModifier.Partial;
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator/DependencyInjection/ServiceProviderFileGenerator.cs b/src/SourceGenerators/Hardened.SourceGenerator/DependencyInjection/ServiceProviderFileGenerator.cs
+index 2735d5d..dcf805b 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator/DependencyInjection/ServiceProviderFileGenerator.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator/DependencyInjection/ServiceProviderFileGenerator.cs
+@@ -11,6 +11,11 @@ public class ServiceProviderFileGenerator {
+         EntryPointSelector.Model model) {
+         var diFile = new CSharpFileDefinition(model.EntryPointType.Namespace);
+ 
++        // AddLogging, BuildServiceProvider and GetRequiredService are extension methods, and an
++        // extension method is reachable only through a using of its namespace - global:: cannot
++        // name one.
++        diFile.AddUsingNamespace(KnownTypes.Namespace.Microsoft.Extensions.DependencyInjection);
++
+         GenerateCode(model, diFile);
+ 
+         var outputContext = new OutputContext(
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator/Function/FunctionIncrementalGenerator.cs b/src/SourceGenerators/Hardened.SourceGenerator/Function/FunctionIncrementalGenerator.cs
+index 4a56c86..ff68103 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator/Function/FunctionIncrementalGenerator.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator/Function/FunctionIncrementalGenerator.cs
+@@ -66,6 +66,10 @@ public static class FunctionIncrementalGenerator {
+ 
+         var csharpFile = new CSharpFileDefinition(appModel.EntryPointType.Namespace);
+ 
++        // AddSingleton/AddTransient are extension methods, and an extension method is reachable
++        // only through a using of its namespace - global:: cannot name one.
++        csharpFile.AddUsingNamespace(KnownTypes.Namespace.Microsoft.Extensions.DependencyInjection);
++
+         var appClass = csharpFile.AddClass(appModel.EntryPointType.Name);
+         appClass.Modifiers = ComponentModifier.Public | ComponentModifier.Partial;
+ 
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator/Requests/BindRequestParametersMethodGenerator.cs b/src/SourceGenerators/Hardened.SourceGenerator/Requests/BindRequestParametersMethodGenerator.cs
+index ce6ec01..c9a4144 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator/Requests/BindRequestParametersMethodGenerator.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator/Requests/BindRequestParametersMethodGenerator.cs
+@@ -195,7 +195,16 @@ public static class BindRequestParametersMethodGenerator {
+                 break;
+         }
+ 
+-        var valueStatement = Bang(context.Property("Request").Property(instance).Invoke("Get", QuoteString(bindingName)));
++        var requestValue = context.Property("Request").Property(instance).Invoke("Get", QuoteString(bindingName));
++
++        // PathTokens and QueryString carry their own Get; Headers is a plain IDictionary and
++        // Cookies a plain IReadOnlyList, so theirs comes from an extension class. An extension
++        // method is reachable only through a using of its namespace - global:: cannot name one.
++        if (parameterInformation.BindingType is ParameterBindType.Header or ParameterBindType.Cookie) {
++            requestValue.AddUsingNamespace(KnownTypes.Namespace.Hardened.Requests.Runtime.Execution);
++        }
++
++        var valueStatement = Bang(requestValue);
+ 
+         var stringInvokeStatement = context.Property("KnownServices").Property("StringConverterService");
+ 
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator/Requests/HandlerInfoCodeGenerator.cs b/src/SourceGenerators/Hardened.SourceGenerator/Requests/HandlerInfoCodeGenerator.cs
+index 9584d21..b0e9518 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator/Requests/HandlerInfoCodeGenerator.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator/Requests/HandlerInfoCodeGenerator.cs
+@@ -105,8 +105,18 @@ public static class HandlerInfoCodeGenerator {
+             declaredArgs += $", producedContentTypes: new string[] {{ {string.Join(", ", quoted)} }}";
+         }
+ 
++        // The type is handed over rather than named, so it is still a type when the file is
++        // serialized: written qualified in a file that qualifies, and counted in the using list.
++        // Spelled into the string it was neither, and resolved only while some other part of the
++        // file happened to import the namespace.
+         handlerInfoField.InitializeValue =
+-            new CodeOutputComponent($"new ExecutionRequestHandlerInfo(\"{handlerModel.Name.Path}\", \"{handlerModel.Name.Method}\", typeof({handlerModel.ControllerType.Name}), \"{handlerModel.HandlerMethod}\"{parameterInfoField}{metadataArg}{declaredArgs})");
++            CodeOutputComponent.FromParts(new object[] {
++                "new ",
++                KnownTypes.Requests.ExecutionRequestHandlerInfo,
++                $"(\"{handlerModel.Name.Path}\", \"{handlerModel.Name.Method}\", typeof(",
++                handlerModel.ControllerType,
++                $"), \"{handlerModel.HandlerMethod}\"{parameterInfoField}{metadataArg}{declaredArgs})"
++            });
+ 
+         // No HandlerInfo property is emitted, deliberately. The field above is the handler as
+         // written; BaseExecutionHandler exposes the one the chain was actually built from, which is
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator/Shared/ApplicationRootImplementation.cs b/src/SourceGenerators/Hardened.SourceGenerator/Shared/ApplicationRootImplementation.cs
+index 24e8902..625c930 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator/Shared/ApplicationRootImplementation.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator/Shared/ApplicationRootImplementation.cs
+@@ -12,8 +12,11 @@ public static class ApplicationRootImplementation {
+         var provider = appClass.AddProperty(KnownTypes.DI.IServiceProvider, "Provider");
+ 
+         provider.Get.LambdaSyntax = true;
++        // {arg1} keeps Exception a type until the file is serialized. Spelled into the string it
++        // was text, and resolved only where something else had already imported System.
+         provider.Get.AddCode(
+-            "RootServiceProvider ?? throw new Exception(\"RootServiceProvider not initialized yet\");");
++            "RootServiceProvider ?? throw new {arg1}(\"RootServiceProvider not initialized yet\");",
++            typeof(Exception));
+         provider.Set = null;
+ 
+         var disposeAsync = appClass.AddMethod("DisposeAsync");
+diff --git a/src/SourceGenerators/Hardened.Validation.SourceGenerator/RegistrationWriter.cs b/src/SourceGenerators/Hardened.Validation.SourceGenerator/RegistrationWriter.cs
+index 2db33f3..be99d35 100644
+--- a/src/SourceGenerators/Hardened.Validation.SourceGenerator/RegistrationWriter.cs
++++ b/src/SourceGenerators/Hardened.Validation.SourceGenerator/RegistrationWriter.cs
+@@ -40,6 +40,10 @@ internal static class RegistrationWriter {
+ 
+         var file = new CSharpFileDefinition(entryPoint.EntryPointType.Namespace);
+ 
++        // AddSingleton is an extension method, and an extension method is reachable only through a
++        // using of its namespace - global:: cannot name one.
++        file.AddUsingNamespace(KnownTypes.Namespace.Microsoft.Extensions.DependencyInjection);
++
+         var appClass = file.AddClass(entryPoint.EntryPointType.Name);
+         appClass.Modifiers |= ComponentModifier.Partial;
+ 

@@ -1,7 +1,26 @@
 namespace CSharpAuthor;
 
+/// <summary>
+/// A method or constructor parameter: its declaration, and a value the body can use.
+/// </summary>
+/// <remarks>
+/// It is an <see cref="InstanceDefinition"/>, so the same object that declares
+/// <c>string name</c> is what a statement in the body writes as <c>name</c>. That is why
+/// <see cref="MethodDefinition.AddParameter(ITypeDefinition, string)"/> hands it back: holding it
+/// is how the declaration and the body stay in step.
+/// </remarks>
 public class ParameterDefinition : InstanceDefinition
 {
+    /// <summary>
+    /// A parameter of <paramref name="typeDefinition"/> named <paramref name="name"/>. Prefer
+    /// <see cref="MethodDefinition.AddParameter(ITypeDefinition, string)"/>, which builds one and
+    /// appends it to a signature.
+    /// </summary>
+    /// <remarks>
+    /// Constructing one directly is for a parameter built before the method exists - a helper that
+    /// assembles a signature and then attaches it with
+    /// <see cref="MethodDefinition.AddParameter(ParameterDefinition)"/>.
+    /// </remarks>
     public ParameterDefinition(ITypeDefinition typeDefinition, string name)
         : base(name)
     {
@@ -38,13 +57,32 @@ public class ParameterDefinition : InstanceDefinition
     /// </summary>
     public bool This { get; set; } = false;
 
+    /// <summary>The declared type.</summary>
     public ITypeDefinition TypeDefinition { get; }
 
+    /// <summary>
+    /// The default: <c>public void Greet(string name = "world")</c>.
+    /// </summary>
+    /// <remarks>
+    /// A component rather than a value, so a string literal needs
+    /// <see cref="SyntaxHelpers.QuoteString"/> and a null default needs
+    /// <see cref="SyntaxHelpers.Null"/> - setting this to null means no default at all. C# requires
+    /// every parameter after an optional one to be optional too, and nothing here checks that; the
+    /// order is the order they were added.
+    /// </remarks>
     public IOutputComponent? DefaultValue { get; set; }
 
     public void WriteWithSignature(IOutputContext outputContext)
     {
-        outputContext.AddImportNamespace(TypeDefinition);
+        // A parameter never goes through BaseOutputComponent.WriteOutput - it is written inline as
+        // part of a signature - and that is the only place UsingNamespaces was consumed. So
+        // AddUsingNamespace on a parameter compiled, and did nothing. It matters in a qualifying
+        // mode, where an explicit directive is the only way to reach an extension method:
+        // `global::` cannot name one.
+        if (UsingNamespaces != null)
+        {
+            outputContext.AddImportNamespaces(UsingNamespaces);
+        }
 
         // Inline, because a parameter is part of a line rather than a line of its own. Attributes
         // could always be added to a parameter; they were simply never written.
@@ -78,7 +116,7 @@ public class ParameterDefinition : InstanceDefinition
 
         outputContext.Write(TypeDefinition);
         outputContext.WriteSpace();
-        outputContext.Write(Name);
+        outputContext.Write(CSharpIdentifier.Escape(Name));
 
         if (DefaultValue != null)
         {
@@ -108,7 +146,9 @@ public class ParameterDefinition : InstanceDefinition
             _ => null
         };
 
-        return new CodeOutputComponent(modifier == null ? Name : modifier + " " + Name)
+        var name = CSharpIdentifier.Escape(Name);
+
+        return new CodeOutputComponent(modifier == null ? name : modifier + " " + name)
         {
             Indented = false
         };
@@ -126,8 +166,15 @@ public class ParameterDefinition : InstanceDefinition
         };
     }
 
+    /// <summary>
+    /// The parameter used as a value expression - its own name.
+    /// </summary>
+    /// <remarks>
+    /// Escaped the same way the declaration is, so a parameter named after a keyword reads back as
+    /// the identifier it was declared as.
+    /// </remarks>
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.Write(Name);
+        outputContext.Write(CSharpIdentifier.Escape(Name));
     }
 }
