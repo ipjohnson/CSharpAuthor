@@ -21,7 +21,7 @@ public class OutputContextAdversaryTests
     /// otherwise. On Linux and macOS <see cref="Environment.NewLine"/> is <c>"\n"</c>, so the whole
     /// thing is invisible: it reproduces only on the platform nobody generating this ran it on.
     /// </remarks>
-    [Fact(Skip = "ADVERSARY GAP: OutputContext.WriteLine(text) and WriteIndentedLine use StringBuilder.AppendLine, which appends Environment.NewLine and ignores Options.NewLine - so a file emitted with NewLine set has mixed line endings, and on Windows the default is silently CRLF")]
+    [Fact]
     public void NewLineOptionIsHonouredEverywhere()
     {
         var options = new OutputContextOptions { NewLine = "\r\n" };
@@ -49,7 +49,7 @@ public class OutputContextAdversaryTests
     /// <c>FieldDefinition</c> and <c>ParameterDefinition</c> call <c>AddImportNamespace</c>
     /// themselves, before and outside that check, so the usings appear anyway.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP (§7 'Global mode'): FieldDefinition and ParameterDefinition call AddImportNamespace directly, bypassing the mode check in Write(ITypeDefinition), so a fully global::-qualified file still carries using directives it does not need")]
+    [Fact]
     public void GlobalModeEmitsNoUsings()
     {
         var file = new CSharpFileDefinition("Probe");
@@ -91,7 +91,7 @@ public class OutputContextAdversaryTests
     /// name, long before the context knows it is writing a <see cref="TypeOutputMode.Global"/> file
     /// - so it stays short while every other type in the file is qualified.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP (§7 'AddCode'): AddCode calls GetShortName() when the statement is built, so the type is text before the output mode is known - it stays unqualified in a Global-mode file, and its using is emitted to make it resolve")]
+    [Fact]
     public void AddCodeDefersItsTypes()
     {
         var file = new CSharpFileDefinition("Probe");
@@ -109,7 +109,7 @@ public class OutputContextAdversaryTests
     /// A file whose own namespace is imported. Legal, and a line of noise in every snapshot of
     /// every generator that refers to a type beside the one it is writing.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: a type in the file's own namespace is still imported, so the file emits 'using Probe;' above 'namespace Probe'")]
+    [Fact]
     public void FilesOwnNamespaceIsNotImported()
     {
         var file = new CSharpFileDefinition("Probe");

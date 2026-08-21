@@ -90,7 +90,7 @@ public class TypeModelContractTests
     /// <c>int[]</c> hash identically. Legal, and a guaranteed collision for every array in every
     /// dictionary the model is used as a key in.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: GetHashCode is built from ToString(), which omits IsArray and IsNullable, so int and int[] always collide - unequal values with the same hash, by construction rather than by chance")]
+    [Fact]
     public void ArrayAndElementTypesHashDifferently()
     {
         var element = TypeDefinition.Get(typeof(int));
@@ -111,7 +111,7 @@ public class TypeModelContractTests
         Assert.Equal("int", TypeDefinition.Get(typeof(int)).ToString());
     }
 
-    [Fact(Skip = "ADVERSARY GAP: no API - EquatableArray<T> does not exist (§7 requires it). Records compare collection members by reference, so a generator model holding an IReadOnlyList never matches its cached self and the incremental pipeline re-runs on every keystroke.")]
+    [Fact]
     public void EquatableArrayExists()
     {
         var type = typeof(TypeDefinition).Assembly

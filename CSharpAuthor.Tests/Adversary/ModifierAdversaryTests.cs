@@ -14,7 +14,7 @@ namespace CSharpAuthor.Tests.Adversary;
 /// </remarks>
 public class ModifierAdversaryTests
 {
-    [Fact(Skip = "ADVERSARY GAP (§7 'protected internal'): GetAccessModifier returns on the first flag it matches, so protected|internal emits internal - a derived type in another assembly loses access")]
+    [Fact]
     public void ProtectedInternalOnAClass()
     {
         var classDefinition = new ClassDefinition("Host")
@@ -25,7 +25,7 @@ public class ModifierAdversaryTests
         Assert.StartsWith("protected internal class", Emit.Component(classDefinition));
     }
 
-    [Fact(Skip = "ADVERSARY GAP (§7 'private protected'): emits protected, which WIDENS access - another assembly's derived type can now reach the member")]
+    [Fact]
     public void PrivateProtectedOnAMethod()
     {
         var method = new MethodDefinition("M")
@@ -50,7 +50,7 @@ public class ModifierAdversaryTests
     /// <summary>
     /// §7's abstract-method case, put to the compiler: an abstract method with a body is CS0500.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP (§7 'abstract method'): the modifier is written and a body is written after it - CS0500")]
+    [Fact]
     public void AbstractMethodHasNoBody()
     {
         var method = new MethodDefinition("M")
@@ -68,7 +68,7 @@ public class ModifierAdversaryTests
     /// member exists, is not virtual, and the first derived type that overrides it fails with
     /// CS0506 - a long way from the generator that caused it.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: abstract on a property is silently dropped and an auto-property body written instead; the type compiles and any override of it is CS0506")]
+    [Fact]
     public void AbstractPropertyHasNoBody()
     {
         var classDefinition = new ClassDefinition("Base")
@@ -106,7 +106,7 @@ public class ModifierAdversaryTests
     /// struct may not have a mutable instance field, so if the modifier reached the output the
     /// compiler says CS8340. It does not, so the struct compiles - which is the defect.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP (§7 'readonly on structs'): ClassDefinition never writes Readonly, so a readonly struct is emitted as an ordinary one and its immutability is gone")]
+    [Fact]
     public void ReadonlyStructIsActuallyReadonly()
     {
         var structDefinition = new ClassDefinition("Point")
@@ -122,7 +122,7 @@ public class ModifierAdversaryTests
         Assert.Contains(errors, e => e.Id == "CS8340");
     }
 
-    [Fact(Skip = "ADVERSARY GAP (§7 'sealed + override'): the modifier chain is an if/else, so sealed is skipped once override matches - emits override, leaving the member open to further overriding")]
+    [Fact]
     public void SealedOverrideKeepsBoth()
     {
         var method = new MethodDefinition("M")
@@ -133,7 +133,7 @@ public class ModifierAdversaryTests
         Assert.StartsWith("public sealed override void", Emit.Component(method));
     }
 
-    [Fact(Skip = "ADVERSARY GAP (§7 'abstract + sealed/static'): ClassDefinition's if/else picks Sealed and drops Abstract")]
+    [Fact]
     public void AbstractAndSealedOnAClass()
     {
         var classDefinition = new ClassDefinition("Host")
@@ -151,7 +151,7 @@ public class ModifierAdversaryTests
     /// <c>readonly</c> on a member of a struct - <c>public readonly int Sum() =&gt; ...</c> - is a
     /// different modifier from <c>readonly</c> on the struct, and neither is written.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: MethodDefinition never writes Readonly, so a readonly struct member cannot be declared at all")]
+    [Fact]
     public void ReadonlyMethodOnAStruct()
     {
         var method = new MethodDefinition("Sum")
@@ -192,7 +192,7 @@ public class ModifierAdversaryTests
     /// order, so this is a formatting question - but it is a formatting question that appears in
     /// consumer snapshots, which is where formatting questions turn into review time.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: FieldDefinition writes readonly before static, giving 'public readonly static int' - legal, and the reverse of what every style guide and the compiler's own messages use")]
+    [Fact]
     public void StaticReadonlyFieldModifierOrder()
     {
         var classDefinition = new ClassDefinition("Host");

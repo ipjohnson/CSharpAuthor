@@ -8,20 +8,28 @@ library code. Every entry here is a test in `CSharpAuthor.Tests/Adversary/`.
 | | count |
 |---|---|
 | **found** | **170** |
-| **fixed** | **0** |
-| **outstanding** | **170** |
+| **fixed** | **54** |
+| **outstanding** | **116** |
 
-Suite: **274 passing, 0 failing, 170 skipped, 444 total.** The 139 pre-existing tests are
-unmodified and all pass. 135 of the passing tests are new adversary regression guards.
+Suite: **1122 passing, 0 failing, 116 skipped, 1238 total** (measured, not projected). The 139
+pre-existing tests are unmodified and all pass. Of the adversary's own 305 cases, **189 pass and
+116 are skipped gaps**.
+
+**Reconciliation, wave 2.** The 54 findings closed by the wave-1 builders were still carrying their
+`Skip` attributes, so the gate under-reported the work and the fixes had no regression guard. Every
+one of those skips has now been removed and the test runs live. The method was mechanical, not a
+judgement call: strip every skip on a throwaway branch, run the suite, and un-skip exactly the set
+that passed. 170 skips stripped → 116 failures; those 116 keep their skips, the other 54 lost them.
 
 ### How to read a finding
 
-Every finding is a test carrying `[Fact(Skip = "ADVERSARY GAP: …")]`. The test asserts the
-**correct** behaviour, so when the defect is fixed the skip comes off and the test passes as
-written. Nothing here is a test that agrees with a defect.
+Every outstanding finding is a test carrying `[Fact(Skip = "ADVERSARY GAP: …")]`. The test asserts
+the **correct** behaviour, so when the defect is fixed the skip comes off and the test passes as
+written. Nothing here is a test that agrees with a defect. A finding that has been **fixed** is the
+same test with the skip removed — it is now a live regression guard, and the appendix names all 54.
 
-Every gap in this document has been **verified to fail today**. Running the suite with the skip
-attributes stripped gives 170 failures and 135 passes — the same 170. Reproduce with:
+Every remaining gap in this document has been **verified to fail today**. Running the suite with the
+skip attributes stripped gives 116 failures — the same 116 that are still skipped. Reproduce with:
 
 ```
 perl -0pi -e 's/\[(Fact|Theory)\(Skip\s*=\s*"(?:[^"\\]|\\.)*"\)\]/[$1]/g' CSharpAuthor.Tests/Adversary/*.cs
@@ -244,26 +252,292 @@ that work will trip over it.
 
 ## Files
 
-| File | Guards | Gaps |
+| File | Live tests | Gaps still skipped |
 |---|---|---|
 | `Adversary/RoslynAssert.cs` | — | the harness |
 | `Adversary/Emit.cs` | — | emit + culture helper |
 | `Adversary/RoslynAssertSelfTests.cs` | 6 | — |
-| `Adversary/TypeNameAdversaryTests.cs` | 5 | 15 |
-| `Adversary/IdentifierAdversaryTests.cs` | 10 | 10 |
-| `Adversary/LiteralAdversaryTests.cs` | 3 | 15 |
-| `Adversary/CultureAdversaryTests.cs` | 2 | 9 |
-| `Adversary/ModifierAdversaryTests.cs` | 20 | 14 |
-| `Adversary/AttributeAdversaryTests.cs` | 7 | 4 |
+| `Adversary/TypeNameAdversaryTests.cs` | 13 | 7 |
+| `Adversary/IdentifierAdversaryTests.cs` | 18 | 2 |
+| `Adversary/LiteralAdversaryTests.cs` | 14 | 4 |
+| `Adversary/CultureAdversaryTests.cs` | 5 | 6 |
+| `Adversary/ModifierAdversaryTests.cs` | 29 | 5 |
+| `Adversary/AttributeAdversaryTests.cs` | 9 | 2 |
 | `Adversary/PrecedenceAdversaryTests.cs` | 11 | 6 |
 | `Adversary/TriviaAdversaryTests.cs` | 5 | 10 |
-| `Adversary/ExpressionAdversaryTests.cs` | 7 | 17 |
-| `Adversary/StatementAdversaryTests.cs` | 8 | 13 |
+| `Adversary/ExpressionAdversaryTests.cs` | 12 | 12 |
+| `Adversary/StatementAdversaryTests.cs` | 9 | 12 |
 | `Adversary/PatternCoverageTests.cs` | 1 | 13 |
 | `Adversary/MemberCoverageTests.cs` | 11 | 18 |
 | `Adversary/ConstraintAdversaryTests.cs` | 12 | 3 |
-| `Adversary/OutputContextAdversaryTests.cs` | 8 | 6 |
-| `Adversary/TypeModelContractTests.cs` | 6 | 6 |
-| `Adversary/StructureAdversaryTests.cs` | 7 | 5 |
+| `Adversary/OutputContextAdversaryTests.cs` | 12 | 2 |
+| `Adversary/TypeModelContractTests.cs` | 8 | 4 |
+| `Adversary/StructureAdversaryTests.cs` | 8 | 4 |
 | `Adversary/ValueConversionAdversaryTests.cs` | 6 | 6 |
-| **total** | **135** | **170** |
+| **total** | **189** | **116** |
+
+---
+
+## Appendix: the ledger, reconciled
+
+Generated mechanically from a run of the suite, not by hand. `fixed` = the skip has been
+removed and the test passes as written; `outstanding` = the skip is still on and the test still
+fails without it.
+
+### Fixed by wave 1, un-skipped in wave 2 (54)
+
+**AttributeAdversaryTests.cs** — 2
+
+- `AttributeInGlobalMode`
+- `GenericAttribute`
+
+**CultureAdversaryTests.cs** — 3
+
+- `AWholeFileIsIdenticalAcrossCultures`
+- `AddCodeRawArgument`
+- `FieldInitializer`
+
+**ExpressionAdversaryTests.cs** — 5
+
+- `IsImportsItsTypeArgumentsNamespaces`
+- `IsInGlobalMode`
+- `IsWithAGenericType`
+- `IsWithAGenericTypeThatHasANonGenericTwin`
+- `IsWithAnArrayType`
+
+**IdentifierAdversaryTests.cs** — 8
+
+- `ClassNamedEvent`
+- `EnumValueNamedDefault`
+- `FieldNamedLock`
+- `InterfaceNamedInterface`
+- `MethodNamedIf`
+- `NamespaceSegmentNamedNamespace`
+- `ParameterNamedClass`
+- `PropertyNamedString`
+
+**LiteralAdversaryTests.cs** — 11
+
+- `AddCodeStringArgumentContainingAQuote`
+- `CharLiteral`
+- `CharLiteralThatIsAQuote`
+- `DecimalLiteral`
+- `FloatLiteral`
+- `NonFiniteDoubleLiterals`
+- `StringArrayElementsContainingQuotes`
+- `StringContainingANewline`
+- `StringContainingAQuote`
+- `StringContainingBackslashes`
+- `StringContainingNul`
+
+**ModifierAdversaryTests.cs** — 9
+
+- `AbstractAndSealedOnAClass`
+- `AbstractMethodHasNoBody`
+- `AbstractPropertyHasNoBody`
+- `PrivateProtectedOnAMethod`
+- `ProtectedInternalOnAClass`
+- `ReadonlyMethodOnAStruct`
+- `ReadonlyStructIsActuallyReadonly`
+- `SealedOverrideKeepsBoth`
+- `StaticReadonlyFieldModifierOrder`
+
+**OutputContextAdversaryTests.cs** — 4
+
+- `AddCodeDefersItsTypes`
+- `FilesOwnNamespaceIsNotImported`
+- `GlobalModeEmitsNoUsings`
+- `NewLineOptionIsHonouredEverywhere`
+
+**StatementAdversaryTests.cs** — 1
+
+- `ForLoopWritesItsBody`
+
+**StructureAdversaryTests.cs** — 1
+
+- `ClosingAnUnopenedScope`
+
+**TypeModelContractTests.cs** — 2
+
+- `ArrayAndElementTypesHashDifferently`
+- `EquatableArrayExists`
+
+**TypeNameAdversaryTests.cs** — 8
+
+- `ArrayOfConstructedGeneric`
+- `DeeplyNestedType_KeepsItsContainers`
+- `GenericNestedInGeneric`
+- `GenericNestedInGeneric_NamesATypeThatExists`
+- `MakeArrayTwice`
+- `MultiDimensionalArray`
+- `NestedType_InGlobalMode`
+- `NestedType_KeepsItsContainer`
+
+### Outstanding (116)
+
+**AttributeAdversaryTests.cs** — 2
+
+- `AssemblyLevelAttribute`
+- `AttributeTypeNamedAttribute`
+
+**ConstraintAdversaryTests.cs** — 3
+
+- `AllowsRefStruct`
+- `BaseClassConstraintOrdering`
+- `InterfaceConstraints`
+
+**CultureAdversaryTests.cs** — 6
+
+- `AttributeArgumentDoesNotSplitIntoTwo`
+- `ConstructorArgument`
+- `DecimalValue`
+- `DoubleValue`
+- `EnumMemberValue`
+- `FloatValue`
+
+**ExpressionAdversaryTests.cs** — 12
+
+- `AsExpression`
+- `CollectionExpressionsAndSpreads`
+- `ConditionalExpression`
+- `InterpolatedStrings`
+- `Lambdas`
+- `NameOf`
+- `ObjectInitializerWithNamedMembers`
+- `RangesAndIndices`
+- `StackAlloc`
+- `SwitchExpressions`
+- `TuplesAndDeconstruction`
+- `WithExpressions`
+
+**IdentifierAdversaryTests.cs** — 2
+
+- `TypeParameterNamedInt`
+- `TypeReferenceNamedEvent`
+
+**LiteralAdversaryTests.cs** — 4
+
+- `NullValueBecomesTheNullLiteral`
+- `RawStringLiteralFenceLength`
+- `StringContainingAnEscapeCharacter`
+- `StringValueIsQuotedConsistently`
+
+**MemberCoverageTests.cs** — 18
+
+- `ConstFields`
+- `ConversionOperators`
+- `Destructors`
+- `EnumMemberLiteralForm`
+- `ExtensionBlocksAndMembers`
+- `ExternMembers`
+- `FieldKeyword`
+- `FileLocalTypes`
+- `GenericDelegateConstraints`
+- `GenericInterfaces`
+- `InterfaceMemberKinds`
+- `NewMemberHiding`
+- `OperatorDeclarations`
+- `RefReturns`
+- `RequiredMembers`
+- `StaticAbstractInterfaceMembers`
+- `UnsafeMembers`
+- `VolatileFields`
+
+**ModifierAdversaryTests.cs** — 5
+
+- `IndexerOnAPropertyNotNamedThis`
+- `NoAccessibilityDoesNotLeaveAStraySpace`
+- `NoAccessibilityOnAPropertyDoesNotLeaveAStraySpace`
+- `PartialMethodKeepsItsModifier`
+- `PublicAndInternalTogether`
+
+**OutputContextAdversaryTests.cs** — 2
+
+- `SameShortNameFromTwoNamespaces`
+- `SystemUsingsSortFirst`
+
+**PatternCoverageTests.cs** — 13
+
+- `ConstantPattern`
+- `DeclarationPattern`
+- `DiscardPattern`
+- `ListPattern`
+- `NotNullPattern`
+- `ParenthesisedPattern`
+- `PatternCombinators`
+- `PatternInACaseLabel`
+- `PositionalPattern`
+- `PropertyPattern`
+- `RelationalPattern`
+- `SlicePattern`
+- `VarPattern`
+
+**PrecedenceAdversaryTests.cs** — 6
+
+- `AwaitThenMemberAccess`
+- `CastThenIndex`
+- `CastThenInvoke`
+- `CastThenMemberAccess`
+- `CastThenMemberAccess_Compiles`
+- `IncrementOfAnExpressionIsRejectedOrParenthesised`
+
+**StatementAdversaryTests.cs** — 12
+
+- `CatchWhenFilterIsForwarded`
+- `CheckedAndUnchecked`
+- `ContinueStatement`
+- `DoWhileStatement`
+- `ForEachWithAnExplicitElementType`
+- `GotoAndLabels`
+- `LocalFunctions`
+- `LockStatement`
+- `SwitchCaseOnAStringValue`
+- `ThrowExpressionAndRethrow`
+- `UsingStatementAndDeclaration`
+- `YieldBreak`
+
+**StructureAdversaryTests.cs** — 4
+
+- `AddBaseTypeTwiceKeepsTheArguments`
+- `EnumMemberValueUsesCSharpLiteralForm`
+- `GenericTypeWithNoArguments`
+- `NoBlankLineBeforeTheFirstMember`
+
+**TriviaAdversaryTests.cs** — 10
+
+- `AutoGeneratedHeaderIsTheFirstLine`
+- `CommentContainingMarkupCharacters`
+- `ConditionalCompilationDirective`
+- `EnableNullableRestoresRatherThanDisables`
+- `FileLevelCommentIsWritten`
+- `LineDirective`
+- `NamespaceCommentIsWritten`
+- `OrdinaryComment`
+- `ParameterAndReturnCommentsAreEscaped`
+- `RegionDirective`
+
+**TypeModelContractTests.cs** — 4
+
+- `CompareToAgreesWithEquals`
+- `CompareToIsSymmetric`
+- `SortingProducesAStableOrder`
+- `ToStringOfAKeywordTypeHasNoLeadingDot`
+
+**TypeNameAdversaryTests.cs** — 7
+
+- `JaggedArrayOfMultiDimensional`
+- `MultiDimensionalArrayOfJagged`
+- `NullableElementArray_AcceptsNullElement`
+- `NullableElementArray_OnGenericType`
+- `NullableElementArray_OnTypeParameter`
+- `NullableElementArray_WritesQuestionBeforeBrackets`
+- `TheWholeShape`
+
+**ValueConversionAdversaryTests.cs** — 6
+
+- `EmptyArrayValue`
+- `EnumValue`
+- `EnumValueThroughAddCode`
+- `StringAttributeArgument`
+- `TwoDimensionalArrayValue`
+- `UnmatchedPlaceholder`

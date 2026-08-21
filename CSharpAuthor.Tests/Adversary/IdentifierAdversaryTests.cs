@@ -14,7 +14,7 @@ namespace CSharpAuthor.Tests.Adversary;
 /// </remarks>
 public class IdentifierAdversaryTests
 {
-    [Fact(Skip = "ADVERSARY GAP (§7 'Keyword identifiers'): emits void M(string class) - CS1001, identifier expected")]
+    [Fact]
     public void ParameterNamedClass()
     {
         var method = new MethodDefinition("M");
@@ -24,13 +24,13 @@ public class IdentifierAdversaryTests
         RoslynAssert.MemberCompiles(Emit.Component(method));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: a type's own name is never escaped - ClassDefinition(\"event\") emits public class event, CS1001")]
+    [Fact]
     public void ClassNamedEvent()
     {
         RoslynAssert.Compiles(Emit.Component(new ClassDefinition("event")));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: a field name is never escaped - emits private int lock;, CS1001")]
+    [Fact]
     public void FieldNamedLock()
     {
         var classDefinition = new ClassDefinition("Host");
@@ -40,7 +40,7 @@ public class IdentifierAdversaryTests
         RoslynAssert.Compiles(Emit.Component(classDefinition));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: a property name is never escaped - emits public int string { get; set; }, CS1001")]
+    [Fact]
     public void PropertyNamedString()
     {
         var classDefinition = new ClassDefinition("Host");
@@ -50,7 +50,7 @@ public class IdentifierAdversaryTests
         RoslynAssert.Compiles(Emit.Component(classDefinition));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: a method name is never escaped - emits public void if(), CS1001")]
+    [Fact]
     public void MethodNamedIf()
     {
         var classDefinition = new ClassDefinition("Host");
@@ -60,7 +60,7 @@ public class IdentifierAdversaryTests
         RoslynAssert.Compiles(Emit.Component(classDefinition));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: an enum member name is never escaped - emits public enum E { default, }, CS1001")]
+    [Fact]
     public void EnumValueNamedDefault()
     {
         var enumDefinition = new EnumDefinition("E");
@@ -74,7 +74,7 @@ public class IdentifierAdversaryTests
     /// A namespace is a dotted list of identifiers, so any one of them can be a keyword. Nothing
     /// splits on the dot to check.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: a namespace is written as one opaque string, so a keyword segment is never escaped - namespace My.namespace.Thing is CS1001")]
+    [Fact]
     public void NamespaceSegmentNamedNamespace()
     {
         var file = new CSharpFileDefinition("My.namespace.Thing");
@@ -92,7 +92,7 @@ public class IdentifierAdversaryTests
         Assert.Equal("@event", Emit.TypeName(type));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: an interface name is never escaped - emits public interface interface, CS1001")]
+    [Fact]
     public void InterfaceNamedInterface()
     {
         RoslynAssert.Compiles(Emit.Component(new InterfaceDefinition("interface")));

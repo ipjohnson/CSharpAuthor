@@ -31,7 +31,7 @@ namespace Probe
     /// <c>ITypeDefinition.Name</c> rather than the rendered type, so the type argument never reaches
     /// the output - and the name that is left is the name of a different attribute.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: a generic attribute loses its type arguments - Validate<int> is written [Validate], which is CS0305 where no non-generic overload exists and binds to the wrong attribute where one does")]
+    [Fact]
     public void GenericAttribute()
     {
         var classDefinition = new ClassDefinition("Host");
@@ -182,7 +182,7 @@ namespace Probe
     /// An attribute in <see cref="TypeOutputMode.Global"/> is written as a bare short name, because
     /// the name is rebuilt from <c>ITypeDefinition.Name</c> and never passes through the mode.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: AttributeDefinition rebuilds the name from ITypeDefinition.Name, so Global mode does not reach it - the attribute stays unqualified while every other type in the file is global::-prefixed")]
+    [Fact]
     public void AttributeInGlobalMode()
     {
         var classDefinition = new ClassDefinition("Host");
