@@ -249,11 +249,8 @@ public sealed partial class Pat : IPatternNode
 
             if (positional != null)
             {
-                if (wroteSomething)
-                {
-                    c.Write(" ");
-                }
-
+                // No space between the type and the positional list: `Point(0, var y)` is
+                // how it is written, and the deconstruction reads as a call.
                 c.Write("(");
 
                 for (var i = 0; i < positional.Count; i++)
