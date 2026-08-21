@@ -9,6 +9,18 @@ assembly_info:
   assembly_version: '$(build_version).0'
   assembly_file_version: '$(build_version).{build}'
   assembly_informational_version: '$(build_version)'
+# The image ships 6.0, 7.0, 8.0 and 9.0, and global.json pins the .NET 11 preview - so without
+# this every project fails to resolve Microsoft.NET.Sdk before a single file is compiled.
+#
+# The preview is needed because the test project declares a union, which is how an emitted union
+# declaration gets checked by a compiler rather than against a string. The library itself is
+# netstandard2.0 and unaffected.
+install:
+ - ps: |
+     Invoke-WebRequest -Uri https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1
+     ./dotnet-install.ps1 -Version 11.0.100-preview.7.26381.103 -InstallDir "$env:ProgramFiles\dotnet"
+     dotnet --list-sdks
+
 before_build:
  - cmd: nuget restore CSharpAuthor.sln
 build:
