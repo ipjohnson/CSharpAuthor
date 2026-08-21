@@ -8,6 +8,11 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
+// CSharpAuthor gained its own LanguageVersion (the profiles capability enum). This file sits in
+// a namespace nested inside CSharpAuthor, and enclosing-namespace members beat using-aliases, so
+// a plain `using LanguageVersion = ...` cannot win. A distinct name is unambiguous.
+using RoslynLangVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
+
 namespace CSharpAuthor.Tests.Adversary;
 
 /// <summary>
@@ -35,7 +40,7 @@ internal static class RoslynAssert
     /// The highest version this Roslyn understands. 4.14 tops out at C# 13 - handoff §4 - so a
     /// construct newer than that cannot be validated here, only asserted as a string.
     /// </summary>
-    public const LanguageVersion MaxLanguageVersion = LanguageVersion.CSharp13;
+    public const RoslynLangVersion MaxLanguageVersion = RoslynLangVersion.CSharp13;
 
     /// <summary>
     /// Parses and compiles <paramref name="source"/> as a whole file, asserting the compiler reports
@@ -43,7 +48,7 @@ internal static class RoslynAssert
     /// </summary>
     public static void Compiles(
         string source,
-        LanguageVersion languageVersion = MaxLanguageVersion,
+        RoslynLangVersion languageVersion = MaxLanguageVersion,
         bool allowUnsafe = true,
         params string[] warningsAsErrors)
     {
@@ -68,7 +73,7 @@ internal static class RoslynAssert
         string member,
         string? containerHeader = null,
         string preamble = "",
-        LanguageVersion languageVersion = MaxLanguageVersion,
+        RoslynLangVersion languageVersion = MaxLanguageVersion,
         params string[] warningsAsErrors)
     {
         var header = containerHeader ?? "public class AdversaryHost";
@@ -98,7 +103,7 @@ internal static class RoslynAssert
     public static void StatementCompiles(
         string statement,
         string preamble = "",
-        LanguageVersion languageVersion = MaxLanguageVersion,
+        RoslynLangVersion languageVersion = MaxLanguageVersion,
         params string[] warningsAsErrors)
     {
         MemberCompiles(
@@ -115,7 +120,7 @@ internal static class RoslynAssert
     public static void ExpressionCompiles(
         string expression,
         string preamble = "",
-        LanguageVersion languageVersion = MaxLanguageVersion,
+        RoslynLangVersion languageVersion = MaxLanguageVersion,
         params string[] warningsAsErrors)
     {
         StatementCompiles("_ = " + expression + ";", preamble, languageVersion, warningsAsErrors);
@@ -127,7 +132,7 @@ internal static class RoslynAssert
     /// </summary>
     public static IReadOnlyList<Diagnostic> Errors(
         string source,
-        LanguageVersion languageVersion = MaxLanguageVersion,
+        RoslynLangVersion languageVersion = MaxLanguageVersion,
         params string[] warningsAsErrors) =>
         Diagnose(source, languageVersion, allowUnsafe: true, warningsAsErrors)
             .Where(d => d.Severity == DiagnosticSeverity.Error)
@@ -143,7 +148,7 @@ internal static class RoslynAssert
     /// apart; assigning null to an element and promoting CS8625 to an error can.
     /// </remarks>
     private static IReadOnlyList<Diagnostic> Diagnose(
-        string source, LanguageVersion languageVersion, bool allowUnsafe,
+        string source, RoslynLangVersion languageVersion, bool allowUnsafe,
         string[]? warningsAsErrors = null)
     {
         // DocumentationMode.Diagnose is what makes CS1570 - "XML comment has badly formed XML" -

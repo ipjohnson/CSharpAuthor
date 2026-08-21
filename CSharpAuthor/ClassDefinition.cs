@@ -36,6 +36,17 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
     public ClassKeyword TypeKeyword { get; set; } = ClassKeyword.Class;
 
     /// <summary>
+    /// Whether a struct is declared <c>ref struct</c> - stack-only, and enforced by the compiler.
+    /// </summary>
+    /// <remarks>
+    /// Ignored unless <see cref="TypeKeyword"/> is a struct. C# 7.2, and one of the features with
+    /// no downlevel: dropping <c>ref</c> gives a type that compiles and can be boxed, captured and
+    /// put on the heap - every restriction the caller asked for, silently removed. Below C# 7.2
+    /// this is a capability violation rather than a formatting decision.
+    /// </remarks>
+    public bool IsRefStruct { get; set; }
+
+    /// <summary>
     /// Whether the declaration is terminated with <c>;</c> rather than a body.
     /// </summary>
     /// <remarks>
@@ -325,6 +336,9 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
+        // Before the signature is written, so a #error directive lands on a line of its own.
+        RequireCapabilities(outputContext);
+
         if (TerminateWithSemicolon)
         {
             WriteClassSignature(outputContext, terminator: ";");
@@ -496,6 +510,12 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         outputContext.Write(
             Modifiers.GetModifierKeywords(ComponentModifierExtensions.TypeModifiers));
 
+        if (IsRefStruct && IsStruct && outputContext.EmitProfile().Supports(LanguageFeature.RefStructs))
+        {
+            outputContext.Write(KeyWords.Ref);
+            outputContext.WriteSpace();
+        }
+
         outputContext.Write(GetTypeKeywordString());
         outputContext.WriteSpace();
 
@@ -582,6 +602,60 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         }
 
         outputContext.Write(")");
+    }
+
+    private bool IsStruct =>
+        TypeKeyword == ClassKeyword.Struct || TypeKeyword == ClassKeyword.RecordStruct;
+
+    private bool HasPrimaryConstructor
+    {
+        get
+        {
+            foreach (var constructor in _constructors)
+            {
+                if (constructor.IsPrimary)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Everything about this declaration that the target language version has to have.
+    /// </summary>
+    /// <remarks>
+    /// Every one of these is demanded rather than asked about, because this writer has no
+    /// alternative form for any of them. A primary constructor could in principle be written out
+    /// as fields and a constructor - that is why the capability table calls it free - but nothing
+    /// here does that, and dropping the parameters would give a type with no way to construct it.
+    /// A silent "near enough" is the failure this library exists to remove.
+    /// </remarks>
+    private void RequireCapabilities(IOutputContext outputContext)
+    {
+        var session = outputContext.EmitSession();
+
+        if (IsRefStruct && IsStruct)
+        {
+            session.Require(LanguageFeature.RefStructs, outputContext, Name);
+        }
+
+        if (TypeKeyword == ClassKeyword.Record)
+        {
+            session.Require(LanguageFeature.Records, outputContext, Name);
+        }
+        else if (TypeKeyword == ClassKeyword.RecordStruct)
+        {
+            session.Require(LanguageFeature.RecordStructs, outputContext, Name);
+        }
+        else if (HasPrimaryConstructor)
+        {
+            // A record carries its positional parameters from C# 9; a class or struct only from
+            // C# 12.
+            session.Require(LanguageFeature.PrimaryConstructors, outputContext, Name);
+        }
     }
 
     private string GetTypeKeywordString() => TypeKeyword switch
