@@ -35,9 +35,18 @@ internal static class TestCompilation
             .ToList();
     });
 
+    /// <summary>
+    /// Parses at the language version every tree here uses. A compilation cannot mix versions, so a
+    /// generated file added to one has to be parsed the same way.
+    /// </summary>
+    public static SyntaxTree ParseTree(string source)
+    {
+        return CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.CSharp11));
+    }
+
     public static CSharpCompilation Compile(string source)
     {
-        var tree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.CSharp11));
+        var tree = ParseTree(source);
 
         return CSharpCompilation.Create(
             "BridgeTests",
