@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CSharpAuthor.Collections;
 using Xunit;
 
 namespace CSharpAuthor.Tests.TypeDefinitionTests;

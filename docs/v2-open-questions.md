@@ -19,6 +19,22 @@ caller choose.
 should select `IntPtr`/`UIntPtr`. The choice belongs in the writer, not the tree — the type model
 holds one value for the type either way.
 
+### `EquatableArray<T>` lives in `CSharpAuthor.Collections`, not `CSharpAuthor`
+
+§7 says the type belongs "beside `ITypeDefinition`", which reads as the `CSharpAuthor` namespace. It is
+in `CSharpAuthor.Collections` instead.
+
+CSharpAuthor is *source-compiled into* its consumers, and `Hardened.Framework`'s generators already
+source-include an `EquatableArray<T>` of their own (`ValidationModules.SourceGenerator.Impl`, used in
+`HandlerValidationFrontEnd.cs`). Nothing breaks today because no file there imports both namespaces —
+but in the bare `CSharpAuthor` namespace the two would be one `using CSharpAuthor;` away from CS0104
+in a repo that includes both, and the point of adding the type is to let those generators *delete*
+their hand-written comparers.
+
+**Taken:** a sub-namespace. Consumers add `using CSharpAuthor.Collections;` where they want it, and
+can adopt it file by file while their own version still exists. If the human prefers it in
+`CSharpAuthor`, the move is one line plus a `using` in each consumer that adopts it.
+
 ### Nullability sits on the array, not on the element
 
 `ITypeDefinition` carries one `IsNullable` flag, and it is written after the array ranks, so

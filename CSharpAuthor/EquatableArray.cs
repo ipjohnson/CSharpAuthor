@@ -3,7 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CSharpAuthor;
+// Deliberately not the bare CSharpAuthor namespace: this library is source-compiled into its
+// consumers, and Hardened.Framework's generators already source-include an EquatableArray<T> of
+// their own. Sharing a name in a shared namespace would be one `using CSharpAuthor;` away from
+// CS0104 in a repo that includes both.
+namespace CSharpAuthor.Collections;
 
 /// <summary>
 /// An immutable array with value equality.
