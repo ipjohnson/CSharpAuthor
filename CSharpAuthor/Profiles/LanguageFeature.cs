@@ -118,7 +118,7 @@ public enum FeatureCategory
 
     /// <summary>
     /// Nothing else means the same thing. Emitting a substitute would be wrong, so this produces
-    /// a diagnostic instead - see <see cref="EmitSession.Require"/>.
+    /// a diagnostic instead - see <see cref="EmitSession.Require(LanguageFeature, string)"/>.
     /// </summary>
     Impossible
 }

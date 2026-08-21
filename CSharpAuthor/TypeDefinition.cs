@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -446,7 +446,7 @@ public class TypeDefinition : BaseTypeDefinition
     /// </description></item>
     /// <item><description>
     /// An array keeps its shape, outermost specifier first, which is the order C# writes them and
-    /// the reverse of the order <see cref="Type.Name"/> gives: <c>typeof(int[,][])</c> becomes
+    /// the reverse of the order <c>Type.Name</c> gives: <c>typeof(int[,][])</c> becomes
     /// <c>int[,][]</c>, not <c>Int32[][,]</c>.
     /// </description></item>
     /// <item><description>
@@ -594,7 +594,7 @@ public class TypeDefinition : BaseTypeDefinition
     /// <summary>
     /// Unwraps an array type one array at a time, outermost first, which is the order C# writes the
     /// specifiers in. Reflection writes them the other way round - <c>typeof(int[,][])</c> is named
-    /// <c>Int32[][,]</c> - so reading <see cref="Type.Name"/> gives a reversed, and previously
+    /// <c>Int32[][,]</c> - so reading <c>Type.Name</c> gives a reversed, and previously
     /// doubled, answer.
     /// </summary>
     private static ITypeDefinition GetArray(Type type)

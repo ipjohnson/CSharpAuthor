@@ -593,7 +593,7 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
 
     /// <inheritdoc cref="If(string)" />
     /// <remarks>
-    /// The overload for a condition built out of components - <see cref="SyntaxHelpers.And"/>,
+    /// The overload for a condition built out of components - <see cref="SyntaxHelpers.And(object[])"/>,
     /// <see cref="SyntaxHelpers.EqualsStatement"/>, <see cref="SyntaxHelpers.Is"/>. A
     /// <see cref="LogicStatement"/> passed here drops the parentheses it would print on its own,
     /// because the <c>if</c> supplies them.

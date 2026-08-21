@@ -81,7 +81,7 @@ public interface ITypeDefinition : IComparable<ITypeDefinition>
     /// A single flag cannot tell <c>int[]</c> from <c>int[][]</c> from <c>int[,]</c>, and all three
     /// are different types. Reflection names them in the opposite order to C# — <c>typeof(int[,][])</c>
     /// is named <c>Int32[][,]</c> — so the list is the order the emitter needs, not the order
-    /// <see cref="Type.Name"/> gives.
+    /// <c>Type.Name</c> gives.
     /// </remarks>
     IReadOnlyList<int> ArrayRanks { get; }
 

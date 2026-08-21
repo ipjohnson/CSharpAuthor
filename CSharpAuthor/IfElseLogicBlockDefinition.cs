@@ -51,7 +51,7 @@ public class IfElseLogicBlockDefinition : BaseBlockDefinition
 
     /// <inheritdoc cref="ElseIf(string)" />
     /// <remarks>
-    /// The overload for a condition built out of components - <see cref="SyntaxHelpers.And"/>,
+    /// The overload for a condition built out of components - <see cref="SyntaxHelpers.And(object[])"/>,
     /// <see cref="SyntaxHelpers.Is"/> - so any type it mentions reaches the file as a type.
     /// </remarks>
     public BaseBlockDefinition ElseIf(IOutputComponent ifStatement)

@@ -24,7 +24,7 @@ namespace CSharpAuthor.Profiles;
 /// a <c>// DOWNLEVEL:</c> comment says so in the output itself.
 /// </description></item>
 /// <item><description>
-/// <see cref="Require"/> returns false: there is no other form. That is an
+/// <see cref="Require(LanguageFeature, string)"/> returns false: there is no other form. That is an
 /// <see cref="EmitSeverity.Error"/>, and it either throws or puts <c>#error</c> in the file. It
 /// never returns quietly, because that is the V1 defect class.
 /// </description></item>

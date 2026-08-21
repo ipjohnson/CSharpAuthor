@@ -18,7 +18,7 @@ namespace CSharpAuthor.Profiles;
 /// with <see cref="Target"/> at <see cref="LanguageVersion.CSharp8"/> emits
 /// <c>new[] { ... }</c> - silently, and correctly. A preference is never an error. A capability
 /// violation - asking for something with no downlevel at all, like <c>ref struct</c> - is, and
-/// goes through <see cref="EmitSession.Require"/>.
+/// goes through <see cref="EmitSession.Require(LanguageFeature, string)"/>.
 /// </para>
 /// <para>
 /// The presets are frozen: assigning to one throws rather than quietly changing every other
@@ -262,7 +262,7 @@ public sealed partial class EmitProfile
     /// The whole resolution rule in one line. A false answer for a
     /// <see cref="FeatureCategory.Free"/> feature is not a problem - it means "write the other
     /// form". For a <see cref="FeatureCategory.Impossible"/> one there is no other form, which is
-    /// why those go through <see cref="EmitSession.Require"/> instead.
+    /// why those go through <see cref="EmitSession.Require(LanguageFeature, string)"/> instead.
     /// </remarks>
     public bool CanEmit(LanguageFeature feature) => Supports(feature) && Prefers(feature);
 
