@@ -1,4 +1,22 @@
 <Project>
+  <!--
+    Source inclusion. The consumer compiles CSharpAuthor's own .cs files into its assembly,
+    which is why a source generator can use this library without a dependency it would then
+    have to ship.
+
+    CSHARPAUTHOR_SOURCE is what makes that safe for the consumer's public API surface. The
+    generated grammar nodes carry `#if !CSHARPAUTHOR_SOURCE / public / #endif`, so they are
+    public when this library is referenced as an assembly and internal - C#'s default for a
+    top-level type - when their source lands inside somebody else's compilation. Roughly 250
+    node types would otherwise appear in the consumer's public API.
+
+    The Compile glob is recursive, so CSharpAuthor/Syntax/*.cs is picked up with no change
+    here beyond the constant.
+  -->
+  <PropertyGroup Condition="'$(PackageCSharpAuthorIncludeSource)' == 'true'">
+    <DefineConstants>$(DefineConstants);CSHARPAUTHOR_SOURCE</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(PackageCSharpAuthorIncludeSource)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)../src/**/*.cs" Visible="false"/>
   </ItemGroup>
