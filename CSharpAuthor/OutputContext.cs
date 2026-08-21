@@ -233,6 +233,40 @@ public class OutputContext : IOutputContext
     /// <summary>The namespaces the file itself declares. A using for one of them says nothing.</summary>
     private readonly HashSet<string> _declaredNamespaces = new HashSet<string>();
 
+    // -----------------------------------------------------------------------------------------
+    // What the name plan needs, gathered as the types are written rather than found again
+    // afterwards.
+    //
+    // Reading it back off the record meant walking every recorded code - five in six of which are
+    // text - to reach the one write in fourteen that names a type, and doing it to discover, in
+    // nearly every file, that no two names were the same. The types arrive at Write already; the
+    // only thing the walk added was finding them a second time.
+    //
+    // All of it is allocated on the first type written, so a context that writes none - and this
+    // library makes one per rendered expression - still allocates nothing for it.
+    // -----------------------------------------------------------------------------------------
+
+    /// <summary>Types already seen, by identity. Keeps the list below to one entry per type.</summary>
+    private HashSet<ITypeDefinition>? _seenTypes;
+
+    /// <summary>Every distinct type written, in write order, arguments included.</summary>
+    private List<ITypeDefinition>? _writtenTypes;
+
+    /// <summary>The namespaces those types bring with them.</summary>
+    private HashSet<string>? _derivedNamespaces;
+
+    /// <summary>
+    /// Whether every type was written in the mode the name plan is built for, so the gathering
+    /// above is the whole story.
+    /// </summary>
+    /// <remarks>
+    /// A mode that qualifies its types derives no namespaces and needs no plan, so nothing is
+    /// gathered while one is in force. A caller that changes the mode after writing - which is
+    /// allowed, because nothing is decided until serialization - leaves the gathering incomplete,
+    /// and the plan is then built by reading the types back off the record exactly as before.
+    /// </remarks>
+    private bool _typesGathered = true;
+
     private int _indentIndex;
     private bool _generateUsings;
 
@@ -372,7 +406,89 @@ public class OutputContext : IOutputContext
         _typeNameChars += NameAllowance(typeDefinition);
         _typeQualifierChars += typeDefinition.Namespace.Length + 1;
 
+        // Everything the name plan will want from this type, taken while it is here. Nothing is
+        // derived in a mode that qualifies, so nothing is gathered while one is in force - but the
+        // mode can still change before serialization, and then the record is read instead.
+        if (Options.TypeOutputMode == TypeOutputMode.ShortName)
+        {
+            NoteWrittenType(typeDefinition);
+        }
+        else
+        {
+            _typesGathered = false;
+        }
+
         RecordValue(SegmentKind.TypeReference, typeDefinition);
+    }
+
+    /// <summary>
+    /// Takes what the name plan will want from a type as it is written: its place in the list of
+    /// written types, and the namespaces it brings with it.
+    /// </summary>
+    /// <inheritdoc cref="CollectType" />
+    private void NoteWrittenType(ITypeDefinition type)
+    {
+        if (type == null)
+        {
+            return;
+        }
+
+        var seen = _seenTypes ??= new HashSet<ITypeDefinition>(ReferenceComparer.Instance);
+
+        if (!seen.Add(type))
+        {
+            return;
+        }
+
+        (_writtenTypes ??= new List<ITypeDefinition>()).Add(type);
+
+        AddKnownNamespaces(type);
+
+        var typeArguments = type.TypeArguments;
+
+        if (typeArguments == null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < typeArguments.Count; i++)
+        {
+            NoteWrittenType(typeArguments[i]);
+        }
+    }
+
+    /// <summary>The namespaces a type brings with it, into the derived set.</summary>
+    /// <remarks>
+    /// <c>KnownNamespaces</c> is an iterator on every implementation of it, and a state machine per
+    /// type is most of what deriving the using list costs. The two definitions this library hands
+    /// out answer it with their own namespace and their parts' - and the parts are walked here
+    /// anyway - so the exact classes are answered directly and everything else, including a
+    /// consumer's own <see cref="ITypeDefinition"/>, is asked as before.
+    /// </remarks>
+    private void AddKnownNamespaces(ITypeDefinition type)
+    {
+        var runtimeType = type.GetType();
+
+        if (type.ContainingType == null &&
+            (runtimeType == typeof(TypeDefinition) || runtimeType == typeof(GenericTypeDefinition)))
+        {
+            AddDerivedNamespace(type.Namespace);
+
+            return;
+        }
+
+        foreach (var knownNamespace in type.KnownNamespaces)
+        {
+            AddDerivedNamespace(knownNamespace);
+        }
+    }
+
+    private void AddDerivedNamespace(string? ns)
+    {
+        if (!string.IsNullOrEmpty(ns))
+        {
+            (_derivedNamespaces ??= new HashSet<string>(StringComparer.Ordinal)).Add(ns!);
+        }
     }
 
     public void WriteLine()
@@ -1000,25 +1116,58 @@ public class OutputContext : IOutputContext
         public string? Winner;
     }
 
+    /// <summary>The answer for a file that wrote no types at all.</summary>
+    private static readonly List<ITypeDefinition> NoTypes = new List<ITypeDefinition>();
+
     private NamePlan BuildNamePlan()
     {
         var namePlan = new NamePlan();
 
         if (Options.TypeOutputMode == TypeOutputMode.ShortName)
         {
-            var written = CollectWrittenTypes(namePlan);
+            List<ITypeDefinition> written;
 
-            var groups = GroupByShortName(written);
-
-            ResolveCollisions(namePlan, groups);
-
-            DropAliasedNamespaces(namePlan, written);
-
-            // A namespace that had to stay - something else in it is still written plainly - puts
-            // the ambiguity back. The name that was left plain then has to be aliased as well.
-            if (AliasTheWinners(namePlan, groups))
+            if (_typesGathered)
             {
+                written = _writtenTypes ?? NoTypes;
+
+                if (_derivedNamespaces != null)
+                {
+                    foreach (var ns in _derivedNamespaces)
+                    {
+                        namePlan.Namespaces.Add(ns);
+                    }
+                }
+
+                foreach (var ns in _typeNamespaces)
+                {
+                    namePlan.Namespaces.Add(ns);
+                }
+            }
+            else
+            {
+                written = CollectWrittenTypes(namePlan);
+            }
+
+            // Grouping means a group object with two lists in it for every distinct name in the
+            // file, and a string for each - all of it to discover, in the overwhelming majority of
+            // files, that no two names were the same. So it only runs once something says two
+            // names might be.
+            if (Options.AliasCollisions && written.Count > 1 &&
+                MayHaveCollision(written, new StringBuilder()))
+            {
+                var groups = GroupByShortName(written);
+
+                ResolveCollisions(namePlan, groups);
+
                 DropAliasedNamespaces(namePlan, written);
+
+                // A namespace that had to stay - something else in it is still written plainly -
+                // puts the ambiguity back. The name that was left plain then has to be aliased too.
+                if (AliasTheWinners(namePlan, groups))
+                {
+                    DropAliasedNamespaces(namePlan, written);
+                }
             }
         }
 
@@ -1168,35 +1317,14 @@ public class OutputContext : IOutputContext
         }
     }
 
-    /// <summary>The answer for a file no two of whose types want the same name, which is nearly all of them.</summary>
-    private static readonly List<NameGroup> NoGroups = new List<NameGroup>();
-
     /// <summary>
     /// Groups the types by the name they compete for. Arity is part of it, because two types of the
     /// same name and different arity do not compete: <c>Box</c> and <c>Box&lt;T&gt;</c> resolve
     /// separately.
     /// </summary>
-    /// <remarks>
-    /// Two passes, because the first one nearly always ends the matter. Grouping means a group
-    /// object with two lists in it for every distinct name in the file, and a string for each - all
-    /// of it to discover, in the overwhelming majority of files, that no two names were the same.
-    /// The first pass instead hashes each name as it is rendered and sorts the hashes: no strings,
-    /// no groups, one small array. Only a repeat - a real collision, or a hash that happens to
-    /// match, which the second pass then rejects - makes it group anything.
-    /// </remarks>
     private List<NameGroup> GroupByShortName(List<ITypeDefinition> written)
     {
-        if (!Options.AliasCollisions || written.Count < 2)
-        {
-            return NoGroups;
-        }
-
         var builder = new StringBuilder();
-
-        if (!MayHaveCollision(written, builder))
-        {
-            return NoGroups;
-        }
 
         var groups = new List<NameGroup>();
         var byKey = new Dictionary<string, NameGroup>(StringComparer.Ordinal);
