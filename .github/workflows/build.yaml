@@ -30,3 +30,15 @@ jobs:
       - run: dotnet build CSharpAuthor.sln --no-restore --configuration Release -p:ContinuousIntegrationBuild=true
 
       - run: dotnet test CSharpAuthor.sln --no-build --configuration Release
+
+      # Packed on every build, not only on a release. A CI that builds a library and never packs it
+      # does not exercise the one output anyone consumes - and this package ships its sources, so
+      # what is in the .nupkg is not something the compiled assembly can vouch for.
+      - name: Pack
+        run: dotnet pack CSharpAuthor/CSharpAuthor.csproj --no-build --configuration Release --output artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CSharpAuthor
+          path: artifacts/*.nupkg
+          if-no-files-found: error

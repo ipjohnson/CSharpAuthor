@@ -40,14 +40,16 @@ build_script:
 
 test_script:
  - cmd: dotnet test CSharpAuthor.sln --no-build --configuration Release
-# No artifacts. The old build: block packed as part of publishing, so a .nupkg appeared at the
-# root and was collected here; dotnet build does not pack, and publishing moved to
-# .github/workflows/release.yaml, which packs into ./artifacts and attaches the package to the
-# GitHub release. Leaving this block behind meant every build logged
-#
-#   No artifacts found matching 'CSharpAuthor*.nupkg' path
-#
-# for output nothing produces any more.
+# Packed on every build, so there is a package to download and inspect from any commit - which is
+# what publish_nuget gave before releases moved to a tag. Publishing is what moved; producing the
+# package did not, and a CI that builds a library without ever packing it never exercises the one
+# output anyone consumes.
+after_test:
+ - cmd: dotnet pack CSharpAuthor/CSharpAuthor.csproj --no-build --configuration Release --output artifacts
+
+artifacts:
+- path: artifacts/*.nupkg
+  name: CSharpAuthor
 image:
 - Visual Studio 2022
 
