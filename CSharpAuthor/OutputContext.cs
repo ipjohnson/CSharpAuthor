@@ -988,7 +988,7 @@ public class OutputContext : IOutputContext
     private List<ITypeDefinition> CollectWrittenTypes(NamePlan namePlan)
     {
         var written = new List<ITypeDefinition>();
-        var seen = new HashSet<ITypeDefinition>();
+        var seen = new HashSet<ITypeDefinition>(ReferenceComparer.Instance);
 
         // Over the codes rather than over the values, counting past the strings. Asking each value
         // whether it is a type instead means an interface type test per written token, and five
@@ -1043,6 +1043,32 @@ public class OutputContext : IOutputContext
         }
 
         return written;
+    }
+
+    /// <summary>
+    /// Identity, not equality: two type definitions that name the same type are kept apart here.
+    /// </summary>
+    /// <remarks>
+    /// The set exists only to keep the list short - everything downstream of it treats two entries
+    /// naming the same type the way it treats one, and the collision test below is written so that a
+    /// repeat is not mistaken for an ambiguity. Equality would be the wrong tool for it: hashing a
+    /// type definition builds its fully qualified name, and a generator that calls
+    /// <c>TypeDefinition.Get</c> per use hands over a fresh instance every time, so it would pay for
+    /// a name per written reference to save a list entry.
+    /// </remarks>
+    private sealed class ReferenceComparer : IEqualityComparer<ITypeDefinition>
+    {
+        public static readonly ReferenceComparer Instance = new ReferenceComparer();
+
+        public bool Equals(ITypeDefinition x, ITypeDefinition y)
+        {
+            return ReferenceEquals(x, y);
+        }
+
+        public int GetHashCode(ITypeDefinition obj)
+        {
+            return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
+        }
     }
 
     private static void CollectType(ITypeDefinition type, List<ITypeDefinition> written, HashSet<ITypeDefinition> seen)
@@ -1144,7 +1170,11 @@ public class OutputContext : IOutputContext
     /// </remarks>
     private static bool MayHaveCollision(List<ITypeDefinition> written, StringBuilder builder)
     {
-        var hashes = new int[written.Count];
+        // The name and arity in the high half, the namespace in the low half. Sorting brings equal
+        // names together, and an ambiguity is two of them that disagree about the namespace - so a
+        // type written twice, which is every file, reads as the repeat it is rather than as a
+        // collision with itself.
+        var keys = new long[written.Count];
 
         for (var i = 0; i < written.Count; i++)
         {
@@ -1154,20 +1184,42 @@ public class OutputContext : IOutputContext
 
             type.WriteTypeName(builder, TypeOutputMode.ShortName);
 
-            hashes[i] = BareNameHash(builder, type.TypeArguments?.Count ?? 0);
+            var name = (long)(uint)BareNameHash(builder, type.TypeArguments?.Count ?? 0);
+            var space = (uint)StringHash(type.Namespace);
+
+            keys[i] = (name << 32) | space;
         }
 
-        Array.Sort(hashes);
+        Array.Sort(keys);
 
-        for (var i = 1; i < hashes.Length; i++)
+        for (var i = 1; i < keys.Length; i++)
         {
-            if (hashes[i] == hashes[i - 1])
+            if ((keys[i] >> 32) == (keys[i - 1] >> 32) && keys[i] != keys[i - 1])
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /// <summary>FNV-1a over a string. Its own, because string.GetHashCode is randomised per process.</summary>
+    private static int StringHash(string? value)
+    {
+        unchecked
+        {
+            var hash = (int)2166136261;
+
+            if (value != null)
+            {
+                for (var i = 0; i < value.Length; i++)
+                {
+                    hash = (hash ^ value[i]) * 16777619;
+                }
+            }
+
+            return hash;
+        }
     }
 
     /// <summary>
