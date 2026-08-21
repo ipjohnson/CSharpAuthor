@@ -1,8 +1,0 @@
-HasErrors: false
-
-Info  CSA0001  FileScopedNamespaces  needs C#10, targeting C#8
-    'file-scoped namespace' on namespace - emitted in its pre-C#10 form, which means the same thing.
-Warning  CSA0002  InitOnlyProperties  needs C#9, targeting C#8
-    Name: 'init' unavailable below C#9 — emitted as a settable property, immutability lost
-Warning  CSA0002  RequiredMembers  needs C#11, targeting C#8
-    Name: 'required' unavailable below C#11 — emitted as an ordinary member, initialisation is no longer enforced

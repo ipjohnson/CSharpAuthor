@@ -1,7 +1,0 @@
-int  ->  int
-GreetingService  ->  global::Acme.Services.GreetingService
-List<GreetingService>  ->  global::System.Collections.Generic.List<global::Acme.Services.GreetingService>
-int[][]  ->  int[][]
-int[,]  ->  int[,]
-GreetingService?  ->  global::Acme.Services.GreetingService?
-GreetingService.Options  ->  global::Acme.Services.GreetingService.Options

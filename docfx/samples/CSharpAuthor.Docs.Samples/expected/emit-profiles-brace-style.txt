@@ -1,6 +1,0 @@
-namespace Acme.Model {
-  public class Pet {
-
-    public string Name { get; set; }
-  }
-}

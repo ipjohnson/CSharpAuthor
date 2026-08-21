@@ -75,7 +75,6 @@ target may use, and features downlevel where an equivalent exists — a collecti
 
 ## Documentation
 
-- **[Getting started and guides](https://ipjohnson.github.io/CSharpAuthor)**
 - **[Migrating from 1.x](docs/migration-v1-v2.md)**
 - **[AGENTS.md](AGENTS.md)** — conventions, invariants and traps, for humans and AI agents working
   on the library itself

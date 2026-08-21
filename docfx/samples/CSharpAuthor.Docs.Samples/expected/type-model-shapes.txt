@@ -1,5 +1,0 @@
-int[][]       // a jagged array
-int[,]        // a rectangular array
-int[][,]      // rectangular, then jagged
-string[]?     // a nullable array
-string?[]     // an array of nullables

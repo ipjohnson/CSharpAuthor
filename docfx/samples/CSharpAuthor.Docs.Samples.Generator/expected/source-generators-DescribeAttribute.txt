@@ -1,7 +1,0 @@
-namespace Acme.Generated
-{
-    [global::System.AttributeUsage(global::System.AttributeTargets.Class)]
-    internal sealed class DescribeAttribute : global::System.Attribute
-    {
-    }
-}
