@@ -1,0 +1,275 @@
+diff --git a/src/SourceGenerators/Hardened.Idl.SourceGenerator/SpecRoutingTableGenerator.cs b/src/SourceGenerators/Hardened.Idl.SourceGenerator/SpecRoutingTableGenerator.cs
+index f1fd082..3d65a36 100644
+--- a/src/SourceGenerators/Hardened.Idl.SourceGenerator/SpecRoutingTableGenerator.cs
++++ b/src/SourceGenerators/Hardened.Idl.SourceGenerator/SpecRoutingTableGenerator.cs
+@@ -54,6 +54,10 @@ internal static class SpecRoutingTableGenerator {
+ 
+         var applicationFile = new CSharpFileDefinition(appModel.EntryPointType.Namespace);
+ 
++        // AddSingleton/AddTransient are extension methods, and an extension method is reachable
++        // only through a using of its namespace - global:: cannot name one.
++        applicationFile.AddUsingNamespace(KnownTypes.Namespace.Microsoft.Extensions.DependencyInjection);
++
+         CreateRoutingTable(appModel, handlers, handlerInfos, specRegistrations, applicationFile, cancellationToken, excludeFromCoverage);
+ 
+         var outputContext = new OutputContext(
+diff --git a/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratedCodeCompilesTests.cs b/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratedCodeCompilesTests.cs
+index 2097de3..b0cecc1 100644
+--- a/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratedCodeCompilesTests.cs
++++ b/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratedCodeCompilesTests.cs
+@@ -193,13 +193,13 @@ public class GeneratedCodeCompilesTests {
+ 
+         // property:, or the attribute lands on a positional record's parameter and the generator
+         // reading properties never sees it.
+-        Assert.Contains("[property: Required]", emitted);
+-        Assert.Contains("[property: StringLength(", emitted);
+-        Assert.Contains("[property: Range(", emitted);
++        Assert.Contains("[property: global::ValidationModules.Constraints.Required]", emitted);
++        Assert.Contains("[property: global::ValidationModules.Constraints.StringLength(", emitted);
++        Assert.Contains("[property: global::ValidationModules.Constraints.Range(", emitted);
+ 
+         // The reference form, pointing at a [GeneratedRegex] member the task also emits. The inline
+         // form would root the regex engine at 448 KB on an AOT publish.
+-        Assert.Contains("[property: Pattern(typeof(", emitted);
++        Assert.Contains("[property: global::ValidationModules.Constraints.Pattern(typeof(", emitted);
+         Assert.Contains("GeneratedRegex(", emitted);
+         Assert.DoesNotContain("new Regex(", emitted);
+     }
+diff --git a/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratorConfigurationTests.cs b/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratorConfigurationTests.cs
+index bf7c15e..5af66a9 100644
+--- a/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratorConfigurationTests.cs
++++ b/src/SourceGenerators/Hardened.OpenApi.SourceGenerator.Tests/GeneratorConfigurationTests.cs
+@@ -101,7 +101,7 @@ public class GeneratorConfigurationTests {
+     public void GeneratedRecordsAreExcludedFromCoverageByDefault() {
+         var result = OpenApiGenerator.Run(Specs.EveryValidationConstraint).AssertNoErrors();
+ 
+-        Assert.Contains("[ExcludeFromCodeCoverage]",
++        Assert.Contains("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]",
+             result.SourceContaining("petstore.g.cs"));
+     }
+ 
+@@ -109,7 +109,7 @@ public class GeneratorConfigurationTests {
+     public void TheGeneratedJsonResolverIsExcludedFromCoverageByDefault() {
+         var result = OpenApiGenerator.Run(Specs.Minimal).AssertNoErrors();
+ 
+-        Assert.Contains("[ExcludeFromCodeCoverage]",
++        Assert.Contains("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]",
+             result.SourceContaining("petstore.g.cs"));
+     }
+ 
+@@ -117,14 +117,14 @@ public class GeneratorConfigurationTests {
+     public void TheGeneratedRoutingTableIsExcludedFromCoverageByDefault() {
+         var result = OpenApiGenerator.Run(Specs.Minimal).AssertNoErrors();
+ 
+-        Assert.Contains("[ExcludeFromCodeCoverage]", result.SourceContaining("SpecRouting"));
++        Assert.Contains("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]", result.SourceContaining("SpecRouting"));
+     }
+ 
+     [Fact]
+     public void GeneratedFilterAttributesAreExcludedFromCoverageByDefault() {
+         var result = OpenApiGenerator.Run(Specs.FilterTypes).AssertNoErrors();
+ 
+-        Assert.Contains("[ExcludeFromCodeCoverage]",
++        Assert.Contains("[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]",
+             result.SourceContaining("petstore.g.cs"));
+     }
+ 
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator.Tests/Function/FunctionHandlerProviderTests.cs b/src/SourceGenerators/Hardened.SourceGenerator.Tests/Function/FunctionHandlerProviderTests.cs
+index 635c2d3..82fb2e2 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator.Tests/Function/FunctionHandlerProviderTests.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator.Tests/Function/FunctionHandlerProviderTests.cs
+@@ -89,7 +89,7 @@ public class FunctionHandlerProviderTests {
+         var provider = Provider(OneHandler);
+ 
+         Assert.Contains("DependencyRegistry<TestApplication>.Add(FunctionHandlersDI)", provider);
+-        Assert.Contains("[DynamicDependency(nameof(FunctionHandlersDI))]", provider);
++        Assert.Contains("[global::System.Diagnostics.CodeAnalysis.DynamicDependency(nameof(FunctionHandlersDI))]", provider);
+     }
+ 
+     /// <summary>
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator.Tests/Requests/GeneratedCodeRegressionTests.cs b/src/SourceGenerators/Hardened.SourceGenerator.Tests/Requests/GeneratedCodeRegressionTests.cs
+index 479f992..c5c83ca 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator.Tests/Requests/GeneratedCodeRegressionTests.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator.Tests/Requests/GeneratedCodeRegressionTests.cs
+@@ -112,7 +112,7 @@ public class GeneratedCodeRegressionTests {
+         var source = result.SourceContaining("Health");
+ 
+         Assert.Contains(
+-            "new ExecutionRequestHandlerInfo(\"/health\", \"GET\", typeof(HealthController), \"Health\", null, _metadata)",
++            "new global::Hardened.Requests.Runtime.Execution.ExecutionRequestHandlerInfo(\"/health\", \"GET\", typeof(global::TestApp.HealthController), \"Health\", null, _metadata)",
+             source);
+     }
+ 
+@@ -137,7 +137,7 @@ public class GeneratedCodeRegressionTests {
+         var source = result.SourceContaining("GetOrder");
+ 
+         Assert.Contains(
+-            "new ExecutionRequestHandlerInfo(\"/orders/{id}\", \"GET\", typeof(OrderController), \"GetOrder\", _parameterInfo)",
++            "new global::Hardened.Requests.Runtime.Execution.ExecutionRequestHandlerInfo(\"/orders/{id}\", \"GET\", typeof(global::TestApp.OrderController), \"GetOrder\", _parameterInfo)",
+             source);
+         Assert.DoesNotContain("_metadata", source);
+     }
+@@ -183,7 +183,7 @@ public class GeneratedCodeRegressionTests {
+             """).AssertNoErrors();
+ 
+         Assert.Contains(
+-            "new ExecutionRequestHandlerInfo(\"/health\", \"GET\", typeof(HealthController), \"Health\")",
++            "new global::Hardened.Requests.Runtime.Execution.ExecutionRequestHandlerInfo(\"/health\", \"GET\", typeof(global::TestApp.HealthController), \"Health\")",
+             result.SourceContaining("Health"));
+     }
+ 
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator.Tests/Shared/ApplicationRootEmitTests.cs b/src/SourceGenerators/Hardened.SourceGenerator.Tests/Shared/ApplicationRootEmitTests.cs
+index 61accf6..2e58b01 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator.Tests/Shared/ApplicationRootEmitTests.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator.Tests/Shared/ApplicationRootEmitTests.cs
+@@ -41,7 +41,7 @@ public class ApplicationRootEmitTests {
+         var root = ApplicationRootHarness.Generate(ApplicationRootHarness.Application());
+ 
+         Assert.Contains("Hardened.Shared.Runtime.Application.IApplicationRoot", root);
+-        Assert.Contains("RootServiceProvider ?? throw new Exception", root);
++        Assert.Contains("RootServiceProvider ?? throw new global::System.Exception", root);
+         Assert.Contains("DisposeAsync", root);
+     }
+ 
+@@ -266,8 +266,15 @@ public class ApplicationRootEmitTests {
+ 
+             var handler = appClass.AddField(KnownTypes.Requests.IMiddlewareService, "_handler");
+ 
+-            constructor.Assign(provider.InvokeGeneric("GetRequiredService",
+-                new[] { KnownTypes.Requests.IMiddlewareService })).To(handler.Instance);
++            var resolve = provider.InvokeGeneric("GetRequiredService",
++                new[] { KnownTypes.Requests.IMiddlewareService });
++
++            // GetRequiredService is an extension method, and an extension method is reachable only
++            // through a using of its namespace - global:: cannot name one. Every derived writer that
++            // resolves a service has to say this, the four in Hardened.Amz included.
++            resolve.AddUsingNamespace(KnownTypes.Namespace.Microsoft.Extensions.DependencyInjection);
++
++            constructor.Assign(resolve).To(handler.Instance);
+         }
+ 
+         protected override void CreateDomainMethods(
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator/Configuration/ConfigurationEntryPointGenerator.cs b/src/SourceGenerators/Hardened.SourceGenerator/Configuration/ConfigurationEntryPointGenerator.cs
+index 9349c90..279651a 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator/Configuration/ConfigurationEntryPointGenerator.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator/Configuration/ConfigurationEntryPointGenerator.cs
+@@ -13,6 +13,10 @@ public static class ConfigurationEntryPointGenerator {
+             ConfigFiles) arg2) {
+         var cSharpFile = new CSharpFileDefinition(arg2.AppModel.EntryPointType.Namespace);
+ 
++        // AddSingleton is an extension method, and an extension method is reachable only through a
++        // using of its namespace - global:: cannot name one.
++        cSharpFile.AddUsingNamespace(KnownTypes.Namespace.Microsoft.Extensions.DependencyInjection);
++
+         var classDefinition = cSharpFile.AddClass(arg2.AppModel.EntryPointType.Name);
+ 
+         classDefinition.Modifiers = ComponentModifier.Public | ComponentModifier.Partial;
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator/DependencyInjection/ServiceProviderFileGenerator.cs b/src/SourceGenerators/Hardened.SourceGenerator/DependencyInjection/ServiceProviderFileGenerator.cs
+index 2735d5d..dcf805b 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator/DependencyInjection/ServiceProviderFileGenerator.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator/DependencyInjection/ServiceProviderFileGenerator.cs
+@@ -11,6 +11,11 @@ public class ServiceProviderFileGenerator {
+         EntryPointSelector.Model model) {
+         var diFile = new CSharpFileDefinition(model.EntryPointType.Namespace);
+ 
++        // AddLogging, BuildServiceProvider and GetRequiredService are extension methods, and an
++        // extension method is reachable only through a using of its namespace - global:: cannot
++        // name one.
++        diFile.AddUsingNamespace(KnownTypes.Namespace.Microsoft.Extensions.DependencyInjection);
++
+         GenerateCode(model, diFile);
+ 
+         var outputContext = new OutputContext(
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator/Function/FunctionIncrementalGenerator.cs b/src/SourceGenerators/Hardened.SourceGenerator/Function/FunctionIncrementalGenerator.cs
+index 4a56c86..ff68103 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator/Function/FunctionIncrementalGenerator.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator/Function/FunctionIncrementalGenerator.cs
+@@ -66,6 +66,10 @@ public static class FunctionIncrementalGenerator {
+ 
+         var csharpFile = new CSharpFileDefinition(appModel.EntryPointType.Namespace);
+ 
++        // AddSingleton/AddTransient are extension methods, and an extension method is reachable
++        // only through a using of its namespace - global:: cannot name one.
++        csharpFile.AddUsingNamespace(KnownTypes.Namespace.Microsoft.Extensions.DependencyInjection);
++
+         var appClass = csharpFile.AddClass(appModel.EntryPointType.Name);
+         appClass.Modifiers = ComponentModifier.Public | ComponentModifier.Partial;
+ 
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator/Requests/BindRequestParametersMethodGenerator.cs b/src/SourceGenerators/Hardened.SourceGenerator/Requests/BindRequestParametersMethodGenerator.cs
+index ce6ec01..c9a4144 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator/Requests/BindRequestParametersMethodGenerator.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator/Requests/BindRequestParametersMethodGenerator.cs
+@@ -195,7 +195,16 @@ public static class BindRequestParametersMethodGenerator {
+                 break;
+         }
+ 
+-        var valueStatement = Bang(context.Property("Request").Property(instance).Invoke("Get", QuoteString(bindingName)));
++        var requestValue = context.Property("Request").Property(instance).Invoke("Get", QuoteString(bindingName));
++
++        // PathTokens and QueryString carry their own Get; Headers is a plain IDictionary and
++        // Cookies a plain IReadOnlyList, so theirs comes from an extension class. An extension
++        // method is reachable only through a using of its namespace - global:: cannot name one.
++        if (parameterInformation.BindingType is ParameterBindType.Header or ParameterBindType.Cookie) {
++            requestValue.AddUsingNamespace(KnownTypes.Namespace.Hardened.Requests.Runtime.Execution);
++        }
++
++        var valueStatement = Bang(requestValue);
+ 
+         var stringInvokeStatement = context.Property("KnownServices").Property("StringConverterService");
+ 
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator/Requests/HandlerInfoCodeGenerator.cs b/src/SourceGenerators/Hardened.SourceGenerator/Requests/HandlerInfoCodeGenerator.cs
+index 9584d21..b0e9518 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator/Requests/HandlerInfoCodeGenerator.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator/Requests/HandlerInfoCodeGenerator.cs
+@@ -105,8 +105,18 @@ public static class HandlerInfoCodeGenerator {
+             declaredArgs += $", producedContentTypes: new string[] {{ {string.Join(", ", quoted)} }}";
+         }
+ 
++        // The type is handed over rather than named, so it is still a type when the file is
++        // serialized: written qualified in a file that qualifies, and counted in the using list.
++        // Spelled into the string it was neither, and resolved only while some other part of the
++        // file happened to import the namespace.
+         handlerInfoField.InitializeValue =
+-            new CodeOutputComponent($"new ExecutionRequestHandlerInfo(\"{handlerModel.Name.Path}\", \"{handlerModel.Name.Method}\", typeof({handlerModel.ControllerType.Name}), \"{handlerModel.HandlerMethod}\"{parameterInfoField}{metadataArg}{declaredArgs})");
++            CodeOutputComponent.FromParts(new object[] {
++                "new ",
++                KnownTypes.Requests.ExecutionRequestHandlerInfo,
++                $"(\"{handlerModel.Name.Path}\", \"{handlerModel.Name.Method}\", typeof(",
++                handlerModel.ControllerType,
++                $"), \"{handlerModel.HandlerMethod}\"{parameterInfoField}{metadataArg}{declaredArgs})"
++            });
+ 
+         // No HandlerInfo property is emitted, deliberately. The field above is the handler as
+         // written; BaseExecutionHandler exposes the one the chain was actually built from, which is
+diff --git a/src/SourceGenerators/Hardened.SourceGenerator/Shared/ApplicationRootImplementation.cs b/src/SourceGenerators/Hardened.SourceGenerator/Shared/ApplicationRootImplementation.cs
+index 24e8902..625c930 100644
+--- a/src/SourceGenerators/Hardened.SourceGenerator/Shared/ApplicationRootImplementation.cs
++++ b/src/SourceGenerators/Hardened.SourceGenerator/Shared/ApplicationRootImplementation.cs
+@@ -12,8 +12,11 @@ public static class ApplicationRootImplementation {
+         var provider = appClass.AddProperty(KnownTypes.DI.IServiceProvider, "Provider");
+ 
+         provider.Get.LambdaSyntax = true;
++        // {arg1} keeps Exception a type until the file is serialized. Spelled into the string it
++        // was text, and resolved only where something else had already imported System.
+         provider.Get.AddCode(
+-            "RootServiceProvider ?? throw new Exception(\"RootServiceProvider not initialized yet\");");
++            "RootServiceProvider ?? throw new {arg1}(\"RootServiceProvider not initialized yet\");",
++            typeof(Exception));
+         provider.Set = null;
+ 
+         var disposeAsync = appClass.AddMethod("DisposeAsync");
+diff --git a/src/SourceGenerators/Hardened.Validation.SourceGenerator/RegistrationWriter.cs b/src/SourceGenerators/Hardened.Validation.SourceGenerator/RegistrationWriter.cs
+index 2db33f3..be99d35 100644
+--- a/src/SourceGenerators/Hardened.Validation.SourceGenerator/RegistrationWriter.cs
++++ b/src/SourceGenerators/Hardened.Validation.SourceGenerator/RegistrationWriter.cs
+@@ -40,6 +40,10 @@ internal static class RegistrationWriter {
+ 
+         var file = new CSharpFileDefinition(entryPoint.EntryPointType.Namespace);
+ 
++        // AddSingleton is an extension method, and an extension method is reachable only through a
++        // using of its namespace - global:: cannot name one.
++        file.AddUsingNamespace(KnownTypes.Namespace.Microsoft.Extensions.DependencyInjection);
++
+         var appClass = file.AddClass(entryPoint.EntryPointType.Name);
+         appClass.Modifiers |= ComponentModifier.Partial;
+ 

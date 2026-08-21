@@ -259,11 +259,204 @@ be made of. Each is a §7 defect whose fix is deliberate.
 | B9 | Same-name collisions auto-alias instead of emitting ambiguous `CS0104` code. | predicted | None, and it is what the prototype already demonstrates: `proto/deferred/DeferredContext.cs` compiles cases where V1 fails. New `using X = A.B.X;` lines in output are expected. |
 | B10 | File-scoped namespaces / other `EmitProfile` defaults. | **open** | `EmitProfile.Default` in §4 sets `FileScopedNamespace = true`, but every DM snapshot today is block-scoped (`namespace TestNamespace {`). If the default flips, all 9 generator snapshots diff for a formatting reason alone. **Recommendation, per §8.4 (keep V1 source-compatible): the default used by the existing `Output()` overloads must stay block-scoped**, and file-scoped is opt-in via an explicit profile. Record in `docs/v2-open-questions.md` if taken. |
 
+### 4.3 The two shapes a `Global`-mode file breaks in — measured, with the patch
+
+B1 and B2 above were written as predictions. They have now been **measured** against
+`v2/output-context`, and both consumers break in exactly two shapes and no others. Ready-made
+patches live beside this file:
+
+| Patch | Applies to | Files | Lines |
+|---|---|---:|---:|
+| [`consumer-patches/dependencymodules-v2.patch`](consumer-patches/dependencymodules-v2.patch) | `DependencyModules` @ `642bac3` | 4 | +29 / −6 |
+| [`consumer-patches/hardened-v2.patch`](consumer-patches/hardened-v2.patch) | `Hardened.Framework` @ `81a0627` | 13 | +59 / −18 |
+
+```
+git apply /path/to/dependencymodules-v2.patch      # from the repository root
+```
+
+#### Why anything broke at all
+
+In `TypeOutputMode.Global`, V1 emitted `using` directives that no type in the file needed —
+every type was already written `global::`-qualified. Those stray directives were harmless
+noise *except* that two other things in the same files were quietly leaning on them. V2 stops
+emitting them (§1, invariant 1: the using list is derived from the types actually written).
+The moment it does, both leaners fall over.
+
+So the breakage is not the removal. The breakage is that a bare name and a stray directive
+were each hiding the other's absence, and only one of them was ever going to be fixed.
+
+---
+
+#### Shape A — extension methods
+
+**What breaks.** An extension method is found through a `using` of its namespace and through
+nothing else. `global::` names a *type*; there is no syntax that names an extension method.
+So the one kind of `using` a `Global`-mode file genuinely needs is the one V1 was emitting by
+accident, and V2 no longer emits for free.
+
+**What the compiler says.**
+
+```
+error CS1061: 'IServiceCollection' does not contain a definition for 'AddSingleton'
+and no accessible extension method 'AddSingleton' accepting a first argument of type
+'IServiceCollection' could be found (are you missing a using directive or an assembly reference?)
+```
+
+Also seen as `CS0308: The non-generic method 'IServiceProvider.GetService(Type)' cannot be
+used with type arguments` — the same cause, wearing a different error number because a
+non-generic instance method of that name does exist.
+
+**The fix — one line per generated file.** Ask for the namespace by name. V2 keeps that
+possible on purpose: `OutputContextOptions.EmitExplicitUsings` defaults to `true`, and a
+namespace asked for **by name** survives a qualifying mode. (A namespace merely *derived*
+from a written type does not, and should not — the `global::` name already said everything
+the directive would have.)
+
+```csharp
+var csharpFile = new CSharpFileDefinition(model.Namespace);
+
+// An extension method is reachable only through a using of its namespace -
+// global:: cannot name one.
+csharpFile.AddUsingNamespace("Microsoft.Extensions.DependencyInjection");
+```
+
+`AddUsingNamespace` is on `BaseOutputComponent`, so it can go on the file, the class, the
+method, or the single statement that makes the call — whichever scope you find clearest. Put
+it at the file level when everything in the file needs it; put it on the statement when only
+one call does. Both end up in the same header.
+
+**Where it was needed.** Every generated file that calls one of these:
+
+| Namespace | Extension methods the generated code calls |
+|---|---|
+| `Microsoft.Extensions.DependencyInjection` | `AddSingleton` `AddScoped` `AddTransient` `AddKeyedSingleton` `AddLogging` `BuildServiceProvider` `GetService<T>` `GetRequiredService` `GetRequiredKeyedService` |
+| `Hardened.Requests.Runtime.Execution` | `Get` on `IDictionary<string, StringValues>` (headers) and on `IReadOnlyList<string>` (cookies) |
+
+DependencyModules already had the pattern — `DependencyFileWriter` asked for
+`Microsoft.Extensions.DependencyInjection.Extensions` so `TryAdd*` would resolve. It just
+never asked for the parent namespace, because V1 handed that over for free.
+
+---
+
+#### Shape B — a type written as a raw string
+
+**What breaks.** A type spelled into a string is text by the time the library sees it. It
+carries no namespace, so nothing can qualify it, alias it, or count it into the using list.
+In V1 it resolved whenever some other part of the file happened to drag its namespace in. In
+a file that qualifies everything, nothing does.
+
+**What the compiler says.**
+
+```
+error CS0103: The name 'ServiceLifetime' does not exist in the current context
+error CS0246: The type or namespace name 'ExecutionRequestHandlerInfo' could not be found
+              (are you missing a using directive or an assembly reference?)
+```
+
+**The fix — hand the type over instead of its name.** V2 adds three ways to do it, all of
+which keep an `ITypeDefinition` unrendered until the file is serialized.
+
+*A type followed by a member of it* — `CodeOutputComponent.Get(ITypeDefinition, string)`:
+
+```csharp
+// before - "ServiceLifetime" is text and resolves only by luck
+parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Transient"));
+
+// after - the type is still a type at serialization
+parameters.Add(CodeOutputComponent.Get(
+    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Transient"));
+```
+
+*A statement built from mixed pieces* — `CodeOutputComponent.FromParts`. Each element is
+either a `string` or an `ITypeDefinition`:
+
+```csharp
+// before
+new CodeOutputComponent($"new ExecutionRequestHandlerInfo(\"{path}\", typeof({controller.Name}))");
+
+// after
+CodeOutputComponent.FromParts(new object[] {
+    "new ", KnownTypes.Requests.ExecutionRequestHandlerInfo,
+    $"(\"{path}\", typeof(", controller, "))"
+});
+```
+
+*A statement with substitution slots* — `AddCode(string, params object[])`, where `{argN}`
+takes a type and `[argN]` takes literal text:
+
+```csharp
+// before
+provider.Get.AddCode("RootServiceProvider ?? throw new Exception(\"not initialized\");");
+
+// after
+provider.Get.AddCode(
+    "RootServiceProvider ?? throw new {arg1}(\"not initialized\");", typeof(Exception));
+```
+
+**Do not fix Shape B with Shape A's fix.** Adding a `using` so the bare name resolves puts
+the file straight back into the state V2 exists to end — a name that resolves because
+something unrelated imported its namespace. Hand the type over.
+
+---
+
+#### A third thing the patch found, which is neither shape
+
+`typeof({model.ControllerType.Name})` in Hardened's `HandlerInfoCodeGenerator` is Shape B, but
+it was invisible in the gate-5 suite: there the generated file and the controller happen to
+share a namespace, so the short name resolved. In the OpenAPI and IDL generators they do not
+(`Contoso.Petstore.Generated.Generated` vs `Contoso.Petstore.Generated.Services`), and it is
+`CS0246`. **`--scope core` cannot see this class of bug. Run `--scope full` before believing a
+consumer is migrated.**
+
+---
+
+#### Measured result
+
+`--scope core`, against `v2/output-context`, patched clones:
+
+| Suite | TFM | Before | After |
+|---|---|---|---|
+| `DependencyModules.Tests` | net8.0 | 384 / 735 | **725 / 735** |
+| `DependencyModules.Tests` | net10.0 | 384 / 735 | **725 / 735** |
+| `Hardened.SourceGenerator.Tests` | net8.0 | 265 / 468 | **468 / 468** |
+
+`--scope full`, all 35 assemblies:
+
+| | Before | After |
+|---|---|---|
+| Assemblies that ran | 23 of 35 — 12 blocked by generated code that would not compile | **35 of 35** |
+| Tests | 3,413 passed / 1,306 failed | **6,166 passed / 20 failed** |
+
+The 20 remaining failures are 10 snapshot tests × 2 TFMs in `DependencyModules.Tests`, all of
+them in §5 below. **Zero compile errors remain in generated code in either repository.**
+
+Five suites — `Hardened.Requests.Runtime.Tests` (803), `Hardened.IntegrationTests.WebApp.SUT.Tests`
+(149), `Hardened.IntegrationTests.OpenApi.SUT.Tests` (68), `Hardened.IntegrationTests.Benchmark.SUT.Tests`
+(23) and `Hardened.IntegrationTests.Smithy.SUT.Tests` (20) — could not run at all before the
+patch, because the SUT projects they test failed to build. They pass now.
+
+---
+
+#### What the patch does *not* cover
+
+The patch fixes every writer in the two repositories. **`Hardened.Amz` is a separate repository
+and needs the same treatment**: it holds the only four production subclasses of
+`ApplicationEntryPointFileWriter`, and a derived writer that resolves a service emits
+`GetRequiredService` and therefore needs Shape A's one line. The equivalent writer in
+`Hardened.SourceGenerator.Tests` is patched here and shows the shape.
+
+The general rule, worth applying by grep rather than by waiting for a red build:
+
+- **`AddUsingNamespace` for every namespace whose extension methods the generated code calls.**
+- **Every type reference goes through an `ITypeDefinition`, never through a string.**
+  In these two repositories: `git grep -n 'CodeOutputComponent.Get("' and 'new CodeOutputComponent($"'`.
+
 ---
 
 ## 5. Snapshot diffs — gate 6
 
-**Nothing here yet: run 0 produced zero snapshot diffs.**
+**Ten snapshots moved under `v2/output-context`. All ten are justified below and none
+was re-baselined.**
 
 Procedure when one appears:
 
@@ -275,7 +468,70 @@ Procedure when one appears:
 
 | Run | Snapshot | What changed | Cause (change # from §4) | Verdict |
 |---|---|---|---|---|
-| — | — | — | — | — |
+| consumer-patch | `ModuleGenerationSnapshotTests.SimpleModule` | `using System.Diagnostics.CodeAnalysis;` and, in `*.Module.g.cs`, four more derived usings are gone; `[ExcludeFromCodeCoverage]` and `[DynamicDependency(...)]` are now written `[global::System.Diagnostics.CodeAnalysis....]` | B1 | improvement — **human** |
+| consumer-patch | `…GenericServiceRegistrations` | same | B1 | improvement — **human** |
+| consumer-patch | `…KeyedAndAsRegistrations` | same | B1 | improvement — **human** |
+| consumer-patch | `…ModuleWithAllServiceLifetimes` | same | B1 | improvement — **human** |
+| consumer-patch | `…ModuleWithConstructorParametersAndProperties` | same, plus `using System;` dropped | B1 | improvement — **human** |
+| consumer-patch | `…ModuleWithCoverageExclusionDisabled` | same | B1 | improvement — **human** |
+| consumer-patch | `…ModuleWithEnvironmentConditions` | same, plus `using DependencyModules.Runtime.Interfaces;` dropped from `*.Dependencies.g.cs` | B1 | improvement — **human** |
+| consumer-patch | `…RecordModule` | same | B1 | improvement — **human** |
+| consumer-patch | `…RegistrationTypeVariants` | same, plus `ServiceLifetime.Singleton` → `global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton` | B1 + B2 | improvement — **human** |
+| consumer-patch | `PublicApiTests.SourceGeneratorApi` | CSharpAuthor's own public surface, snapshotted because its source is compiled into the generator assembly | see below | **human** |
+
+All ten are `.verified.txt` baselines and **none of them was touched** — rule §8.1. They are
+the reason `DependencyModules.Tests` reports 725/735 rather than 735/735, and every one is a
+deliberate V2 behaviour change rather than a regression. Approving them is Ian's call.
+
+**Why the nine generator snapshots moved.** Each is a `TypeOutputMode.Global` file, and in
+Global mode V1 emitted `using` directives that nothing in the file needed — every type was
+already `global::`-qualified — *except* for the attributes, which V1 wrote as bare short names
+and which resolved only because those stray directives happened to be there. V2 derives the
+using list from the types actually written (§1), so the directives go and the attributes are
+qualified like everything else. The generated code compiles either way; it now compiles for a
+reason rather than by coincidence. Nothing about the emitted registrations changed.
+
+**Why the API snapshot moved.** `PublicApiTests.SourceGeneratorApi.verified.txt` records the
+public surface of `DependencyModules.SourceGenerator`, which source-includes CSharpAuthor —
+so V2's own API changes land in a DependencyModules baseline. No consumer patch can restore
+it. What moved:
+
+- *added*: `BraceStyle`, `AttributeTypeReference`, `OutputContextOptions.{AliasCollisions,
+  BraceStyle, ContainingNamespace, EmitExplicitUsings}`, `CodeOutputComponent.{FromParts,
+  Get(ITypeDefinition, string, bool), .ctor(ITypeDefinition, string?)}`,
+  `CSharpFileDefinition.Namespace`, `OutputContext.{IndentDepth, DeclareContainingNamespace}`
+- *removed from the `IOutputContext` interface*: `AddImportNamespace(ITypeDefinition)` and
+  `AddImportNamespaces(IEnumerable<ITypeDefinition>)`. This is a **deliberate source-breaking
+  change** — it is how invariant 1 is enforced rather than merely asked for. The concrete
+  `OutputContext` still has both, so nothing that holds the class breaks; only code holding
+  the interface does. Neither consumer holds the interface for this, so neither broke. Any
+  other consumer that did replaces `ctx.AddImportNamespace(type); ctx.Write("Foo")` with
+  `ctx.Write(type)`.
+- *one line from the consumer patch*: `KnownTypes.Microsoft.DependencyInjection.ServiceLifetime`,
+  the `ITypeDefinition` that replaces the `"ServiceLifetime"` string (§4.3, Shape B).
+
+### Hardened.Framework — expected text updated in the patch, not re-baselined
+
+Hardened has no `.verified.txt` mechanism for generated code; it pins expected output with
+`Assert.Contains` literals in the test bodies. Thirteen of them recorded V1's unqualified
+output. The patch updates them **in source, visibly**, which is a different act from letting a
+snapshot rewrite its own baseline — there is no `UPDATE_SNAPSHOTS` here and nothing was
+absorbed silently. Each one is listed so it can be vetoed individually.
+
+| File | Before | After | Cause |
+|---|---|---|---|
+| `Requests/GeneratedCodeRegressionTests.cs` ×3 | `new ExecutionRequestHandlerInfo("…", typeof(HealthController), …)` | `new global::Hardened.Requests.Runtime.Execution.ExecutionRequestHandlerInfo("…", typeof(global::TestApp.HealthController), …)` | B2 |
+| `Shared/ApplicationRootEmitTests.cs` ×1 | `RootServiceProvider ?? throw new Exception` | `RootServiceProvider ?? throw new global::System.Exception` | B2 |
+| `Function/FunctionHandlerProviderTests.cs` ×1 | `[DynamicDependency(nameof(FunctionHandlersDI))]` | `[global::System.Diagnostics.CodeAnalysis.DynamicDependency(nameof(FunctionHandlersDI))]` | B1 |
+| `Hardened.OpenApi.SourceGenerator.Tests/GeneratorConfigurationTests.cs` ×4 | `[ExcludeFromCodeCoverage]` | `[global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]` | B1 |
+| `Hardened.OpenApi.SourceGenerator.Tests/GeneratedCodeCompilesTests.cs` ×4 | `[property: Required]`, `[property: StringLength(`, `[property: Range(`, `[property: Pattern(typeof(` | each prefixed `global::ValidationModules.Constraints.` | B1 |
+
+The last eight are **not** caused by the patch: they are B1 alone, and they were invisible
+until the patch made those suites buildable again. The first five are caused by the patch, and
+are the point of it — a type that is now a type gets written like one.
+
+If any of these is rejected, the corresponding writer change has to be rejected with it, and
+that file's generated code goes back to not compiling.
 
 Verdicts: `improvement` (V1 was wrong), `neutral` (cosmetic, semantically identical),
 `regression` (fix the emitter), `human` (needs Ian's call — leave it and keep going).
@@ -374,6 +630,10 @@ reporting one.
 |---|---|---|---|---|---|
 | 0 | `7ab7145` `feature/v2` — V1 code, baseline | core | 735/735, 735/735 | 468/468 | PASS, 15 s |
 | 0 | `7ab7145` `feature/v2` — V1 code, baseline | full | 735/735, 735/735 | 468/468 | PASS — 35 assemblies, 6,186 tests, 0 failures, 36 s |
+| 1 | `d7d3d2e` `v2/output-context` — unpatched consumers | core | 384/735, 384/735 | 265/468 | FAIL — the §1 interlock, measured |
+| 1 | `d7d3d2e` `v2/output-context` — unpatched consumers | full | 384/735, 384/735 | 265/468 | FAIL — only 23 of 35 assemblies could run; 3,413 passed / 1,306 failed |
+| 2 | `d7d3d2e` `v2/output-context` + `docs/consumer-patches/*` | core | 725/735, 725/735 | **468/468** | 10 `.verified.txt` snapshots left, all in §5 |
+| 2 | `d7d3d2e` `v2/output-context` + `docs/consumer-patches/*` | full | 725/735, 725/735 | **468/468** | 35 of 35 assemblies, 6,166 passed / 20 failed — the same 10 snapshots × 2 TFMs. Zero compile errors in generated code. |
 Every behaviour change, with the mechanical fix.
 
 <!-- Each build area appends its own section. Keep sections separate so they merge cleanly. -->

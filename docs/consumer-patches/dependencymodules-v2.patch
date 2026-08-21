@@ -1,0 +1,105 @@
+diff --git a/src/DependencyModules.SourceGenerator.Impl/DecoratorFileWriter.cs b/src/DependencyModules.SourceGenerator.Impl/DecoratorFileWriter.cs
+index 9b80133..a46d351 100644
+--- a/src/DependencyModules.SourceGenerator.Impl/DecoratorFileWriter.cs
++++ b/src/DependencyModules.SourceGenerator.Impl/DecoratorFileWriter.cs
+@@ -28,6 +28,11 @@ public class DecoratorFileWriter {
+ 
+         var csharpFile = new CSharpFileDefinition(entryPointModel.EntryPointType.Namespace);
+ 
++        // GetRequiredService/GetRequiredKeyedService/GetService<T> are extension methods, and an
++        // extension method is reachable only through a using of its namespace - global:: cannot
++        // name one.
++        csharpFile.AddUsingNamespace(KnownTypes.Microsoft.DependencyInjection.Namespace);
++
+         var classDefinition = csharpFile.AddClass(entryPointModel.EntryPointType.Name);
+         classDefinition.Modifiers |= ComponentModifier.Partial;
+ 
+diff --git a/src/DependencyModules.SourceGenerator.Impl/DependencyFileWriter.cs b/src/DependencyModules.SourceGenerator.Impl/DependencyFileWriter.cs
+index cc5b72f..59e4f70 100644
+--- a/src/DependencyModules.SourceGenerator.Impl/DependencyFileWriter.cs
++++ b/src/DependencyModules.SourceGenerator.Impl/DependencyFileWriter.cs
+@@ -43,6 +43,11 @@ public class DependencyFileWriter {
+ 
+         var csharpFile = new CSharpFileDefinition(entryPointModel.EntryPointType.Namespace);
+ 
++        // An extension method is reachable only through a using of its namespace - global:: cannot
++        // name one - so the registration calls need this directive even though every type in the
++        // file is written fully qualified.
++        csharpFile.AddUsingNamespace(KnownTypes.Microsoft.DependencyInjection.Namespace);
++
+         GenerateClass(entryPointModel, configurationModel, serviceModels, csharpFile, uniqueId);
+ 
+         var output = new OutputContext(
+@@ -293,13 +298,16 @@ public class DependencyFileWriter {
+ 
+         switch (registrationModel.Lifestyle) {
+             case ServiceLifestyle.Transient:
+-                parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Transient"));
++                parameters.Add(CodeOutputComponent.Get(
++                    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Transient"));
+                 break;
+             case ServiceLifestyle.Scoped:
+-                parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Scoped"));
++                parameters.Add(CodeOutputComponent.Get(
++                    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Scoped"));
+                 break;
+             case ServiceLifestyle.Singleton:
+-                parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Singleton"));
++                parameters.Add(CodeOutputComponent.Get(
++                    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Singleton"));
+                 break;
+             default:
+                 throw new ArgumentOutOfRangeException();
+@@ -372,13 +380,16 @@ public class DependencyFileWriter {
+ 
+         switch (registrationModel.Lifestyle) {
+             case ServiceLifestyle.Transient:
+-                parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Transient"));
++                parameters.Add(CodeOutputComponent.Get(
++                    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Transient"));
+                 break;
+             case ServiceLifestyle.Scoped:
+-                parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Scoped"));
++                parameters.Add(CodeOutputComponent.Get(
++                    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Scoped"));
+                 break;
+             case ServiceLifestyle.Singleton:
+-                parameters.Add(CodeOutputComponent.Get("ServiceLifetime.Singleton"));
++                parameters.Add(CodeOutputComponent.Get(
++                    KnownTypes.Microsoft.DependencyInjection.ServiceLifetime, "Singleton"));
+                 break;
+             default:
+                 throw new ArgumentOutOfRangeException();
+diff --git a/src/DependencyModules.SourceGenerator.Impl/InterceptorRegistrationWriter.cs b/src/DependencyModules.SourceGenerator.Impl/InterceptorRegistrationWriter.cs
+index 0e86219..1aa0540 100644
+--- a/src/DependencyModules.SourceGenerator.Impl/InterceptorRegistrationWriter.cs
++++ b/src/DependencyModules.SourceGenerator.Impl/InterceptorRegistrationWriter.cs
+@@ -18,6 +18,10 @@ public class InterceptorRegistrationWriter {
+ 
+         var csharpFile = new CSharpFileDefinition(entryPointModel.EntryPointType.Namespace);
+ 
++        // GetRequiredService is an extension method, and an extension method is reachable only
++        // through a using of its namespace - global:: cannot name one.
++        csharpFile.AddUsingNamespace(KnownTypes.Microsoft.DependencyInjection.Namespace);
++
+         var classDefinition = csharpFile.AddClass(entryPointModel.EntryPointType.Name);
+         classDefinition.Modifiers |= ComponentModifier.Partial;
+ 
+diff --git a/src/DependencyModules.SourceGenerator.Impl/KnownTypes.cs b/src/DependencyModules.SourceGenerator.Impl/KnownTypes.cs
+index 36358c1..49780e7 100644
+--- a/src/DependencyModules.SourceGenerator.Impl/KnownTypes.cs
++++ b/src/DependencyModules.SourceGenerator.Impl/KnownTypes.cs
+@@ -17,6 +17,13 @@ public static class KnownTypes {
+             
+             public static readonly ITypeDefinition ServiceDescriptor = 
+                 TypeDefinition.Get(TypeDefinitionEnum.ClassDefinition, Namespace, "ServiceDescriptor");
++
++            /// <summary>
++            /// Handed to the writer as a type rather than written as the string "ServiceLifetime",
++            /// so the name is qualified in a file that qualifies and counted in the using list.
++            /// </summary>
++            public static readonly ITypeDefinition ServiceLifetime =
++                TypeDefinition.Get(TypeDefinitionEnum.EnumDefinition, Namespace, "ServiceLifetime");
+             
+             public static readonly ITypeDefinition FromKeyedServicesAttribute =
+                 TypeDefinition.Get(TypeDefinitionEnum.ClassDefinition, Namespace, "FromKeyedServicesAttribute");
