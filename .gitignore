@@ -187,3 +187,4 @@ $RECYCLE.BIN/
 
 # round-trip harness scratch output
 /.runs/
+__pycache__/
