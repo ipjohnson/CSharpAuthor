@@ -20,7 +20,7 @@ was measured on this machine, by running the thing it describes. Where a gate fa
 | 6 | Snapshot diffs | zero, or every one justified | 10, every one justified below. **Nothing re-baselined** | ⚠️ |
 | 7 | C# coverage | reported with gaps named | §9(a) **250/250 = 100%**; §9(b) **1,315/1,373 = 95.8%** | ✅ |
 | 8 | Migration doc | every breaking change with its mechanical fix | `docs/migration-v1-v2.md`, 1,398 lines, incl. both consumer patches | ✅ |
-| 9 | Perf | no worse than V1 | **+7.1% allocation, +66..76% time.** Absolute time bar passed (0.0181 ≤ 0.048 ms); absolute allocation bar missed by 6.3% (82.9 vs 78 KB) | ❌ |
+| 9 | Perf | no worse than V1 | **+6.5% allocation, +57% time** on the §10 (ShortName) payload; **+16–24% time in `Global`**. Absolute time bar passed; absolute allocation bar missed by 5.6% | ❌ |
 
 ### Two corrections to the handoff, both measured
 
@@ -160,9 +160,52 @@ Time is the weaker number and is also mostly structural: of the 6.0 µs gap, **2
 pass** (V1 appends as it writes; V2 walks the record and renders it) and **2.4 µs is the name plan**
 — 88% of it. 1.25 KB of the allocation gap is the type model growing, not the output context.
 
-**This is the price of §2 invariant 2.** Deferred rendering is what lets one option flip a file
-between short names and `global::`, and it is what makes a missing `using` structurally impossible.
-Whether +7% allocation is worth that is a product decision, not one an agent should take.
+### The qualifying-mode write path — most of the time gap was avoidable
+
+The record exists so a type can be **re-decided** once the whole file is known: given an alias, or
+dropped in favour of a `using`. **Only `ShortName` ever does that.** In `Global` and `FullName`
+every reference is written out in full as it is written, so the record and the pass over it were
+pure overhead.
+
+Those modes now stream straight into the `StringBuilder` they are returned from, and the `using`
+block goes in at the header offset at the end — V1's own trick, at the header offset rather than at
+zero. `Output()` in `Global` drops from **8.96 µs to ~0.2 µs**.
+
+The §10 benchmark payload uses `new OutputContext()`, i.e. `ShortName`, **so gate 9 never exercises
+the fast path — it only measures its overhead.** A V1-comparable `Global` probe on the same payload:
+
+| | µs/file | KB/file | vs V1 |
+|---|---|---|---|
+| V1 | 12.52 | 74.9 | — |
+| V2 before | 18.66 | 82.0 | +49.6% / +9.5% |
+| **V2 after** | **15.05** | **80.9** | **+20.8% / +8.0%** |
+
+**Global: −19.3% time, and the gap over V1 falls from +49.6% to +20.8%.** On the ShortName gate,
+time went +68.3% → +57.7% and allocation +7.1% → +6.5%. (V1 emits 4,831 chars in `Global` against
+V2's 4,782 — V1 still emits type-derived usings in a qualifying mode, the §1 defect V2 fixed.)
+
+**No guarantee narrows.** The five style options are snapshotted when the fast path engages; every
+write that spends one re-checks the snapshot, and `Output()` checks again. On any disagreement a
+journal of non-text writes — recording where each starts in the stream, so the text between two
+entries is recovered as the string it was written from — **rebuilds the exact record and hands it to
+the existing serializer.** There is no second renderer to get subtly wrong. Indentation, line
+endings, brace style, and even `TypeOutputMode` itself can still change right up to serialization,
+and a `Global`→`ShortName` switch still resolves collisions.
+
+What changed is *when the fast path engages*, not what the library promises: it declines when
+`BraceStyle == KAndR` at the first write, because K&R trims characters back off the output and
+trimmed characters cannot be handed back to a rebuilt record. Such a file takes the recording path —
+same code, same output, same performance as before.
+
+Proved by **60,000 whole-file pair comparisons** (200 generated files × 3 modes × 5 styles × 4 flag
+combinations, against both the recording path and a restyled-after-write path) plus **5,760 scripted
+mid-write comparisons** mutating each option part-way through with `LastCharacter` sampled after
+every write. Zero mismatches. The harness's discriminating power was verified by injecting a
+one-character fault, which it flagged in 880 of 1,500 pairs.
+
+**What remains is the price of §2 invariant 2**, now concentrated where it is earned: `ShortName`
+pays for aliasing and derived usings; qualifying modes no longer pay for a capability they never
+use. Whether the remaining ShortName gap is worth it is a product decision.
 
 ---
 
