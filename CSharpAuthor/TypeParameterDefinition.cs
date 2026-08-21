@@ -41,6 +41,11 @@ public class TypeParameterDefinition : ITypeDefinition
 
     public IReadOnlyList<int> ArrayRanks { get; }
 
+    /// <summary>
+    /// Always null: a type parameter is declared by a type or a method, never nested inside one.
+    /// </summary>
+    public ITypeDefinition? ContainingType => null;
+
     public IEnumerable<string> KnownNamespaces => Enumerable.Empty<string>();
 
     public IReadOnlyList<ITypeDefinition> TypeArguments => Array.Empty<ITypeDefinition>();

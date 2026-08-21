@@ -12,16 +12,22 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     private int? _hashCode;
 
     protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray, bool isNullable)
-        : this(typeDefinitionEnum, ns, name, isArray ? _oneDimensional : _notAnArray, isNullable)
+        : this(typeDefinitionEnum, ns, name, isArray ? _oneDimensional : _notAnArray, isNullable, null)
     {
     }
 
     protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable)
+        : this(typeDefinitionEnum, ns, name, arrayRanks, isNullable, null)
+    {
+    }
+
+    protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable, ITypeDefinition? containingType)
     {
         Name = name;
         Namespace = ns;
         IsNullable = isNullable;
         ArrayRanks = NormalizeRanks(arrayRanks);
+        ContainingType = containingType;
         TypeDefinitionEnum = typeDefinitionEnum;
     }
 
@@ -53,6 +59,9 @@ public abstract class BaseTypeDefinition : ITypeDefinition
 
     /// <inheritdoc />
     public bool IsArray => ArrayRanks.Count > 0;
+
+    /// <inheritdoc />
+    public ITypeDefinition? ContainingType { get; }
 
     public abstract int CompareTo(ITypeDefinition other);
 
@@ -110,6 +119,13 @@ public abstract class BaseTypeDefinition : ITypeDefinition
             return namespaceCompare;
         }
 
+        var containerCompare = CompareContainingTypes(other);
+
+        if (containerCompare != 0)
+        {
+            return containerCompare;
+        }
+
         var rankCompare = CompareArrayRanks(other);
 
         if (rankCompare != 0)
@@ -143,6 +159,28 @@ public abstract class BaseTypeDefinition : ITypeDefinition
 
             builder.Append(']');
         }
+    }
+
+    /// <summary>
+    /// Writes everything that comes before the type's own name: the containing type if it has one,
+    /// the namespace otherwise.
+    /// </summary>
+    /// <remarks>
+    /// A nested type is qualified by its container, not by its namespace - <c>Ns.Outer.Inner</c>, never
+    /// <c>Ns.Inner</c>. The container writes itself in the same mode, so it picks up <c>global::</c> or
+    /// the namespace exactly once, at the outermost type, and the chain below it stays plain.
+    /// </remarks>
+    protected void WriteQualifier(StringBuilder builder, TypeOutputMode typeOutputMode)
+    {
+        if (ContainingType != null)
+        {
+            ContainingType.WriteTypeName(builder, typeOutputMode);
+            builder.Append('.');
+
+            return;
+        }
+
+        WriteNamespacePrefix(builder, typeOutputMode);
     }
 
     protected void WriteNamespacePrefix(StringBuilder builder, TypeOutputMode typeOutputMode)
@@ -190,6 +228,24 @@ public abstract class BaseTypeDefinition : ITypeDefinition
         }
 
         return result;
+    }
+
+    private int CompareContainingTypes(ITypeDefinition other)
+    {
+        var container = ContainingType;
+        var otherContainer = other.ContainingType;
+
+        if (container == null)
+        {
+            return otherContainer == null ? 0 : -1;
+        }
+
+        if (otherContainer == null)
+        {
+            return 1;
+        }
+
+        return container.CompareTo(otherContainer);
     }
 
     private int CompareArrayRanks(ITypeDefinition other)

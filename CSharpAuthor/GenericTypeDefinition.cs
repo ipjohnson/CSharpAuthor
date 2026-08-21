@@ -23,7 +23,8 @@ public class GenericTypeDefinition : BaseTypeDefinition
     }
 
     public GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
-        IReadOnlyList<int>? arrayRanks, bool isNullable = false) : base(classType, ns, name, arrayRanks, isNullable)
+        IReadOnlyList<int>? arrayRanks, bool isNullable = false, ITypeDefinition? containingType = null)
+        : base(classType, ns, name, arrayRanks, isNullable, containingType)
     {
         _closingTypes = closingTypes;
     }
@@ -72,13 +73,21 @@ public class GenericTypeDefinition : BaseTypeDefinition
                 }
             }
 
+            if (ContainingType != null)
+            {
+                foreach (var knownNamespace in ContainingType.KnownNamespaces)
+                {
+                    yield return knownNamespace;
+                }
+            }
+
             yield return Namespace;
         }
     }
-    
+
     public override void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
-        WriteNamespacePrefix(builder, typeOutputMode);
+        WriteQualifier(builder, typeOutputMode);
 
         builder.Append(Name);
         builder.Append('<');
@@ -111,19 +120,19 @@ public class GenericTypeDefinition : BaseTypeDefinition
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, nullable);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, nullable, ContainingType);
     }
 
     public override ITypeDefinition MakeArray(int rank)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanksWithOuterRank(rank), IsNullable);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanksWithOuterRank(rank), IsNullable, ContainingType);
     }
 
     public ITypeDefinition MakeOpenType()
     {
         var emptyTypes = _closingTypes.Select(_ => TypeDefinition.Get("", "")).ToArray();
 
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, ArrayRanks, IsNullable);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, ArrayRanks, IsNullable, ContainingType);
     }
         
     public override IReadOnlyList<ITypeDefinition> TypeArguments => _closingTypes;

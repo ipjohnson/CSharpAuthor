@@ -12,15 +12,26 @@ public class TypeDefinition : BaseTypeDefinition
 
     }
 
-    public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable = false)
-        : base(typeDefinitionEnum, ns, name, arrayRanks, isNullable)
+    public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable = false, ITypeDefinition? containingType = null)
+        : base(typeDefinitionEnum, ns, name, arrayRanks, isNullable, containingType)
     {
 
     }
 
     public override IEnumerable<string> KnownNamespaces
     {
-        get { yield return Namespace; }
+        get
+        {
+            if (ContainingType != null)
+            {
+                foreach (var knownNamespace in ContainingType.KnownNamespaces)
+                {
+                    yield return knownNamespace;
+                }
+            }
+
+            yield return Namespace;
+        }
     }
 
     public override void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
@@ -32,7 +43,7 @@ public class TypeDefinition : BaseTypeDefinition
             return;
         }
 
-        WriteNamespacePrefix(builder, typeOutputMode);
+        WriteQualifier(builder, typeOutputMode);
 
         builder.Append(Name);
 
@@ -46,12 +57,12 @@ public class TypeDefinition : BaseTypeDefinition
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanks, nullable);
+        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanks, nullable, ContainingType);
     }
 
     public override ITypeDefinition MakeArray(int rank)
     {
-        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanksWithOuterRank(rank), IsNullable);
+        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanksWithOuterRank(rank), IsNullable, ContainingType);
     }
 
     public override IReadOnlyList<ITypeDefinition> TypeArguments => Array.Empty<ITypeDefinition>();
@@ -173,11 +184,26 @@ public class TypeDefinition : BaseTypeDefinition
     }
 
     /// <summary>
-    /// A type with array specifiers, outermost first: <c>[2, 1]</c> is <c>Name[,][]</c>.
+    /// A type with array specifiers, outermost first (<c>[2, 1]</c> is <c>Name[,][]</c>), and
+    /// optionally the type it is declared inside.
     /// </summary>
-    public static TypeDefinition Get(TypeDefinitionEnum definitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable = false)
+    public static TypeDefinition Get(TypeDefinitionEnum definitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable = false, ITypeDefinition? containingType = null)
     {
-        return new TypeDefinition(definitionEnum, ns, name, arrayRanks, isNullable);
+        return new TypeDefinition(definitionEnum, ns, name, arrayRanks, isNullable, containingType);
+    }
+
+    /// <summary>
+    /// A type declared inside <paramref name="containingType"/>, which is what makes it write as
+    /// <c>Outer.Inner</c> rather than as a bare <c>Inner</c> that names something else.
+    /// </summary>
+    public static TypeDefinition GetNested(ITypeDefinition containingType, string name, TypeDefinitionEnum definitionEnum = TypeDefinitionEnum.ClassDefinition)
+    {
+        if (containingType == null)
+        {
+            throw new ArgumentNullException(nameof(containingType));
+        }
+
+        return new TypeDefinition(definitionEnum, containingType.Namespace, name, null, false, containingType);
     }
 
     public static ITypeDefinition Get(Type type)
@@ -190,6 +216,11 @@ public class TypeDefinition : BaseTypeDefinition
         if (type.IsArray)
         {
             return GetArray(type);
+        }
+
+        if (type.IsGenericParameter)
+        {
+            return new TypeParameterDefinition(type.Name);
         }
 
         if (IsKnownType(type, out var knownDefinition))
@@ -208,6 +239,8 @@ public class TypeDefinition : BaseTypeDefinition
             typeDefinition = TypeDefinitionEnum.InterfaceDefinition;
         }
 
+        var containingType = GetContainingType(type);
+
         if (type.IsConstructedGenericType)
         {
             var genericTypeDefinition = type.GetGenericTypeDefinition();
@@ -216,16 +249,87 @@ public class TypeDefinition : BaseTypeDefinition
 
             var closingTypes = new List<ITypeDefinition>();
 
-            foreach (var genericArgument in type.GetGenericArguments())
+            foreach (var genericArgument in OwnGenericArguments(type))
             {
                 closingTypes.Add(Get(genericArgument));
             }
 
+            if (closingTypes.Count == 0)
+            {
+                // A type with no type parameters of its own, nested in a generic one: the arguments
+                // all belong to the container, and writing them here would invent a Inner<T>.
+                return new TypeDefinition(typeDefinition, genericTypeDefinition.Namespace ?? "", className, null, false, containingType);
+            }
+
             return new GenericTypeDefinition(typeDefinition,
-                genericTypeDefinition.Namespace!, className, closingTypes);
+                genericTypeDefinition.Namespace!, className, closingTypes, null, false, containingType);
         }
 
-        return new TypeDefinition(typeDefinition, type.Namespace!, type.Name, false);
+        return new TypeDefinition(typeDefinition, type.Namespace ?? "", type.Name, null, false, containingType);
+    }
+
+    /// <summary>
+    /// The type a nested type is declared in, closed over the arguments that belong to it.
+    /// </summary>
+    /// <remarks>
+    /// Reflection reports the container of a constructed nested type as the *open* generic -
+    /// <c>Outer&lt;T&gt;</c>, not <c>Outer&lt;int&gt;</c> - and hangs every argument, the container's
+    /// included, off the nested type. Closing the container back over its own share is what turns
+    /// <c>Outer&lt;int&gt;.Inner&lt;string&gt;</c> back into itself.
+    /// </remarks>
+    private static ITypeDefinition? GetContainingType(Type type)
+    {
+        var declaringType = type.DeclaringType;
+
+        if (declaringType == null)
+        {
+            return null;
+        }
+
+        if (declaringType.IsGenericTypeDefinition && type.IsConstructedGenericType)
+        {
+            var declaringArity = declaringType.GetGenericArguments().Length;
+            var arguments = type.GetGenericArguments();
+
+            if (declaringArity > 0 && declaringArity <= arguments.Length)
+            {
+                var containerArguments = new Type[declaringArity];
+
+                Array.Copy(arguments, containerArguments, declaringArity);
+
+                declaringType = declaringType.MakeGenericType(containerArguments);
+            }
+        }
+
+        return Get(declaringType);
+    }
+
+    /// <summary>
+    /// The generic arguments the type declares itself, without the ones inherited from its container.
+    /// </summary>
+    private static IReadOnlyList<Type> OwnGenericArguments(Type type)
+    {
+        var arguments = type.GetGenericArguments();
+
+        var declaringType = type.DeclaringType;
+
+        if (declaringType is not { IsGenericType: true })
+        {
+            return arguments;
+        }
+
+        var inherited = declaringType.GetGenericArguments().Length;
+
+        if (inherited <= 0 || inherited > arguments.Length)
+        {
+            return arguments;
+        }
+
+        var own = new Type[arguments.Length - inherited];
+
+        Array.Copy(arguments, inherited, own, 0, own.Length);
+
+        return own;
     }
 
     /// <summary>

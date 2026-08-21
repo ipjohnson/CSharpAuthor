@@ -38,6 +38,16 @@ a type that does not exist. It now writes `Outer.Inner` and `global::Ns.Outer.In
   **Fix:** use the type definition you already have, or the new
   `TypeDefinition.Get(enumValue, ns, name, arrayRanks, isNullable, containingType)` overload.
 
+### `TypeDefinition.Get` on a generic parameter returns a `TypeParameterDefinition`
+
+`TypeDefinition.Get(typeof(List<>).GetGenericArguments()[0])` used to return a `TypeDefinition` named
+`T` in namespace `System.Collections.Generic` — reflection reports a parameter's namespace as its
+declaring type's — so it wrote `global::System.Collections.Generic.T` in `Global` mode. It now returns
+a `TypeParameterDefinition`, which writes `T` in every mode.
+
+This also keeps the nested-type change from making it worse: a generic parameter's `DeclaringType` is
+the type that declares it, and treating that as a container would have written `List.T`.
+
 ### Array ranks are modelled, not a flag
 
 `IsArray` was a `bool`, so the model could not tell `int[]` from `int[][]` from `int[,]`. Three

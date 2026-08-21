@@ -29,6 +29,17 @@ public interface ITypeDefinition : IComparable<ITypeDefinition>
 
     string Namespace { get; }
 
+    /// <summary>
+    /// The type this one is declared inside, or null when it is declared directly in a namespace.
+    /// </summary>
+    /// <remarks>
+    /// A nested type is named through its container - <c>Outer.Inner</c> - and dropping the container
+    /// produces a name that resolves to a different type or to nothing at all. The container is held
+    /// as a type definition rather than a string so a generic one keeps its arguments unrendered:
+    /// <c>Outer&lt;T&gt;.Inner</c> qualifies the same way in every <see cref="TypeOutputMode"/>.
+    /// </remarks>
+    ITypeDefinition? ContainingType { get; }
+
     IEnumerable<string> KnownNamespaces { get; }
 
     void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName);
