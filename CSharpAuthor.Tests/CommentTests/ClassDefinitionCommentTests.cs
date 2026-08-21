@@ -36,7 +36,6 @@ public class ClassDefinitionCommentTests
 /// </summary>
 public class MyClass
 {
-
     /// <summary>
     /// This is an int property
     /// </summary>

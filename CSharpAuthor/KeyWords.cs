@@ -43,4 +43,6 @@ public static class KeyWords
     public static string Params => "params";
 
     public static string This => "this";
+
+    public static string Var => "var";
 }

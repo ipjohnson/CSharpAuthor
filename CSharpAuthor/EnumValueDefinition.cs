@@ -32,7 +32,7 @@ public class EnumValueDefinition : BaseOutputComponent
         if (Value != null)
         {
             outputContext.Write(" = ");
-            outputContext.Write(Value.ToString());
+            outputContext.Write(Value.ToString() ?? "");
         }
 
         outputContext.WriteLine(",");

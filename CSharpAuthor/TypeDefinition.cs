@@ -9,11 +9,12 @@ public class TypeDefinition : BaseTypeDefinition
 {
     private int? _hashCode;
 
-    public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray, bool isNullable = false) : base(typeDefinitionEnum, ns, name,  isArray, isNullable)
+    public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, bool isArray, bool isNullable = false, ITypeDefinition? containingType = null)
+        : base(typeDefinitionEnum, ns, name,  isArray, isNullable, containingType)
     {
-            
+
     }
-        
+
     public override IEnumerable<string> KnownNamespaces
     {
         get { yield return Namespace; }
@@ -21,32 +22,16 @@ public class TypeDefinition : BaseTypeDefinition
 
     public override void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
-        
         if (Name == "Void" && Namespace == "System")
         {
             builder.Append("void");
             return;
         }
 
-        if (!string.IsNullOrEmpty(Namespace))
-        {
-            if (typeOutputMode == TypeOutputMode.Global)
-            {
-                builder.Append("global::");
-                builder.Append(Namespace);
-                builder.Append('.');
-
-            }
-            else if (typeOutputMode == TypeOutputMode.FullName)
-            {
-                builder.Append(Namespace);
-                builder.Append('.');
-            }
-        }
-
+        WriteQualification(builder, typeOutputMode);
 
         builder.Append(Name);
-        
+
         if (IsArray)
         {
             builder.Append("[]");
@@ -60,22 +45,23 @@ public class TypeDefinition : BaseTypeDefinition
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, IsArray, nullable);
+        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, IsArray, nullable, ContainingType);
     }
 
+    /// <inheritdoc cref="ArrayTypeDefinition.MakeArray"/>
     public override ITypeDefinition MakeArray()
     {
-        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, true, IsNullable);
+        return new ArrayTypeDefinition(this);
     }
 
     public override IReadOnlyList<ITypeDefinition> TypeArguments => Array.Empty<ITypeDefinition>();
 
-    public override int CompareTo(ITypeDefinition other)
+    public override int CompareTo(ITypeDefinition? other)
     {
         return BaseCompareTo(other);
     }
 
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         if (obj is TypeDefinition typeDefinition)
         {
@@ -207,6 +193,15 @@ public class TypeDefinition : BaseTypeDefinition
         return new TypeDefinition(definitionEnum, ns, name, isArray, isNullable);
     }
 
+    /// <summary>
+    /// A nested type, written with the container it is declared in.
+    /// </summary>
+    public static TypeDefinition GetNested(ITypeDefinition containingType, string name, TypeDefinitionEnum definitionEnum = TypeDefinitionEnum.ClassDefinition)
+    {
+        return new TypeDefinition(
+            definitionEnum, containingType.Namespace, name, false, false, containingType);
+    }
+
     public static ITypeDefinition Get(Type type)
     {
         if (type == null)
@@ -214,9 +209,27 @@ public class TypeDefinition : BaseTypeDefinition
             throw new ArgumentNullException(nameof(type));
         }
 
-        if (IsKnownType(type, out var knownDefinition))
+        // An array is its element plus a rank, recursively - so int[][] is an array of int[]
+        // rather than an int carrying two flags it has nowhere to put.
+        if (type.IsArray)
         {
-            return knownDefinition!;
+            return new ArrayTypeDefinition(Get(type.GetElementType()!), type.GetArrayRank());
+        }
+
+        // int? arrives as Nullable<int>. Rendering it as a constructed generic is correct C# and
+        // is not what anyone writes.
+        var underlyingType = Nullable.GetUnderlyingType(type);
+
+        if (underlyingType != null)
+        {
+            return Get(underlyingType).MakeNullable();
+        }
+
+        var specialType = SpecialTypes.Get(type);
+
+        if (specialType != null)
+        {
+            return specialType;
         }
 
         var typeDefinition = TypeDefinitionEnum.ClassDefinition;
@@ -229,6 +242,12 @@ public class TypeDefinition : BaseTypeDefinition
         {
             typeDefinition = TypeDefinitionEnum.InterfaceDefinition;
         }
+
+        // A nested type's own Name is just Inner, so without its container it binds to whatever
+        // Inner is in scope where it is used.
+        var containingType = type.IsNested && type.DeclaringType != null
+            ? Get(type.DeclaringType)
+            : null;
 
         if (type.IsConstructedGenericType)
         {
@@ -243,51 +262,11 @@ public class TypeDefinition : BaseTypeDefinition
                 closingTypes.Add(Get(genericArgument));
             }
 
-            return new GenericTypeDefinition(typeDefinition, 
-                genericTypeDefinition.Namespace!, className, closingTypes, type.IsArray);
+            return new GenericTypeDefinition(typeDefinition,
+                genericTypeDefinition.Namespace!, className, closingTypes, false, false, containingType);
         }
 
-        return new TypeDefinition(typeDefinition, type.Namespace!, type.Name, type.IsArray);
+        return new TypeDefinition(typeDefinition, type.Namespace ?? "", type.Name, false, false, containingType);
     }
 
-    private static readonly Dictionary<Type, ITypeDefinition> _knownTypes = new()
-    {
-        { typeof(object), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "object", false) },
-        { typeof(ulong), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ulong", false) },
-        { typeof(long), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "long", false) },
-        { typeof(uint), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "uint", false) },
-        { typeof(string), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string", false) },
-        { typeof(int), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "int", false) },
-        { typeof(short), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "short", false) },
-        { typeof(ushort), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ushort", false) },
-        { typeof(byte), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "byte", false) },
-        { typeof(double), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "double", false) },
-        { typeof(decimal), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "decimal", false) },
-        { typeof(bool), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "bool", false) },
-    };
-    private static readonly Dictionary<Type, ITypeDefinition> _knownArrayTypes = new()
-    {
-        { typeof(object[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "object", true) },
-        { typeof(string[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "string", true) },
-        { typeof(int[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "int", true) },
-        { typeof(uint[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "uint", true) },
-        { typeof(long[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "long", true) },
-        { typeof(ulong[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ulong", true) },
-        { typeof(short[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "short", true) },
-        { typeof(ushort[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ushort", true) },
-        { typeof(byte[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "byte", true) },
-        { typeof(bool[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "bool", true) },
-        { typeof(double[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "double", true) },
-        { typeof(decimal[]), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "decimal", true) },
-    };
-
-    private static bool IsKnownType(Type type, out ITypeDefinition? typeDefinition)
-    {
-        if (type.IsArray)
-        {
-            return _knownArrayTypes.TryGetValue(type, out typeDefinition);
-        }
-
-        return _knownTypes.TryGetValue(type, out typeDefinition);
-    }
 }

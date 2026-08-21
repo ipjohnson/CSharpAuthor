@@ -11,11 +11,13 @@ public class WhileDefinition : BaseBlockDefinition
     public WhileDefinition(object testStatement)
     {
         _testStatement = CodeOutputComponent.Get(testStatement);
+
+        LogicStatement.SuppressEnclosedParentheses(_testStatement);
     }
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.WriteIndent("while(");
+        outputContext.WriteIndent("while (");
         _testStatement.WriteOutput(outputContext);
         outputContext.WriteLine(")");
 

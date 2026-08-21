@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -56,12 +56,13 @@ public class TypeParameterDefinition : ITypeDefinition
         return new TypeParameterDefinition(Name, nullable, IsArray);
     }
 
+    /// <inheritdoc cref="ArrayTypeDefinition.MakeArray"/>
     public ITypeDefinition MakeArray()
     {
-        return new TypeParameterDefinition(Name, IsNullable, true);
+        return new ArrayTypeDefinition(this);
     }
 
-    public int CompareTo(ITypeDefinition other)
+    public int CompareTo(ITypeDefinition? other)
     {
         if (other is not TypeParameterDefinition typeParameter)
         {
@@ -92,7 +93,7 @@ public class TypeParameterDefinition : ITypeDefinition
     /// Value equality, so a model holding one compares equal across runs. A source generator caches
     /// on its models, and reference equality would miss that cache on every edit.
     /// </summary>
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         return obj is TypeParameterDefinition other && CompareTo(other) == 0;
     }

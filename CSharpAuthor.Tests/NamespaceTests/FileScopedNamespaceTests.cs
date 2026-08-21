@@ -24,7 +24,6 @@ public class FileScopedNamespaceTests
 
 public class TestClass
 {
-
     public void DoWork()
     {
     }

@@ -20,7 +20,6 @@ public class EventDefinitionTests
     private const string FieldLikeOutput =
         @"public class Publisher
 {
-
     public event EventHandler Changed;
 }
 ";
@@ -43,7 +42,6 @@ public class EventDefinitionTests
     private const string AccessorsOutput =
         @"public class Publisher
 {
-
     public event EventHandler Changed
     {
         add

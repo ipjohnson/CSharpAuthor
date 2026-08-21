@@ -32,6 +32,7 @@ public class OutputContext : IOutputContext
     private readonly HashSet<string> _namespaces = new ();
     private readonly StringBuilder _output;
     private int _indentIndex;
+    private bool _usingStatementsGenerated;
     public OutputContextOptions Options { get; }
 
     public OutputContext(OutputContextOptions? options = null)
@@ -78,9 +79,16 @@ public class OutputContext : IOutputContext
         _output.Append(Options.NewLine);
     }
 
+    /// <remarks>
+    /// <see cref="StringBuilder.AppendLine(string)"/> appends <see cref="Environment.NewLine"/>,
+    /// which is the host's line ending rather than the configured one. That made generated output
+    /// differ by the operating system it was generated on, and left
+    /// <see cref="OutputContextOptions.NewLine"/> reaching almost nothing it claimed to control.
+    /// </remarks>
     public void WriteLine(string text)
     {
-        _output.AppendLine(text);
+        _output.Append(text);
+        _output.Append(Options.NewLine);
     }
 
     public void WriteSpace()
@@ -145,8 +153,20 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <remarks>
+    /// Idempotent, because <see cref="CSharpFileDefinition"/> already calls this and nothing says
+    /// so at the call site. Calling it again used to insert the whole block a second time, for a
+    /// file that still compiled and warned CS0105 on every duplicated directive.
+    /// </remarks>
     public void GenerateUsingStatements()
     {
+        if (_usingStatementsGenerated)
+        {
+            return;
+        }
+
+        _usingStatementsGenerated = true;
+
         var namespaceList = _namespaces.ToList();
 
         namespaceList.Sort();
@@ -177,10 +197,12 @@ public class OutputContext : IOutputContext
         }
     }
 
+    /// <inheritdoc cref="WriteLine(string)"/>
     public void WriteIndentedLine(string text)
     {
         _output.Append(IndentString);
-        _output.AppendLine(text);
+        _output.Append(text);
+        _output.Append(Options.NewLine);
     }
 
     private void SetIndentString()

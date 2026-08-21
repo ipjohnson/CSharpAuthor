@@ -113,7 +113,6 @@ public class GenericClassDefinitionTests
     private const string ConstructorOutput =
         @"public class Box<T>
 {
-
     public Box(T value)
     {
         _value = value;
@@ -156,10 +155,8 @@ public class GenericClassDefinitionTests
     private const string NestedGenericOutput =
         @"public class Wrapper
 {
-
     private sealed class State<T> : InvocationState<T> where T : class
     {
-
         public override T Invoke()
         {
             return _inner.Pick<T>(_arg0);

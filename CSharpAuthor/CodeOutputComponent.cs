@@ -50,7 +50,7 @@ public class CodeOutputComponent : BaseOutputComponent
             return new CodeOutputComponent(booleanValue ? "true" : "false") { Indented = indented };
         }
         
-        return new CodeOutputComponent(value.ToString()) { Indented = indented };
+        return new CodeOutputComponent(value.ToString() ?? "") { Indented = indented };
     }
 
     private static IOutputComponent GetNewStringArray(IEnumerable<string> stringValues, bool indented)

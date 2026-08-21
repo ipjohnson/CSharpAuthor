@@ -23,7 +23,6 @@ public class IndexerPropertyTests
     private const string SingleIndexOutput =
         @"public class Row
 {
-
     public string this[int index]
     {
         get
@@ -58,7 +57,6 @@ public class IndexerPropertyTests
     private const string SeveralIndicesOutput =
         @"public class Grid
 {
-
     public int this[int row, int column]
     {
         get
@@ -95,7 +93,6 @@ public class IndexerPropertyTests
     private const string ReadOnlyOutput =
         @"public class Row
 {
-
     public string this[int index]
     {
         get

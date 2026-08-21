@@ -19,4 +19,14 @@
     <ProjectReference Include="..\CSharpAuthor\CSharpAuthor.csproj" />
   </ItemGroup>
 
+  <!--
+    The Roslyn bridge ships as source rather than in the assembly, so this is the only way to
+    test it - and it compiles it the same way a consumer does: the sources linked in, against the
+    library referenced normally.
+  -->
+  <ItemGroup>
+    <Compile Include="..\CSharpAuthor\Roslyn\**\*.cs" LinkBase="RoslynBridge" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+  </ItemGroup>
+
 </Project>

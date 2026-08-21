@@ -1,5 +1,18 @@
 <Project>
+  <!--
+    Scoped to src/CSharpAuthor so that the Roslyn bridge, which sits beside it in
+    src/CSharpAuthor.Roslyn, is not pulled in by this glob. It needs Microsoft.CodeAnalysis to
+    compile and has its own property below.
+  -->
   <ItemGroup Condition="'$(PackageCSharpAuthorIncludeSource)' == 'true'">
-    <Compile Include="$(MSBuildThisFileDirectory)../src/**/*.cs" Visible="false"/>
+    <Compile Include="$(MSBuildThisFileDirectory)../src/CSharpAuthor/**/*.cs" Visible="false"/>
+  </ItemGroup>
+
+  <!--
+    The Roslyn bridge: ITypeSymbol to ITypeDefinition. Only useful in a project that references
+    Roslyn, which is why it is opt-in separately rather than riding along with the source above.
+  -->
+  <ItemGroup Condition="'$(PackageCSharpAuthorIncludeRoslyn)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)../src/CSharpAuthor.Roslyn/**/*.cs" Visible="false"/>
   </ItemGroup>
 </Project>

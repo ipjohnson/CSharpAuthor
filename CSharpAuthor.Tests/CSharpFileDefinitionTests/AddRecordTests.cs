@@ -31,7 +31,6 @@ public class AddRecordTests
 
 public sealed record Person
 {
-
     public string Name { get; init; } = default!;
 
     public int Age { get; init; }
@@ -58,7 +57,6 @@ public sealed record Person
 
 public record Item
 {
-
     public string Value { get; set; }
 }
 ";

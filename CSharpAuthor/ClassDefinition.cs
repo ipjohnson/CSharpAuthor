@@ -377,11 +377,34 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         }
     }
 
+    /// <remarks>
+    /// The blank line goes <em>between</em> members rather than before each one. Writing it before
+    /// each put one directly under the opening brace, which is the one place a separator has
+    /// nothing to separate.
+    /// </remarks>
     private void ApplyAllComponents(Action<IOutputComponent> componentAction, IOutputContext outputContext)
     {
+        var bodyStarted = false;
+
+        void WriteSeparatedMember(IOutputComponent component)
+        {
+            if (bodyStarted)
+            {
+                outputContext.WriteLine();
+            }
+
+            bodyStarted = true;
+
+            componentAction(component);
+        }
+
+        // Fields pack together, so they take no separator between themselves - only whatever
+        // follows them is separated from the group.
         foreach (var field in _fields)
         {
             componentAction(field);
+
+            bodyStarted = true;
         }
 
         foreach (var constructor in _constructors)
@@ -392,78 +415,63 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
                 continue;
             }
 
-            outputContext.WriteLine();
-
-            componentAction(constructor);
+            WriteSeparatedMember(constructor);
         }
-        
+
         WriteMemberComponents(
-            componentAction,
-            outputContext,
+            WriteSeparatedMember,
             _properties,
             method => method.Modifiers.HasFlag(ComponentModifier.Public));
 
         WriteMemberComponents(
-            componentAction,
-            outputContext,
+            WriteSeparatedMember,
             _events,
             e => e.Modifiers.HasFlag(ComponentModifier.Public));
 
         WriteMemberComponents(
-            componentAction,
-            outputContext,
+            WriteSeparatedMember,
             _methods,
             m => m.Modifiers.HasFlag(ComponentModifier.Public));
 
         WriteMemberComponents(
-            componentAction,
-            outputContext,
+            WriteSeparatedMember,
             _properties,
             method => !method.Modifiers.HasFlag(ComponentModifier.Public));
 
         WriteMemberComponents(
-            componentAction,
-            outputContext,
+            WriteSeparatedMember,
             _events,
             e => !e.Modifiers.HasFlag(ComponentModifier.Public));
 
         WriteMemberComponents(
-            componentAction,
-            outputContext,
+            WriteSeparatedMember,
             _methods,
             m => !m.Modifiers.HasFlag(ComponentModifier.Public));
 
         foreach (var classDefinition in _classes)
         {
-            outputContext.WriteLine();
-
-            componentAction(classDefinition);
+            WriteSeparatedMember(classDefinition);
         }
 
         foreach (var outputComponent in _otherComponents)
         {
-            outputContext.WriteLine();
-
-            componentAction(outputComponent);
+            WriteSeparatedMember(outputComponent);
         }
     }
 
-    private void WriteMemberComponents(
-        Action<IOutputComponent> componentAction, 
-        IOutputContext outputContext,
+    private static void WriteMemberComponents(
+        Action<IOutputComponent> writeMember,
         IEnumerable<BaseOutputComponent> components,
         Func<BaseOutputComponent,bool> filter) {
-        
+
         foreach (var component in components)
         {
             if (filter(component))
             {
                 continue;
             }
-            
-            outputContext.WriteLine();
 
-            componentAction(component);
+            writeMember(component);
         }
     }
 

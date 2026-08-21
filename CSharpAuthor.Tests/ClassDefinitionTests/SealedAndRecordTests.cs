@@ -58,7 +58,6 @@ public class SealedAndRecordTests
     private const string SealedRecordOutput =
         @"public sealed record TestRecord
 {
-
     public string Name { get; set; }
 }
 ";

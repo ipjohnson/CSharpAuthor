@@ -15,10 +15,7 @@ public class IfElseLogicBlockDefinition : BaseBlockDefinition
     {
         _ifStatement = ifStatement;
 
-        if (ifStatement is LogicStatement logicStatement)
-        {
-            logicStatement.PrintParentheses = false;
-        }
+        LogicStatement.SuppressEnclosedParentheses(_ifStatement);
     }
 
     public BaseBlockDefinition ElseIf(string ifStatement)
@@ -69,10 +66,7 @@ public class IfElseLogicBlockDefinition : BaseBlockDefinition
         {
             _ifStatement = ifStatement;
 
-            if (_ifStatement is LogicStatement logicStatement)
-            {
-                logicStatement.PrintParentheses = false;
-            }
+            LogicStatement.SuppressEnclosedParentheses(_ifStatement);
         }
 
         protected override void WriteComponentOutput(IOutputContext outputContext)

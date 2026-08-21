@@ -9,6 +9,7 @@ public class GenericTypeDefinition : BaseTypeDefinition
 {
     private int? _hashCode;
     private readonly IReadOnlyList<ITypeDefinition> _closingTypes;
+    private readonly bool _isOpenType;
 
     public GenericTypeDefinition(Type type, IReadOnlyList<ITypeDefinition> closeTypes, bool isArray = false,
         bool isNullable = false) :
@@ -18,12 +19,20 @@ public class GenericTypeDefinition : BaseTypeDefinition
     }
 
     public GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
-        bool isArray = false, bool isNullable = false) : base(classType, ns, name, isArray, isNullable)
+        bool isArray = false, bool isNullable = false, ITypeDefinition? containingType = null)
+        : base(classType, ns, name, isArray, isNullable, containingType)
     {
         _closingTypes = closingTypes;
     }
 
-    public override bool Equals(object obj)
+    private GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
+        bool isArray, bool isNullable, ITypeDefinition? containingType, bool isOpenType)
+        : this(classType, ns, name, closingTypes, isArray, isNullable, containingType)
+    {
+        _isOpenType = isOpenType;
+    }
+
+    public override bool Equals(object? obj)
     {
         if (obj is GenericTypeDefinition genericTypeDefinition)
         {
@@ -46,23 +55,8 @@ public class GenericTypeDefinition : BaseTypeDefinition
         stringBuilder.Append(Namespace);
         stringBuilder.Append('.');
         stringBuilder.Append(Name);
-        stringBuilder.Append('<');
-        var comma = false;
 
-        foreach (var closingType in _closingTypes)
-        {
-            if (comma)
-            {
-                stringBuilder.Append(',');
-            }
-            else
-            {
-                comma = true;
-            }
-            stringBuilder.Append(closingType);
-        }
-
-        stringBuilder.Append('>');
+        WriteTypeArguments(stringBuilder, (b, closingType) => b.Append(closingType));
 
         if (IsArray)
         {
@@ -77,7 +71,7 @@ public class GenericTypeDefinition : BaseTypeDefinition
         return stringBuilder.ToString();
     }
 
-    public override int CompareTo(ITypeDefinition other)
+    public override int CompareTo(ITypeDefinition? other)
     {
         var baseCompare = BaseCompareTo(other);
 
@@ -113,11 +107,16 @@ public class GenericTypeDefinition : BaseTypeDefinition
     {
         get
         {
-            foreach (var typeDefinition in _closingTypes)
+            // An open type writes no arguments, so importing their namespaces would add usings
+            // for names that never appear in the file.
+            if (!_isOpenType)
             {
-                foreach (var knownNamespace in typeDefinition.KnownNamespaces)
+                foreach (var typeDefinition in _closingTypes)
                 {
-                    yield return knownNamespace;
+                    foreach (var knownNamespace in typeDefinition.KnownNamespaces)
+                    {
+                        yield return knownNamespace;
+                    }
                 }
             }
 
@@ -127,42 +126,11 @@ public class GenericTypeDefinition : BaseTypeDefinition
     
     public override void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
-        if (!string.IsNullOrEmpty(Namespace))
-        {
-            if (typeOutputMode == TypeOutputMode.Global)
-            {
-                builder.Append("global::");
-                builder.Append(Namespace);
-                builder.Append('.');
-
-            }
-            else if (typeOutputMode == TypeOutputMode.FullName)
-            {
-                builder.Append(Namespace);
-                builder.Append('.');
-            }
-        }
+        WriteQualification(builder, typeOutputMode);
 
         builder.Append(Name);
-        builder.Append('<');
 
-        var writeComma = false;
-
-        foreach (var typeDefinition in _closingTypes)
-        {
-            if (writeComma)
-            {
-                builder.Append(',');
-            }
-            else
-            {
-                writeComma = true;
-            }
-
-            typeDefinition.WriteTypeName(builder, typeOutputMode);
-        }
-
-        builder.Append('>');
+        WriteTypeArguments(builder, (b, typeDefinition) => typeDefinition.WriteTypeName(b, typeOutputMode));
 
         if (IsArray)
         {
@@ -177,19 +145,70 @@ public class GenericTypeDefinition : BaseTypeDefinition
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, IsArray, nullable);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, IsArray, nullable, ContainingType, _isOpenType);
     }
 
+    /// <inheritdoc cref="ArrayTypeDefinition.MakeArray"/>
     public override ITypeDefinition MakeArray()
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, true, IsNullable);
+        return new ArrayTypeDefinition(this);
     }
 
+    /// <summary>
+    /// The unbound form of this type - <c>Dictionary&lt;,&gt;</c> for a
+    /// <c>Dictionary&lt;string, int&gt;</c>.
+    /// </summary>
+    /// <remarks>
+    /// Openness used to be faked by swapping the type arguments for empty ones, which rendered as
+    /// <c>Dictionary&lt;.,.&gt;</c> - each blank argument still wrote the <c>.</c> joining its
+    /// namespace to its name. Recording it instead keeps the arity available and leaves the
+    /// arguments intact for anything that asks.
+    /// </remarks>
     public ITypeDefinition MakeOpenType()
     {
-        var emptyTypes = _closingTypes.Select(_ => TypeDefinition.Get("", "")).ToArray();
+        return new GenericTypeDefinition(
+            TypeDefinitionEnum, Namespace, Name, _closingTypes, IsArray, IsNullable, ContainingType, isOpenType: true);
+    }
 
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, IsArray, IsNullable);
+    /// <summary>
+    /// Writes <c>&lt;...&gt;</c>, either the argument list or the commas alone when the type is
+    /// open.
+    /// </summary>
+    private void WriteTypeArguments(StringBuilder builder, Action<StringBuilder, ITypeDefinition> writeArgument)
+    {
+        // A generic with no arguments is not generic, and <> is not a type. Writing nothing is
+        // what an empty argument list means.
+        if (_closingTypes.Count == 0)
+        {
+            return;
+        }
+
+        builder.Append('<');
+
+        if (_isOpenType)
+        {
+            builder.Append(new string(',', _closingTypes.Count - 1));
+        }
+        else
+        {
+            var writeSeparator = false;
+
+            foreach (var typeDefinition in _closingTypes)
+            {
+                if (writeSeparator)
+                {
+                    builder.Append(", ");
+                }
+                else
+                {
+                    writeSeparator = true;
+                }
+
+                writeArgument(builder, typeDefinition);
+            }
+        }
+
+        builder.Append('>');
     }
         
     public override IReadOnlyList<ITypeDefinition> TypeArguments => _closingTypes;

@@ -14,16 +14,32 @@
 		<RepositoryUrl>https://github.com/ipjohnson/CSharpAuthor</RepositoryUrl>
 	</PropertyGroup>
 
+	<!--
+	  The Roslyn bridge is source-only. Compiling it into this assembly would give every consumer
+	  a Microsoft.CodeAnalysis dependency, including the ones that never touch it; shipping it as
+	  source means a generator project - which already references Roslyn - compiles it with no new
+	  dependency, and everyone else never sees it.
+	-->
+	<ItemGroup>
+		<Compile Remove="Roslyn\**\*.cs" />
+		<None Include="Roslyn\**\*.cs" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<None Remove="Package\CSharpAuthor.*" />
 		<Content Include="Package\CSharpAuthor.*">
 			<Pack>true</Pack>
-			<PackagePath>build\</PackagePath>
+			<PackagePath>build</PackagePath>
 			<PackageCopyToOutput>true</PackageCopyToOutput>
 		</Content>
-		<Content Include="**\*.cs" Exclude="**\obj\**;**\bin\**" Visible="true">
+		<Content Include="**\*.cs" Exclude="**\obj\**;**\bin\**;Roslyn\**" Visible="true">
 			<Pack>true</Pack>
-			<PackagePath>src\CSharpAuthor\</PackagePath>
+			<PackagePath>src\CSharpAuthor</PackagePath>
+			<PackageCopyToOutput>true</PackageCopyToOutput>
+		</Content>
+		<Content Include="Roslyn\**\*.cs" Exclude="**\obj\**;**\bin\**" Visible="true">
+			<Pack>true</Pack>
+			<PackagePath>src\CSharpAuthor.Roslyn</PackagePath>
 			<PackageCopyToOutput>true</PackageCopyToOutput>
 		</Content>
 	</ItemGroup>

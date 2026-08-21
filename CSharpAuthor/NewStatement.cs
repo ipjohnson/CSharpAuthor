@@ -43,7 +43,7 @@ public class NewStatement : InstanceDefinition
 
         if (_initValues.Count > 0)
         {
-            outputContext.Write("{ ");
+            outputContext.Write(" { ");
             _initValues.OutputCommaSeparatedList(outputContext, outputContext.Options.BreakInvokeLines);
             outputContext.Write(" }");
         }

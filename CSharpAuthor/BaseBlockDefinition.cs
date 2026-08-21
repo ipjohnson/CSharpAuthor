@@ -17,9 +17,34 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
         return component;
     }
 
+    /// <inheritdoc cref="AddStatement{T}"/>
     public virtual object AddIndentedStatement(object component)
     {
         StatementList.Add(new IndentedStatementComponent(CodeOutputComponent.Get( component)));
+
+        return component;
+    }
+
+    /// <summary>
+    /// Adds an expression to this block as a statement - on its own line, indented, and
+    /// terminated with a semicolon.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the difference between <c>Add</c> and running the generated file through a
+    /// compiler. <c>Add</c> places a component exactly as it writes itself, and an expression node
+    /// writes no terminator - so <c>Add(Invoke("writer", "WriteStartObject"))</c> emits
+    /// <c>writer.WriteStartObject()</c> with nothing after it.
+    /// </para>
+    /// <para>
+    /// Returns what it was given, typed, so the component stays usable as an expression after
+    /// being placed. <see cref="AddIndentedStatement"/> is the same thing under an older name that
+    /// takes and returns <see cref="object"/>.
+    /// </para>
+    /// </remarks>
+    public T AddStatement<T>(T component) where T : IOutputComponent
+    {
+        StatementList.Add(new IndentedStatementComponent(component));
 
         return component;
     }
@@ -83,10 +108,13 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
 
         if (value is string stringValue)
         {
-            return "\"" + stringValue + "\"";
+            // A substituted string is a value, so it becomes a literal - unlike the raw code that
+            // CodeOutputComponent.Get makes of one. Quoting goes through QuoteString so the two
+            // places that build a literal escape it the same way.
+            return SyntaxHelpers.QuoteString(stringValue);
         }
 
-        return value.ToString();
+        return value.ToString() ?? "";
     }
 
     public SwitchBlockDefinition Switch(object switchValue)
@@ -110,12 +138,16 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
 
     public void Throw(Type type, params object[] parameters)
     {
-        Add(new PostfixOutputComponent(";\n", new ThrowNewExceptionStatement(TypeDefinition.Get(type), parameters)));
+        Throw(TypeDefinition.Get(type), parameters);
     }
 
     public void Throw(ITypeDefinition exceptionType, params object[] parameters)
     {
-        Add(new PostfixOutputComponent(";\n", new ThrowNewExceptionStatement(exceptionType, parameters)));
+        // Terminated through the same path as every other statement. Appending ";\n" directly
+        // wrote a line break the output context never saw, so Options.NewLine could not apply to
+        // it and a throw was the one statement that ignored the setting.
+        AddIndentedStatement(
+            new ThrowNewExceptionStatement(exceptionType, parameters) { Indented = false });
     }
 
     public void Return(object? returnValue = null)
@@ -144,6 +176,13 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
     public ForEachDefinition ForEach(string variable, IOutputComponent enumerableComponent)
     {
         return Add(new ForEachDefinition(variable, enumerableComponent));
+    }
+
+    /// <inheritdoc cref="ForEachDefinition(ITypeDefinition, string, IOutputComponent)"/>
+    public ForEachDefinition ForEach(
+        ITypeDefinition variableType, string variable, IOutputComponent enumerableComponent)
+    {
+        return Add(new ForEachDefinition(variableType, variable, enumerableComponent));
     }
 
     public IfElseLogicBlockDefinition If(string ifStatement)
