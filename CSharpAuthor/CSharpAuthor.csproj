@@ -9,7 +9,10 @@
 		<Authors>Ian Johnson</Authors>
 		<PackageTags>source code generation</PackageTags>
 		<PackageProjectUrl>https://github.com/ipjohnson/CSharpAuthor</PackageProjectUrl>
-		<PackageLicenseUrl>https://github.com/ipjohnson/CSharpAuthor/blob/main/LICENSE</PackageLicenseUrl>
+		<!-- PackageLicenseUrl is deprecated (NU5125); the expression is what nuget.org renders. -->
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<!-- Without this, nuget.org shows no readme at all - the first thing a prospective user sees. -->
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/ipjohnson/CSharpAuthor</RepositoryUrl>
 
@@ -91,6 +94,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath="\" Visible="false" />
 		<None Remove="Package\CSharpAuthor.*" />
 		<Content Include="Package\CSharpAuthor.*">
 			<Pack>true</Pack>
