@@ -6,6 +6,13 @@
 		<Nullable>enable</Nullable>
 		<LangVersion>10</LangVersion>
 		<PackageId>CSharpAuthor</PackageId>
+
+		<!--
+			The 2.0 line. VersionSuffix is what makes a build a prerelease; clear it to cut the
+			final. A release build overrides both from the tag.
+		-->
+		<VersionPrefix>2.0.0</VersionPrefix>
+		<VersionSuffix>preview.1</VersionSuffix>
 		<Authors>Ian Johnson</Authors>
 		<PackageTags>source code generation</PackageTags>
 		<PackageProjectUrl>https://github.com/ipjohnson/CSharpAuthor</PackageProjectUrl>
