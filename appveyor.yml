@@ -21,21 +21,25 @@ install:
      ./dotnet-install.ps1 -Version 11.0.100-preview.7.26381.103 -InstallDir "$env:ProgramFiles\dotnet"
      dotnet --list-sdks
 
-before_build:
- - cmd: nuget restore CSharpAuthor.sln
-build:
-  project: CSharpAuthor.sln
-  # Publishing moved to .github/workflows/release.yaml, where the version comes from the release
-  # tag rather than from build_version below plus a build counter - so the published version is a
-  # property of the commit and can be read back from the repository at the version it describes.
-  #
-  # This file still builds and tests; it does not publish.
-  publish_nuget: false
-  verbosity: minimal
-test:
-  assemblies:
-    only:
-      - '**\*.tests.dll'
+# Built through the dotnet CLI rather than through Visual Studio's MSBuild.
+#
+# The image's MSBuild is 17.14, and the .NET 11 SDK that global.json pins requires 18.6 or later:
+#
+#   Version 11.0.100-preview.7 of the .NET SDK requires at least version 18.6.0 of MSBuild.
+#   The current available version of MSBuild is 17.14.23.42201.
+#
+# Installing the SDK above does not help while the build runs through Visual Studio, because the
+# version that matters is MSBuild's. The CLI carries its own, which is the one the SDK shipped with.
+#
+# Publishing moved to .github/workflows/release.yaml, where the version comes from the release tag
+# rather than from build_version plus a build counter - so the published version is a property of
+# the commit and can be read back from the repository at the version it describes. This file builds
+# and tests; it does not publish.
+build_script:
+ - cmd: dotnet build CSharpAuthor.sln --configuration Release
+
+test_script:
+ - cmd: dotnet test CSharpAuthor.sln --no-build --configuration Release
 artifacts:
 - path: CSharpAuthor*.nupkg
   name: CSharpAuthor
