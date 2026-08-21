@@ -74,6 +74,16 @@ public class ParameterDefinition : InstanceDefinition
 
     public void WriteWithSignature(IOutputContext outputContext)
     {
+        // A parameter never goes through BaseOutputComponent.WriteOutput - it is written inline as
+        // part of a signature - and that is the only place UsingNamespaces was consumed. So
+        // AddUsingNamespace on a parameter compiled, and did nothing. It matters in a qualifying
+        // mode, where an explicit directive is the only way to reach an extension method:
+        // `global::` cannot name one.
+        if (UsingNamespaces != null)
+        {
+            outputContext.AddImportNamespaces(UsingNamespaces);
+        }
+
         // Inline, because a parameter is part of a line rather than a line of its own. Attributes
         // could always be added to a parameter; they were simply never written.
         if (AttributeDefinitions != null)

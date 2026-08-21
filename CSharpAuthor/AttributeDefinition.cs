@@ -69,6 +69,13 @@ public class AttributeDefinition : BaseOutputComponent
     /// </summary>
     public void WriteInline(IOutputContext outputContext)
     {
+        // Same reason as ParameterDefinition.WriteWithSignature: this bypasses
+        // BaseOutputComponent.WriteOutput, which is the only other place UsingNamespaces is read.
+        if (UsingNamespaces != null)
+        {
+            outputContext.AddImportNamespaces(UsingNamespaces);
+        }
+
         outputContext.Write("[");
         WriteBody(outputContext);
         outputContext.Write("] ");

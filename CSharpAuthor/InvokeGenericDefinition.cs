@@ -42,7 +42,11 @@ public class InvokeGenericDefinition : BaseOutputComponent
 
         if (!string.IsNullOrEmpty(_instance))
         {
-            outputContext.Write(_instance);
+            // The receiver is an identifier and needs the same escaping the declaration got.
+            // Written raw, a parameter named `event` was declared `@event` and then invoked as
+            // `event.Go()` - the same name, escaped in one place and not the other, in one file.
+            // EscapeReference walks a dotted path and leaves `this`, `base` and indexers alone.
+            outputContext.Write(CSharpIdentifier.EscapeReference(_instance));
             outputContext.Write(".");
         }
 
