@@ -48,6 +48,32 @@ chain, or a token kind. None is keyed on a node's name. That is deliberate: a ru
 on `IfStatementSyntax` says nothing about the node C# 15 adds, while "a semicolon that is
 not the node's last token is a separator" still holds.
 
+## The spacing policy
+
+Sixteen rules. The grammar encodes token *order*; none of this is in `Syntax.xml` and none
+of it ever will be. Rules 1-4, 6, 13-16 live in `SyntaxWriter.NeedsSpace` and its line
+handling; 5, 7-12 are role and list-style assignments the generator makes, which the writer
+then acts on.
+
+| # | Rule |
+|---|---|
+| R1 | Two word-like tokens separate: `public static void M`, `int x`, `List<int> x`, `int[] x`, `int? x`. |
+| R2 | Punctuation binds tight. `.` `::` `->` `?.` take no space either side; `,` `;` `)` `]` `>` take none before; `..` binds to an operand on both sides but a comma still holds it off. |
+| R3 | `(` binds tight after an identifier, a closing bracket, or a function-like keyword (`typeof`, `nameof`, `sizeof`, `default`, `checked`, `unchecked`, `stackalloc`, `new`); it takes a space after any other keyword. `typeof(int)` against `if (x)`. |
+| R4 | `[` binds tight after a name, a type keyword, a closing bracket or `new`; elsewhere it takes a space. `int[]`, `this[0]`, `new[] { 1 }` against `case [x]:`. |
+| R5 | Angle brackets are always tight. They only ever appear as literal token fields in type and type-parameter lists - a comparison operator arrives as a caller-supplied operator instead, so the two can never be confused. |
+| R6 | `?` is tight in a type node (`int?`), spaced in a ternary, tight in a null-conditional access (`a?.b`). The grammar tells the last two apart: only the ternary carries a matching colon in the same node. |
+| R7 | Colons: spaced in base lists, constraint clauses, constructor initializers and ternaries; tight-before/space-after in `name:` colons and attribute targets; tight-before/newline-after in switch and statement labels. |
+| R8 | A semicolon that is the node's last token ends the line. A mid-node semicolon ends the line *and* leaves a blank one when the node is a member or compilation unit (`namespace Acme;`), and is a plain separator otherwise (the two in `for (;;)`). |
+| R9 | Braces are Allman. `{` in a statement, member or container node - or in any node whose braces enclose an unseparated list of nodes - opens a scope and breaks the line; `{` in an expression or pattern node stays inline with spaces. |
+| R10 | A statement in a statement-typed slot on a statement or clause is an *embedded* statement: a block writes itself, anything else takes its own line at one extra indent. An `if` after `else` stays on the `else` line so a ladder does not march right. |
+| R11 | Statement lists break between elements, or indent themselves when the containing node has no braces of its own. Member lists take a blank line between elements. Using and extern-alias lists break after each and leave a blank line after the block. Attribute lists break after each in member and statement position and stay inline elsewhere. Constraint clauses take one indented line each. |
+| R12 | Separated lists join with `, ` - except enum members, which join with `,` and a line break. |
+| R13 | Indentation is never counted in the writer. Every `{`/`}` goes through the context's `OpenScope`/`CloseScope`, and every line re-reads the context's `IndentString`. |
+| R14 | A line break is requested, not written: "at least N breaks separate these two tokens". Requests collapse instead of stacking, a request with nothing after it is dropped, and the indent is written lazily by the first token on the line - so trailing whitespace and doubled blank lines are structurally impossible. |
+| R15 | An identifier that collides with a reserved keyword is escaped (`@class`). Contextual keywords (`var`, `value`, `record`, `when`) are not - escaping those would be wrong. Type keywords and operator names are not identifiers and are never escaped. |
+| R16 | A directive owns its line, takes no indentation, and binds `#` to its keyword. Everything inside an interpolated string abuts its neighbour, braces included. |
+
 ## What lives where
 
 | File | Generated? | What it holds |
