@@ -14,9 +14,9 @@
 #     (b) a tree was built but the emitted text does not re-parse
 #     (c) the re-parsed tree differs structurally from the original
 #
-# Non-interactive and idempotent. It never writes to the checkout it measures: the importer
-# is regenerated into THIS repository from that checkout's proto/grammar/Syntax.xml, and the
-# node layer under measurement is compiled by reference.
+# Non-interactive and idempotent. It never writes to the checkout it measures, not even an
+# obj/ directory: CSharpAuthor/ and proto/ are copied into a staging directory and built
+# there, the importer is regenerated into THIS repository, and the corpus is only ever read.
 #
 # The measurement is capped by the parser: Microsoft.CodeAnalysis.CSharp 4.14.0 knows
 # language versions only up to C# 13, so nothing above C# 13 is validated here.
@@ -39,6 +39,8 @@ EMIT_DIR=""
 DUMP_FIRST=0
 CONSUMERS=""
 REGEN=1
+KEEP=0
+WORKDIR=""
 TARGET=""
 
 usage() {
@@ -67,6 +69,8 @@ usage: run-roundtrip.sh <path-to-csharpauthor-checkout> [options]
   --out FILE         also write the report to FILE
   --no-regen         skip regenerating the importer (faster; only safe if Syntax.xml,
                      nodes.json and the node layer have not changed)
+  --workdir DIR      staging directory (default $TMPDIR/csharpauthor-roundtrip)
+  --keep             keep the staging directory after the run
   -h, --help         this
 USAGE
 }
@@ -82,6 +86,8 @@ while [[ $# -gt 0 ]]; do
         --dump-first)  DUMP_FIRST="$2"; shift 2 ;;
         --out)         OUT="$2"; shift 2 ;;
         --no-regen)    REGEN=0; shift ;;
+        --workdir)     WORKDIR="$2"; shift 2 ;;
+        --keep)        KEEP=1; shift ;;
         -h|--help)     usage; exit 0 ;;
         -*)            echo "unknown option: $1" >&2; usage; exit 2 ;;
         *)             TARGET="$1"; shift ;;
@@ -104,6 +110,25 @@ fi
 echo "checkout under measurement : ${TARGET}"
 
 # ---------------------------------------------------------------------------
+# 0. Stage the checkout. Building a ProjectReference inside it would leave obj/ and bin/
+#    behind, and the checkout may belong to someone else. Copy what is compiled, read the
+#    corpus in place.
+# ---------------------------------------------------------------------------
+WORKDIR="${WORKDIR:-${TMPDIR:-/tmp}/csharpauthor-roundtrip}"
+STAGE="${WORKDIR}/stage"
+rm -rf "${STAGE}"
+mkdir -p "${STAGE}"
+for d in CSharpAuthor proto; do
+    [[ -d "${TARGET}/${d}" ]] || continue
+    (cd "${TARGET}" && tar cf - --exclude=obj --exclude=bin --exclude=.git "${d}") \
+        | (cd "${STAGE}" && tar xf -)
+done
+[[ -f "${STAGE}/CSharpAuthor/CSharpAuthor.csproj" ]] || {
+    echo "error: staging ${TARGET} failed" >&2; exit 1
+}
+echo "staged for building        : ${STAGE}"
+
+# ---------------------------------------------------------------------------
 # 1. Ask the referenced Roslyn what it actually knows. proto/grammar/Syntax.xml runs ahead
 #    of the parser package, so some grammar nodes and fields cannot appear in a parsed tree.
 #    Measuring that rather than assuming it is what keeps the C# 13 ceiling honest.
@@ -119,10 +144,10 @@ fi
 # 2. Generate the importer - the same field walk gen_all.py uses, inverted.
 # ---------------------------------------------------------------------------
 if [[ ${REGEN} -eq 1 ]]; then
-    echo "regenerating importer      : python3 tools/roundtrip/gen_roundtrip.py --repo ${TARGET} \\"
+    echo "regenerating importer      : python3 tools/roundtrip/gen_roundtrip.py --repo ${STAGE} \\"
     echo "                               --roslyn-nodes ${GEN_DIR}/roslyn-nodes.txt --rt-spacing ${RT_SPACING}"
     python3 "${TOOL_DIR}/gen_roundtrip.py" \
-        --repo "${TARGET}" \
+        --repo "${STAGE}" \
         --roslyn-nodes "${GEN_DIR}/roslyn-nodes.txt" \
         --rt-spacing "${RT_SPACING}" 2>&1 | sed 's/^/  /'
 fi
@@ -132,8 +157,8 @@ fi
 #    proto/grammar/ into the library, it arrives through the ProjectReference and must not
 #    be compiled a second time.
 # ---------------------------------------------------------------------------
-BUILD_ARGS=(-c Release --nologo "-p:CSharpAuthorRepo=${TARGET}")
-if [[ ! -f "${TARGET}/proto/grammar/Nodes.cs" ]]; then
+BUILD_ARGS=(-c Release --nologo "-p:CSharpAuthorRepo=${STAGE}")
+if [[ ! -f "${STAGE}/proto/grammar/Nodes.cs" ]]; then
     echo "node layer                 : not in proto/grammar - taking it from the library reference"
     BUILD_ARGS+=("-p:ProtoNodesFile=none")
 fi
@@ -158,11 +183,13 @@ RUN_ARGS=(--repo "${TARGET}" --corpus "${CORPUS}" --layer "${LAYER}" --types "${
 
 echo
 set +e
-dotnet run -c Release --project "${HARNESS_DIR}" --no-build "-p:CSharpAuthorRepo=${TARGET}" \
-    $( [[ ! -f "${TARGET}/proto/grammar/Nodes.cs" ]] && echo "-p:ProtoNodesFile=none" ) \
+dotnet run -c Release --project "${HARNESS_DIR}" --no-build "-p:CSharpAuthorRepo=${STAGE}" \
+    $( [[ ! -f "${STAGE}/proto/grammar/Nodes.cs" ]] && echo "-p:ProtoNodesFile=none" ) \
     -- "${RUN_ARGS[@]}"
 STATUS=$?
 set -e
+
+[[ ${KEEP} -eq 1 ]] || rm -rf "${STAGE}"
 
 # Exit 0 only when every attempted file round-tripped. A partial pass is a real number, not
 # a green light, so it must not look like one to a caller that checks the exit code.

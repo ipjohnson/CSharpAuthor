@@ -16,6 +16,10 @@ using CSharpAuthor;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
+// CSharpAuthor grew its own LanguageVersion (4's EmitProfile), which collides with
+// Roslyn's for any file that has both usings - CS0104. Alias rather than drop a using: a
+// source generator normally needs both namespaces, so this is the shape consumers will hit.
+using RoslynLanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace RoundTrip;
 
@@ -89,7 +93,7 @@ internal static class Program
 
         var roslyn = typeof(CSharpSyntaxTree).Assembly.GetName().Version?.ToString() ?? "?";
         var parseOptions = new CSharpParseOptions(
-            LanguageVersion.CSharp13, DocumentationMode.None, SourceCodeKind.Regular);
+            RoslynLanguageVersion.CSharp13, DocumentationMode.None, SourceCodeKind.Regular);
 
         Emit("================================================================================");
         Emit("CSharpAuthor 2.0 - round-trip fidelity (V2-HANDOFF.md 9(b))");

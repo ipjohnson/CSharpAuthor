@@ -1,6 +1,6 @@
 {
   "protoNamespace": "GeneratedGrammar.Full",
-  "protoNodesFile": "/private/tmp/claude-501/-Users-ianjohnson-CSharpAuthor/0b98eff1-0d08-4592-a92d-022647d37541/scratchpad/work/roundtrip/proto/grammar/Nodes.cs",
+  "protoNodesFile": "/var/folders/0p/ht4ftmrs7w10___nk6pwwyw80000gn/T/csharpauthor-roundtrip/stage/proto/grammar/Nodes.cs",
   "syntaxXmlNodes": 250,
   "nodesJsonNodes": 241,
   "protoHandWritten": [
@@ -51,6 +51,7 @@
     "ContinueStatementSyntax.Name",
     "IgnoredDirectiveTriviaSyntax.Content"
   ],
+  "typeModelMultiRankArrays": false,
   "rtSpacing": "gen_all",
   "rtDelta": [
     "every SyntaxToken field carries its source text and is nullable; an absent optional token is null and is not emitted (proto hard-codes single-kind tokens and emits them unconditionally)",

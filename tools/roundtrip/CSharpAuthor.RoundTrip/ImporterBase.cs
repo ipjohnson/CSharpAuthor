@@ -111,8 +111,12 @@ public abstract class ImporterBase
         var result = TryImportType(type, out var reason);
         if (result != null) return result;
 
+        // A type whose whole rendering is its name. Nothing custom is implemented here on
+        // purpose: ITypeDefinition is the interface most likely to gain members while this
+        // harness is running, and a hand-rolled implementation of it would stop compiling
+        // the moment it did.
         if (TypeMode == TypeImportMode.Verbatim)
-            return new VerbatimTypeDefinition(Flatten(type));
+            return TypeDefinition.Get("", Flatten(type));
 
         Report.Unsupported(type.Kind().ToString(), $"{where}: {reason}");
         return null;
@@ -189,35 +193,23 @@ public abstract class ImporterBase
 
             case ArrayTypeSyntax at2:
             {
-                // The model carries one bool, so it can express exactly one rank-1 [].
-                // int[,] and int[][] cannot be held - a defect on 7's list, measured here.
-                if (at2.RankSpecifiers.Count != 1)
+                var ranks = new List<int>();
+                foreach (var spec in at2.RankSpecifiers)
                 {
-                    reason = $"array with {at2.RankSpecifiers.Count} rank specifiers - ITypeDefinition.IsArray is one bool";
-                    return null;
-                }
-                var rank = at2.RankSpecifiers[0];
-                if (rank.Rank != 1)
-                {
-                    reason = $"array of rank {rank.Rank} - ITypeDefinition.IsArray is one bool";
-                    return null;
-                }
-                foreach (var s in rank.Sizes)
-                {
-                    if (s is not OmittedArraySizeExpressionSyntax)
+                    foreach (var size in spec.Sizes)
                     {
+                        if (size is OmittedArraySizeExpressionSyntax) continue;
                         reason = "array type with an explicit size";
                         return null;
                     }
+                    ranks.Add(spec.Rank);
                 }
                 var el = TryImportType(at2.ElementType, out reason);
                 if (el == null) return null;
-                if (el.IsArray)
-                {
-                    reason = "jagged array - MakeArray() on an array drops a rank";
-                    return null;
-                }
-                return el.MakeArray();
+                // What the type model can express here is exactly what TypeModel.g.cs was
+                // generated to know about, so this measures the model in the checkout under
+                // test rather than the one this harness was written against.
+                return TypeModel.Array(el, ranks, out reason);
             }
 
             default:
@@ -265,25 +257,4 @@ public abstract class ImporterBase
         var b = char.IsLetterOrDigit(next[0]) || next[0] == '_' || next[0] == '@';
         return a && b;
     }
-}
-
-/// <summary>An ITypeDefinition that carries pre-rendered text. Only ever constructed in
-/// TypeImportMode.Verbatim, which is not the headline measurement.</summary>
-public sealed class VerbatimTypeDefinition : ITypeDefinition
-{
-    private readonly string _text;
-    public VerbatimTypeDefinition(string text) => _text = text;
-
-    public TypeDefinitionEnum TypeDefinitionEnum => TypeDefinitionEnum.ClassDefinition;
-    public bool IsNullable => false;
-    public bool IsArray => false;
-    public string Name => _text;
-    public string Namespace => "";
-    public IEnumerable<string> KnownNamespaces { get { yield break; } }
-    public void WriteTypeName(System.Text.StringBuilder builder, TypeOutputMode mode = TypeOutputMode.ShortName)
-        => builder.Append(_text);
-    public ITypeDefinition MakeNullable(bool nullable = true) => new VerbatimTypeDefinition(_text + (nullable ? "?" : ""));
-    public ITypeDefinition MakeArray() => new VerbatimTypeDefinition(_text + "[]");
-    public IReadOnlyList<ITypeDefinition> TypeArguments => Array.Empty<ITypeDefinition>();
-    public int CompareTo(ITypeDefinition other) => string.CompareOrdinal(_text, other?.Name);
 }
