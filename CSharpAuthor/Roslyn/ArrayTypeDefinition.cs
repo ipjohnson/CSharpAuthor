@@ -184,6 +184,35 @@ public sealed class ArrayTypeDefinition : ITypeDefinition
     }
 
     /// <summary>
+    /// Where each <c>?</c> sits: one flag per level in <see cref="ArrayRanks"/> order, outermost
+    /// first, then one for the root element. <c>int?[]</c> is <c>[false, true]</c>.
+    /// </summary>
+    /// <remarks>
+    /// The same information this class has always held as a chain of levels, flattened into the
+    /// shape the type model states it in - so a bridged <c>int?[]</c> and a hand-built one describe
+    /// their annotation the same way rather than each in its own dialect.
+    /// </remarks>
+    public IReadOnlyList<bool> NullableAnnotations
+    {
+        get
+        {
+            var annotations = new List<bool>();
+
+            ITypeDefinition current = this;
+
+            while (current is ArrayTypeDefinition array)
+            {
+                annotations.Add(array.IsNullable);
+                current = array.ElementType;
+            }
+
+            annotations.Add(current.IsNullable);
+
+            return annotations;
+        }
+    }
+
+    /// <summary>
     /// An array is declared inside nothing, which is what an array symbol reports. The element's
     /// container belongs to the element.
     /// </summary>

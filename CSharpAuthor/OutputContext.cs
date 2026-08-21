@@ -973,15 +973,11 @@ public class OutputContext : IOutputContext
             builder.Append('>');
         }
 
-        if (type.IsArray)
-        {
-            builder.Append("[]");
-        }
-
-        if (type.IsNullable)
-        {
-            builder.Append('?');
-        }
+        // The shape and the annotations, from the one place that knows how they interleave. Writing
+        // "[]" for IsArray and a "?" after it loses the rank of int[,] and moves the annotation of
+        // int?[] - so an aliased type would be spelled differently from the same type written by
+        // itself, which is the one thing an alias must not do.
+        BaseTypeDefinition.WriteArraySuffix(builder, type.ArrayRanks, type.NullableAnnotations);
     }
 
     private static bool NeedsPlannedName(ITypeDefinition type, NamePlan namePlan)

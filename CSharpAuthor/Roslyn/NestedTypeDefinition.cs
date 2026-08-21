@@ -198,6 +198,16 @@ public sealed class NestedTypeDefinition : ITypeDefinition
     public IReadOnlyList<int> ArrayRanks => Array.Empty<int>();
 
     /// <summary>
+    /// Where each <c>?</c> sits: one flag per array level, then one for the element. This type is
+    /// not an array, so it is the single flag <see cref="IsNullable"/>.
+    /// </summary>
+    /// <remarks>
+    /// Present so the bridge's types satisfy the type model's nullable-position contract, the same
+    /// way <see cref="ArrayRanks"/> answers its array-rank contract.
+    /// </remarks>
+    public IReadOnlyList<bool> NullableAnnotations => BaseTypeDefinition.OuterAnnotationOnly(1, IsNullable);
+
+    /// <summary>
     /// The container, with its own arguments — the <c>Outer&lt;int&gt;</c> of
     /// <c>Outer&lt;int&gt;.Inner&lt;string&gt;</c>, and null when there is only one segment.
     /// </summary>

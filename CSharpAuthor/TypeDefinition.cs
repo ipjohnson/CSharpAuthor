@@ -18,6 +18,20 @@ public class TypeDefinition : BaseTypeDefinition
 
     }
 
+    /// <summary>
+    /// A type with array specifiers and an annotation for each level, outermost first, then one for
+    /// the element - <c>[1]</c> with <c>[false, true]</c> is <c>Name?[]</c>.
+    /// </summary>
+    /// <remarks>
+    /// Every parameter is required. An overload that defaulted the annotations would be reachable
+    /// by the same call that reaches the <c>bool</c> one above, and the two mean different things.
+    /// </remarks>
+    public TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, IReadOnlyList<bool>? nullableAnnotations, ITypeDefinition? containingType)
+        : base(typeDefinitionEnum, ns, name, arrayRanks, nullableAnnotations, containingType)
+    {
+
+    }
+
     public override IEnumerable<string> KnownNamespaces
     {
         get
@@ -47,22 +61,17 @@ public class TypeDefinition : BaseTypeDefinition
 
         builder.Append(Name);
 
-        WriteArrayRanks(builder);
-
-        if (IsNullable)
-        {
-            builder.Append("?");
-        }
+        WriteArraySuffix(builder);
     }
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanks, nullable, ContainingType);
+        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanks, AnnotationsWithOuterAnnotation(nullable), ContainingType);
     }
 
     public override ITypeDefinition MakeArray(int rank)
     {
-        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanksWithOuterRank(rank), IsNullable, ContainingType);
+        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanksWithOuterRank(rank), AnnotationsWithOuterLevel(), ContainingType);
     }
 
     public override IReadOnlyList<ITypeDefinition> TypeArguments => Array.Empty<ITypeDefinition>();
@@ -204,6 +213,15 @@ public class TypeDefinition : BaseTypeDefinition
     public static TypeDefinition Get(TypeDefinitionEnum definitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable = false, ITypeDefinition? containingType = null)
     {
         return new TypeDefinition(definitionEnum, ns, name, arrayRanks, isNullable, containingType);
+    }
+
+    /// <summary>
+    /// A type with array specifiers and an annotation for each level, outermost first, then one for
+    /// the element - <c>[1]</c> with <c>[false, true]</c> is <c>Name?[]</c>.
+    /// </summary>
+    public static TypeDefinition Get(TypeDefinitionEnum definitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, IReadOnlyList<bool>? nullableAnnotations, ITypeDefinition? containingType)
+    {
+        return new TypeDefinition(definitionEnum, ns, name, arrayRanks, nullableAnnotations, containingType);
     }
 
     /// <summary>

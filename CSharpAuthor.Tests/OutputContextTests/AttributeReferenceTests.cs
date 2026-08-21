@@ -149,6 +149,7 @@ public class AttributeReferenceTests
         }
 
         public System.Collections.Generic.IReadOnlyList<int> ArrayRanks => System.Array.Empty<int>();
+        public System.Collections.Generic.IReadOnlyList<bool> NullableAnnotations => new[] { false };
         public ITypeDefinition? ContainingType => null;
 
         public ITypeDefinition MakeNullable(bool nullable = true) => this;

@@ -27,8 +27,21 @@ public class TypeParameterDefinition : ITypeDefinition
     internal TypeParameterDefinition(string name, bool isNullable, IReadOnlyList<int>? arrayRanks)
     {
         Name = name;
-        IsNullable = isNullable;
         ArrayRanks = BaseTypeDefinition.NormalizeRanks(arrayRanks);
+        NullableAnnotations = BaseTypeDefinition.OuterAnnotationOnly(ArrayRanks.Count + 1, isNullable);
+        IsNullable = isNullable;
+    }
+
+    /// <remarks>
+    /// <c>T?[]</c> is an array of nullable <c>T</c> and <c>T[]?</c> is a nullable array of
+    /// <c>T</c>; a type parameter reaches both the same way a named type does.
+    /// </remarks>
+    internal TypeParameterDefinition(string name, IReadOnlyList<int>? arrayRanks, IReadOnlyList<bool>? nullableAnnotations)
+    {
+        Name = name;
+        ArrayRanks = BaseTypeDefinition.NormalizeRanks(arrayRanks);
+        NullableAnnotations = BaseTypeDefinition.NormalizeAnnotations(nullableAnnotations, ArrayRanks.Count + 1);
+        IsNullable = NullableAnnotations[0];
     }
 
     public string Name { get; }
@@ -40,6 +53,9 @@ public class TypeParameterDefinition : ITypeDefinition
     public bool IsNullable { get; }
 
     public bool IsArray => ArrayRanks.Count > 0;
+
+    /// <inheritdoc />
+    public IReadOnlyList<bool> NullableAnnotations { get; }
 
     public IReadOnlyList<int> ArrayRanks { get; }
 
@@ -56,27 +72,12 @@ public class TypeParameterDefinition : ITypeDefinition
     {
         builder.Append(Name);
 
-        for (var i = 0; i < ArrayRanks.Count; i++)
-        {
-            builder.Append('[');
-
-            for (var dimension = 1; dimension < ArrayRanks[i]; dimension++)
-            {
-                builder.Append(',');
-            }
-
-            builder.Append(']');
-        }
-
-        if (IsNullable)
-        {
-            builder.Append("?");
-        }
+        BaseTypeDefinition.WriteArraySuffix(builder, ArrayRanks, NullableAnnotations);
     }
 
     public ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new TypeParameterDefinition(Name, nullable, ArrayRanks);
+        return new TypeParameterDefinition(Name, ArrayRanks, BaseTypeDefinition.WithOuterAnnotation(NullableAnnotations, nullable));
     }
 
     public ITypeDefinition MakeArray()
@@ -86,7 +87,10 @@ public class TypeParameterDefinition : ITypeDefinition
 
     public ITypeDefinition MakeArray(int rank)
     {
-        return new TypeParameterDefinition(Name, IsNullable, BaseTypeDefinition.WithOuterRank(ArrayRanks, rank));
+        return new TypeParameterDefinition(
+            Name,
+            BaseTypeDefinition.WithOuterRank(ArrayRanks, rank),
+            BaseTypeDefinition.WithOuterLevel(NullableAnnotations));
     }
 
     public int CompareTo(ITypeDefinition other)
@@ -116,9 +120,14 @@ public class TypeParameterDefinition : ITypeDefinition
             }
         }
 
-        if (IsNullable != typeParameter.IsNullable)
+        // Positional, not merely counted: T?[] and T[]? have one annotation each and are not the
+        // same type.
+        for (var i = 0; i < NullableAnnotations.Count && i < typeParameter.NullableAnnotations.Count; i++)
         {
-            return IsNullable ? 1 : -1;
+            if (NullableAnnotations[i] != typeParameter.NullableAnnotations[i])
+            {
+                return NullableAnnotations[i] ? 1 : -1;
+            }
         }
 
         return 0;
@@ -139,7 +148,10 @@ public class TypeParameterDefinition : ITypeDefinition
         {
             var hash = Name.GetHashCode();
 
-            hash = hash * 31 + IsNullable.GetHashCode();
+            foreach (var annotation in NullableAnnotations)
+            {
+                hash = hash * 31 + annotation.GetHashCode();
+            }
 
             foreach (var rank in ArrayRanks)
             {

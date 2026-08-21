@@ -29,6 +29,21 @@ public class GenericTypeDefinition : BaseTypeDefinition
         _closingTypes = closingTypes;
     }
 
+    /// <summary>
+    /// A closed generic with array specifiers and an annotation for each level, outermost first,
+    /// then one for the element - <c>[1]</c> with <c>[false, true]</c> is <c>Name&lt;T&gt;?[]</c>.
+    /// </summary>
+    /// <remarks>
+    /// Every parameter is required, so this cannot be reached by a call that means the
+    /// <c>bool isNullable</c> overload above.
+    /// </remarks>
+    public GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
+        IReadOnlyList<int>? arrayRanks, IReadOnlyList<bool>? nullableAnnotations, ITypeDefinition? containingType)
+        : base(classType, ns, name, arrayRanks, nullableAnnotations, containingType)
+    {
+        _closingTypes = closingTypes;
+    }
+
     /// <inheritdoc cref="TypeDefinition.ToString" />
     public override string ToString()
     {
@@ -57,12 +72,7 @@ public class GenericTypeDefinition : BaseTypeDefinition
 
         stringBuilder.Append('>');
 
-        WriteArrayRanks(stringBuilder);
-
-        if (IsNullable)
-        {
-            stringBuilder.Append('?');
-        }
+        WriteArraySuffix(stringBuilder);
 
         return stringBuilder.ToString();
     }
@@ -148,29 +158,24 @@ public class GenericTypeDefinition : BaseTypeDefinition
 
         builder.Append('>');
 
-        WriteArrayRanks(builder);
-
-        if (IsNullable)
-        {
-            builder.Append("?");
-        }
+        WriteArraySuffix(builder);
     }
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, nullable, ContainingType);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, AnnotationsWithOuterAnnotation(nullable), ContainingType);
     }
 
     public override ITypeDefinition MakeArray(int rank)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanksWithOuterRank(rank), IsNullable, ContainingType);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanksWithOuterRank(rank), AnnotationsWithOuterLevel(), ContainingType);
     }
 
     public ITypeDefinition MakeOpenType()
     {
         var emptyTypes = _closingTypes.Select(_ => TypeDefinition.Get("", "")).ToArray();
 
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, ArrayRanks, IsNullable, ContainingType);
+        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, ArrayRanks, NullableAnnotations, ContainingType);
     }
         
     public override IReadOnlyList<ITypeDefinition> TypeArguments => _closingTypes;

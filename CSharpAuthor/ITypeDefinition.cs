@@ -8,9 +8,31 @@ public interface ITypeDefinition : IComparable<ITypeDefinition>
 {
     TypeDefinitionEnum TypeDefinitionEnum { get; }
 
+    /// <summary>
+    /// Whether the type <em>itself</em> carries a <c>?</c> - the outermost annotation, which is
+    /// <see cref="NullableAnnotations"/>[0]. <c>int?</c> is nullable; so is <c>int[]?</c>; but
+    /// <c>int?[]</c> is an array, and an array is not nullable for having a nullable element.
+    /// </summary>
     bool IsNullable { get; }
 
     bool IsArray { get; }
+
+    /// <summary>
+    /// Where each <c>?</c> sits. One entry per array level in <see cref="ArrayRanks"/> order -
+    /// outermost first - followed by one for the element type itself, so it is always exactly one
+    /// longer than <see cref="ArrayRanks"/> and never empty. <c>int?[]</c> is
+    /// <c>[false, true]</c>; <c>int[]?</c> is <c>[true, false]</c>; <c>int?[]?</c> is
+    /// <c>[true, true]</c>. For a type that is not an array it is the single flag
+    /// <see cref="IsNullable"/>.
+    /// </summary>
+    /// <remarks>
+    /// A single positionless flag cannot tell <c>int?[]</c> from <c>int[]?</c>, and it loses one of
+    /// the two <c>?</c> in <c>int?[]?</c> without complaining. Those are three different types, and
+    /// the one a positionless flag always picks - the annotation on the outside of the array - is
+    /// what turned <c>new string?[] { null }</c> into <c>new string[]? { null }</c>, which is not a
+    /// worse spelling of an array creation but a different node kind entirely.
+    /// </remarks>
+    IReadOnlyList<bool> NullableAnnotations { get; }
 
     /// <summary>
     /// The rank of each array wrapping this type, outermost first - the order the specifiers are
@@ -44,6 +66,10 @@ public interface ITypeDefinition : IComparable<ITypeDefinition>
 
     void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName);
 
+    /// <summary>
+    /// This type with its own - outermost - annotation set or cleared. Everything inside keeps its
+    /// own: <c>int?[]</c>.MakeNullable() is <c>int?[]?</c>, never <c>int[]?</c>.
+    /// </summary>
     ITypeDefinition MakeNullable(bool nullable = true);
 
     /// <summary>
@@ -55,6 +81,11 @@ public interface ITypeDefinition : IComparable<ITypeDefinition>
     /// An array of this type with the given rank. The new array goes on the outside, so
     /// <c>Get(typeof(int)).MakeArray().MakeArray()</c> is <c>int[][]</c>.
     /// </summary>
+    /// <remarks>
+    /// The new level is the one that is now outermost, and it is not annotated: an array of
+    /// <c>int?</c> is <c>int?[]</c>. The annotation belongs to the element that was asked for and
+    /// stays with it, rather than migrating to the array that was just built around it.
+    /// </remarks>
     ITypeDefinition MakeArray(int rank);
 
     IReadOnlyList<ITypeDefinition> TypeArguments { get; }
