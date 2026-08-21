@@ -1,5 +1,24 @@
 <Project>
+  <!--
+    Opting into the Roslyn bridge implies opting into the source, because the bridge is written
+    against the type model and the package is normally referenced with IncludeAssets="build" - which
+    brings no assembly with it. Setting PackageCSharpAuthorIncludeSource to false explicitly still
+    wins, for a consumer referencing the library as an assembly.
+  -->
+  <PropertyGroup Condition="'$(PackageCSharpAuthorIncludeRoslyn)' == 'true' and '$(PackageCSharpAuthorIncludeSource)' == ''">
+    <PackageCSharpAuthorIncludeSource>true</PackageCSharpAuthorIncludeSource>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(PackageCSharpAuthorIncludeSource)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)../src/**/*.cs" Visible="false"/>
+  </ItemGroup>
+
+  <!--
+    The bridge is a second source folder in the same package, gated separately. It needs
+    Microsoft.CodeAnalysis; a generator project already has it, and a project that has not asked for
+    the bridge never sees these files.
+  -->
+  <ItemGroup Condition="'$(PackageCSharpAuthorIncludeRoslyn)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)../srcRoslyn/**/*.cs" Visible="false"/>
   </ItemGroup>
 </Project>

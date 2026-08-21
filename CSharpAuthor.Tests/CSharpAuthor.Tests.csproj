@@ -6,6 +6,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!--
+      The Roslyn bridge is not compiled into the library - it is packed as a second source folder and
+      compiled into consumers that opt in. Including it here the same way a consumer does is what
+      tests it, and it is also what proves the source-inclusion path compiles at all.
+    -->
+    <Compile Include="..\CSharpAuthor\Roslyn\**\*.cs" LinkBase="RoslynBridge" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="SimpleFixture.NSubstitute" Version="4.0.0-RC190" />
     <PackageReference Include="SimpleFixture.xUnit" Version="4.0.0-RC190" />
