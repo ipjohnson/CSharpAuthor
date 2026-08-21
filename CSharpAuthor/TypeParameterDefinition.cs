@@ -15,10 +15,8 @@ namespace CSharpAuthor;
 /// </remarks>
 public class TypeParameterDefinition : ITypeDefinition
 {
-    private static readonly int[] _notAnArray = Array.Empty<int>();
-
     public TypeParameterDefinition(string name, bool isNullable = false, bool isArray = false)
-        : this(name, isNullable, isArray ? new[] { 1 } : _notAnArray)
+        : this(name, isNullable, isArray ? new[] { 1 } : null)
     {
     }
 
@@ -26,7 +24,7 @@ public class TypeParameterDefinition : ITypeDefinition
     {
         Name = name;
         IsNullable = isNullable;
-        ArrayRanks = arrayRanks == null || arrayRanks.Count == 0 ? _notAnArray : arrayRanks;
+        ArrayRanks = BaseTypeDefinition.NormalizeRanks(arrayRanks);
     }
 
     public string Name { get; }
@@ -84,21 +82,7 @@ public class TypeParameterDefinition : ITypeDefinition
 
     public ITypeDefinition MakeArray(int rank)
     {
-        if (rank < 1)
-        {
-            throw new ArgumentOutOfRangeException(nameof(rank), rank, "An array rank is at least 1.");
-        }
-
-        var ranks = new int[ArrayRanks.Count + 1];
-
-        ranks[0] = rank;
-
-        for (var i = 0; i < ArrayRanks.Count; i++)
-        {
-            ranks[i + 1] = ArrayRanks[i];
-        }
-
-        return new TypeParameterDefinition(Name, IsNullable, ranks);
+        return new TypeParameterDefinition(Name, IsNullable, BaseTypeDefinition.WithOuterRank(ArrayRanks, rank));
     }
 
     public int CompareTo(ITypeDefinition other)

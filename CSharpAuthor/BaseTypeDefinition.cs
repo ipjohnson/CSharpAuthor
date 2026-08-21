@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text;
 
 namespace CSharpAuthor;
 
 public abstract class BaseTypeDefinition : ITypeDefinition
 {
-    private static readonly int[] _notAnArray = Array.Empty<int>();
-    private static readonly int[] _oneDimensional = { 1 };
+    private static readonly IReadOnlyList<int> _notAnArray = new ReadOnlyCollection<int>(Array.Empty<int>());
+    private static readonly IReadOnlyList<int> _oneDimensional = new ReadOnlyCollection<int>(new[] { 1 });
 
     private int? _hashCode;
 
@@ -209,13 +210,17 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     /// </summary>
     protected IReadOnlyList<int> ArrayRanksWithOuterRank(int rank)
     {
-        CheckRank(rank);
+        return WithOuterRank(ArrayRanks, rank);
+    }
 
-        var ranks = ArrayRanks;
+    /// <inheritdoc cref="ArrayRanksWithOuterRank" />
+    internal static IReadOnlyList<int> WithOuterRank(IReadOnlyList<int> ranks, int rank)
+    {
+        CheckRank(rank);
 
         if (ranks.Count == 0)
         {
-            return rank == 1 ? _oneDimensional : new[] { rank };
+            return rank == 1 ? _oneDimensional : new ReadOnlyCollection<int>(new[] { rank });
         }
 
         var result = new int[ranks.Count + 1];
@@ -227,7 +232,7 @@ public abstract class BaseTypeDefinition : ITypeDefinition
             result[i + 1] = ranks[i];
         }
 
-        return result;
+        return new ReadOnlyCollection<int>(result);
     }
 
     private int CompareContainingTypes(ITypeDefinition other)
@@ -269,7 +274,11 @@ public abstract class BaseTypeDefinition : ITypeDefinition
         return 0;
     }
 
-    private static IReadOnlyList<int> NormalizeRanks(IReadOnlyList<int>? arrayRanks)
+    /// <summary>
+    /// Takes a copy behind a read-only view, so the shape cannot change under a type definition that
+    /// has already cached a hash from it.
+    /// </summary>
+    internal static IReadOnlyList<int> NormalizeRanks(IReadOnlyList<int>? arrayRanks)
     {
         if (arrayRanks == null || arrayRanks.Count == 0)
         {
@@ -280,7 +289,7 @@ public abstract class BaseTypeDefinition : ITypeDefinition
         {
             CheckRank(arrayRanks[0]);
 
-            return arrayRanks[0] == 1 ? _oneDimensional : new[] { arrayRanks[0] };
+            return arrayRanks[0] == 1 ? _oneDimensional : new ReadOnlyCollection<int>(new[] { arrayRanks[0] });
         }
 
         var copy = new int[arrayRanks.Count];
@@ -292,7 +301,7 @@ public abstract class BaseTypeDefinition : ITypeDefinition
             copy[i] = arrayRanks[i];
         }
 
-        return copy;
+        return new ReadOnlyCollection<int>(copy);
     }
 
     private static void CheckRank(int rank)

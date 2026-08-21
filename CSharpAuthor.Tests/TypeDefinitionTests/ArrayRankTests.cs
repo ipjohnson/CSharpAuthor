@@ -193,6 +193,23 @@ public class ArrayRankTests
         Assert.Empty(TypeDefinition.Get(typeof(float[])).Namespace);
     }
 
+    /// <summary>
+    /// The shape is part of the value, and the value's hash is cached the first time it is asked for.
+    /// A shape that could change afterwards would silently corrupt any dictionary holding the type.
+    /// </summary>
+    [Fact]
+    public void TheShapeCannotChangeAfterwards()
+    {
+        var ranks = new[] { 2 };
+
+        var type = TypeDefinition.Get(TypeDefinitionEnum.ClassDefinition, "Ns", "Holder", ranks);
+
+        ranks[0] = 3;
+
+        Assert.Equal("Holder[,]", type.GetShortName());
+        Assert.Throws<NotSupportedException>(() => ((IList<int>)type.ArrayRanks)[0] = 3);
+    }
+
     [Fact]
     public void ArraysOfDifferentShapeAreDifferentValues()
     {
