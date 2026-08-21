@@ -35,8 +35,6 @@ public class EventDefinition : BaseOutputComponent, INamedComponent
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.AddImportNamespace(HandlerType);
-
         var accessModifier = GetAccessModifier(KeyWords.Public);
 
         outputContext.WriteIndent();

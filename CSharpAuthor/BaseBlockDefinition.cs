@@ -25,9 +25,22 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
         return component;
     }
 
+    /// <summary>
+    /// A statement with types substituted into it, held as pieces so the types are still types when
+    /// the file is serialized.
+    /// </summary>
+    /// <remarks>
+    /// A <c>{argN}</c> used to be replaced with the type's short name on the spot, which fixed the
+    /// text before anything knew what mode the file would be written in or what else it would
+    /// contain. The name went in unqualified even in a file that qualified everything, and the
+    /// namespace was declared on the side to make it resolve. The pieces keep the type instead:
+    /// it is rendered with everything else, at the end.
+    ///
+    /// A <c>[argN]</c> is still substituted here, because it is text by definition.
+    /// </remarks>
     public virtual CodeOutputComponent AddCode(string statement, params object[] types)
     {
-        var typeDefinitions = new List<ITypeDefinition>();
+        var parts = new List<object> { statement };
 
         if (types is { Length: > 0 })
         {
@@ -37,53 +50,102 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
                 var typeSwapString =
                     "{arg" + (index + 1).ToString(CultureInfo.InvariantCulture) + "}";
 
-                if (statement.IndexOf(typeSwapString, StringComparison.Ordinal) >= 0)
+                if (PartsContain(parts, typeSwapString))
                 {
-
                     if (value is Type typeValue)
                     {
                         value = TypeDefinition.Get(typeValue);
                     }
 
-                    if (value is ITypeDefinition typeDefinition)
-                    {
-                        typeDefinitions.Add(typeDefinition);
-                    }
-
-                    statement = statement.Replace(typeSwapString, GetObjectStringValue(value));
+                    ReplaceInParts(
+                        parts,
+                        typeSwapString,
+                        value is ITypeDefinition typeDefinition ? typeDefinition : (object)GetObjectStringValue(value));
                 }
                 else
                 {
                     var rawSwapString =
                         "[arg" + (index + 1).ToString(CultureInfo.InvariantCulture) + "]";
 
-                    if (statement.IndexOf(rawSwapString, StringComparison.Ordinal) >= 0)
+                    if (PartsContain(parts, rawSwapString))
                     {
-                        statement = statement.Replace(rawSwapString, LiteralFormatter.Format(value));
+                        ReplaceInParts(parts, rawSwapString, LiteralFormatter.Format(value));
                     }
                 }
             }
         }
 
-        var statementOutput = new CodeOutputComponent(statement);
-
-        statementOutput.AddTypes(typeDefinitions);
-
-        return Add(statementOutput);
+        return Add(CodeOutputComponent.FromParts(parts));
     }
 
+    private static bool PartsContain(List<object> parts, string marker)
+    {
+        for (var i = 0; i < parts.Count; i++)
+        {
+            if (parts[i] is string text && text.IndexOf(marker, StringComparison.Ordinal) >= 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void ReplaceInParts(List<object> parts, string marker, object replacement)
+    {
+        for (var i = 0; i < parts.Count; i++)
+        {
+            if (parts[i] is not string text)
+            {
+                continue;
+            }
+
+            var index = text.IndexOf(marker, StringComparison.Ordinal);
+
+            if (index < 0)
+            {
+                continue;
+            }
+
+            var replaced = new List<object>();
+            var position = 0;
+
+            while (index >= 0)
+            {
+                if (index > position)
+                {
+                    replaced.Add(text.Substring(position, index - position));
+                }
+
+                replaced.Add(replacement);
+
+                position = index + marker.Length;
+                index = text.IndexOf(marker, position, StringComparison.Ordinal);
+            }
+
+            if (position < text.Length)
+            {
+                replaced.Add(text.Substring(position));
+            }
+
+            parts.RemoveAt(i);
+            parts.InsertRange(i, replaced);
+
+            i += replaced.Count - 1;
+        }
+    }
+
+    /// <summary>
+    /// The text a substituted value becomes. A type never reaches here.
+    /// </summary>
+    /// <remarks>
+    /// It used to: a type was turned into its short name at this point, which is when the tree is
+    /// being built and before any output mode exists. There is no answer to give then - the same
+    /// tree is meant to be writable as <c>Result</c> or as <c>global::Sample.Models.Result</c> - so
+    /// the caller keeps the type and this only ever sees things that really are values.
+    /// </remarks>
     private string GetObjectStringValue(object value)
     {
-        if (value is Type type)
-        {
-            value = TypeDefinition.Get(type);
-        }
-
-        if (value is ITypeDefinition typeDefinition)
-        {
-            return typeDefinition.GetShortName();
-        }
-
         if (value is string stringValue)
         {
             return LiteralFormatter.QuoteString(stringValue);

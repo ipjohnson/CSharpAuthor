@@ -6,12 +6,13 @@ namespace CSharpAuthor;
 
 public class AttributeDefinition : BaseOutputComponent
 {
-    private const string AttributePostfix = "Attribute";
     private readonly ITypeDefinition _attributeType;
+    private readonly AttributeTypeReference? _writtenType;
 
     public AttributeDefinition(ITypeDefinition attributeType)
     {
         _attributeType = attributeType;
+        _writtenType = attributeType == null ? null : new AttributeTypeReference(attributeType);
     }
 
     public IList<IOutputComponent>? Arguments { get; set; }
@@ -30,8 +31,6 @@ public class AttributeDefinition : BaseOutputComponent
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.AddImportNamespace(_attributeType);
-
         outputContext.WriteIndent("[");
         WriteBody(outputContext);
         outputContext.WriteLine("]");
@@ -43,8 +42,6 @@ public class AttributeDefinition : BaseOutputComponent
     /// </summary>
     public void WriteInline(IOutputContext outputContext)
     {
-        outputContext.AddImportNamespace(_attributeType);
-
         outputContext.Write("[");
         WriteBody(outputContext);
         outputContext.Write("] ");
@@ -52,20 +49,16 @@ public class AttributeDefinition : BaseOutputComponent
 
     private void WriteBody(IOutputContext outputContext)
     {
-        var attributeName = _attributeType.Name;
-
-        if (attributeName.EndsWith(AttributePostfix, StringComparison.Ordinal))
-        {
-            attributeName = attributeName.Substring(0, attributeName.Length - AttributePostfix.Length);
-        }
-
         if (!string.IsNullOrEmpty(Target))
         {
             outputContext.Write(Target!);
             outputContext.Write(": ");
         }
 
-        outputContext.Write(attributeName);
+        // Written as a type rather than as its name, so the namespace it needs is derived from the
+        // file rather than declared beside it - and so it is qualified when the mode qualifies.
+        outputContext.Write(_writtenType!);
+
         WriteArguments(outputContext);
     }
 

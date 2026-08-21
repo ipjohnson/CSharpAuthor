@@ -18,8 +18,6 @@ public class FieldDefinition : BaseOutputComponent, INamedComponent
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.AddImportNamespace(TypeDefinition);
-
         var accessModifier = GetAccessModifier(KeyWords.Private);
 
         // `static readonly`, which is the order C# convention uses. This wrote `readonly static`,
