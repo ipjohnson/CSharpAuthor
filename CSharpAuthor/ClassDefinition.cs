@@ -36,6 +36,17 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
     public ClassKeyword TypeKeyword { get; set; } = ClassKeyword.Class;
 
     /// <summary>
+    /// Whether a struct is declared <c>ref struct</c> - stack-only, and enforced by the compiler.
+    /// </summary>
+    /// <remarks>
+    /// Ignored unless <see cref="TypeKeyword"/> is a struct. C# 7.2, and one of the features with
+    /// no downlevel: dropping <c>ref</c> gives a type that compiles and can be boxed, captured and
+    /// put on the heap - every restriction the caller asked for, silently removed. Below C# 7.2
+    /// this is a capability violation rather than a formatting decision.
+    /// </remarks>
+    public bool IsRefStruct { get; set; }
+
+    /// <summary>
     /// Whether the declaration is terminated with <c>;</c> rather than a body.
     /// </summary>
     /// <remarks>
@@ -325,6 +336,12 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
+        if (IsRefStruct && IsStruct)
+        {
+            // Before the signature is written, so a #error directive lands on a line of its own.
+            outputContext.EmitSession().Require(LanguageFeature.RefStructs, outputContext, Name);
+        }
+
         if (TerminateWithSemicolon)
         {
             WriteClassSignature(outputContext, terminator: ";");
@@ -512,6 +529,12 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
             outputContext.WriteSpace();
         }
 
+        if (IsRefStruct && IsStruct && outputContext.EmitProfile().Supports(LanguageFeature.RefStructs))
+        {
+            outputContext.Write(KeyWords.Ref);
+            outputContext.WriteSpace();
+        }
+
         outputContext.Write(GetTypeKeywordString());
         outputContext.WriteSpace();
 
@@ -599,6 +622,9 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
 
         outputContext.Write(")");
     }
+
+    private bool IsStruct =>
+        TypeKeyword == ClassKeyword.Struct || TypeKeyword == ClassKeyword.RecordStruct;
 
     private string GetTypeKeywordString() => TypeKeyword switch
     {

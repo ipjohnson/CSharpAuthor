@@ -95,14 +95,21 @@ public static class LanguageVersionExtensions
 
         if (value < 100)
         {
-            return "C#" + value;
+            return "C#" + Number(value);
         }
 
         var major = value / 100;
         var minor = value % 100;
 
-        return minor == 0 ? "C#" + major : "C#" + major + "." + minor;
+        return minor == 0
+            ? "C#" + Number(major)
+            : "C#" + Number(major) + "." + Number(minor);
     }
+
+    // Every number this library writes goes through InvariantCulture. A generator that emits
+    // "1,5" because it ran on de-DE is a verified V1 defect, and a version number is a number.
+    private static string Number(int value) =>
+        value.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>
     /// Whether a bundled Roslyn parser can be asked to validate output rendered for this version.

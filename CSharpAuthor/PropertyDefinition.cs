@@ -48,12 +48,39 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
     private bool IsIndexer => IndexParameters.Count > 0 || IndexType != null;
 
     public InstanceDefinition Instance => new(Name);
-    
+
     public IOutputComponent? DefaultValue { get; set; }
+
+    /// <summary>
+    /// Whether the property is <c>required</c>: the caller has to set it, and the compiler checks.
+    /// </summary>
+    /// <remarks>
+    /// C# 11, and polyfillable - see <see cref="LanguageFeature.RequiredMembers"/>. Below it the
+    /// keyword is dropped and a <c>// DOWNLEVEL:</c> comment says that nothing is enforcing the
+    /// initialisation any more, because a property that silently stops being required is exactly
+    /// the kind of change nobody notices until something is null in production.
+    /// </remarks>
+    public bool IsRequired { get; set; }
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
+        var session = outputContext.EmitSession();
+
+        // Asked before anything for this member is written: a `// DOWNLEVEL:` comment is a line
+        // of its own and cannot be inserted into a half-written one. With no profile in force the
+        // session answers yes to both, which is what V1 did.
+        var writeInit = Set is { IsInit: true } &&
+                        session.MayEmit(LanguageFeature.InitOnlyProperties, outputContext, Name);
+
+        var writeRequired = IsRequired &&
+                            session.MayEmit(LanguageFeature.RequiredMembers, outputContext, Name);
+
         WriteAccessModifiers(outputContext);
+
+        if (writeRequired)
+        {
+            outputContext.Write("required ");
+        }
 
         outputContext.Write(Type);
         outputContext.Write($" {Name}");
@@ -103,7 +130,7 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
                  Get.StatementCount == 0 &&
                  Set is { StatementCount: 0 })
         {
-            if (Set.IsInit)
+            if (writeInit)
             {
                 outputContext.Write(" { get; init; }");
             }
