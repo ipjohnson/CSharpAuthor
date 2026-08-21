@@ -484,3 +484,23 @@ it is written down here rather than asked about.
 - `PreferVar`, `PreferExpressionBodied`, `FieldKeyword` and `ParamsCollections` are answered
   correctly by the capability table but no writer in this slice consults them - the writers that
   own those constructs have to.
+
+---
+
+## Wave 2, defect sweep
+
+Every one of these is a place where two things in the repository disagreed and an agent had to pick
+one without being able to ask. The rule taken each time: **an existing test is never edited**, and
+where that rule and an adversary finding pointed opposite ways, the test won and the finding was
+recorded here.
+
+| # | Question | Default taken | Why |
+|---|---|---|---|
+| 16 | Does `MakeNullable().MakeArray()` mean `string?[]` or `string[]?` | `string[]?` — unchanged. The other type is now reachable through `ITypeDefinitionExtensions.MakeArrayOfNullable`. | Adversary #1 ranks `string?[]` as the worst silent defect in the library, and it is right that the type could not be written at all. But `TypeDefinitionTests.ArrayRankTests.NullableGoesAfterTheShape` pins `MakeNullable().MakeArray().MakeArray()` as `int[][]?`, and no model can answer both. **The type is now expressible either way; what the composition means is the open question.** Changing it is a one-line edit to `MakeArray` plus that one assertion. |
+| 17 | Is `IsElementNullable` part of `ITypeDefinition`? | No. It lives on `BaseTypeDefinition` and `TypeParameterDefinition`, and `TypeDefinitionOrder` asks for it by shape. | Adding a member to the interface breaks every implementation of it outside this assembly. One exists in this repository's own test project (`OutputContextTests.AttributeReferenceTests.NestedTypeStub`), which is the evidence that they exist in consumers too. Rule 8.4. |
+| 18 | Should a `string` handed to `AddAttribute`, `AddCase` or `CodeOutputComponent.Get` be quoted as a literal? | No. A `string` stays a fragment of code. | Three adversary findings ask for quoting (#64, #31, and `StringValueIsQuotedConsistently`), and all three would break both consumers: `AddAttribute(type, $"nameof({m})")`, `AddCase(QuoteString(x))` and `AddCase($"'{c}'")` are all live call sites that mean code. A caller who wants a literal has `QuoteString`. The inconsistency the findings name is real - `AddCode`'s `{argN}` **does** quote - and resolving it is a breaking change with a migration, not a fix. |
+| 19 | Should a documentation comment be XML-escaped? | No. | `Hardened.Idl.Emit`'s `DocComment.Format` already escapes before handing the text over - it has its own test for it - so escaping here emits `&amp;lt;`. CS1570 for the ordinary caller is the real defect (#60, #61); the mechanical fix is "escape here **and** delete the consumer's escaping", which is a coordinated change. |
+| 20 | Should `EnableNullable()` close with `#nullable restore`? | Not yet. | It should - `disable` turns the analysis off for the rest of the file rather than restoring the project setting - but all 9 `DependencyModules` snapshots contain `#nullable disable` and pass today. One line in `NullableEnableComponent`, and 9 snapshot diffs for the human to accept. |
+| 21 | Should the blank line before the first member go, and should `System` usings sort first? | Not yet, for the same reason. | The same 9 snapshots carry both. §11 predicted precisely this: "expect the consumer snapshots to be what catches it." |
+| 22 | An enum value handed to `CodeOutputComponent.Get` | Written as `Type.Member` with the type left unrendered; flags as `Type.A \| Type.B`; an unnamed value as `(Type)5`. | This is §1's `ServiceLifetime` defect at its source, and the only reading that carries a namespace. `AddCode`'s `[argN]` - the raw hatch - is deliberately left writing `ToString()`, because a caller reaching for it has asked for text. |
+| 23 | An unmatched `{argN}` / `[argN]` in `AddCode` | Left in the output, as before. | `ValueConversionAdversaryTests.UnmatchedPlaceholder` asserts the output does not contain `[arg9]`, which rules out reporting it in the output; throwing at the call fails the test as well; and deleting it silently is the defect class this project exists to remove. Reporting it on the diagnostic channel is the right answer, and that channel is `EmitDiagnostic`, which is keyed on `LanguageFeature` - it would have to grow a category first. |
