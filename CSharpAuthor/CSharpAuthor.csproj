@@ -31,6 +31,37 @@
 			practice.
 		-->
 		<DefineConstants>$(DefineConstants);CSHARPAUTHOR_PUBLIC_SYNTAX</DefineConstants>
+
+		<!--
+			The XML documentation file is the input to the generated API reference on the
+			documentation site (docfx/docfx.json reads bin/$(Configuration)/netstandard2.0/CSharpAuthor.xml
+			via its `src` metadata entry). Without it DocFX emits a member list with no prose.
+
+			CS1591 - "missing XML comment for publicly visible type or member" - is suppressed,
+			and the suppression is not cosmetic. Measured on this branch: turning
+			GenerateDocumentationFile on without it produces 3,916 CS1591 warnings from this
+			project alone, because only a minority of the public surface is documented so far.
+
+			The number matters more than it looks, because of how this library is consumed.
+			CSharpAuthor is source-included: build/CSharpAuthor.targets compiles src/**/*.cs
+			straight into the consumer's assembly (V2-HANDOFF.md 3), and NoWarn set here does
+			*not* travel with those files - the consumer's own compilation settings decide. A
+			consumer that generates its own documentation file and escalates warnings to errors
+			(Hardened.Framework does the latter under ContinuousIntegrationBuild) would take
+			those 3,916 warnings as build errors in code it did not write.
+
+			Neither consumer suite hits that combination today, and this change was verified not
+			to move either of them. But the way to keep it that way is for the count to stay at
+			zero-visible here, so nobody has to discover it downstream. A source-including
+			consumer that does want a documentation file of its own suppresses CS1591 in its own
+			csproj; that is documented in docfx/docs/source-generators.md.
+
+			Only CS1591 is suppressed. The remaining doc diagnostics - CS1574/CS0419 on crefs -
+			are genuine defects in individual comments, few enough to fix, and are deliberately
+			left visible rather than silenced.
+		-->
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<NoWarn>$(NoWarn);CS1591</NoWarn>
 	</PropertyGroup>
 
 	<!--
