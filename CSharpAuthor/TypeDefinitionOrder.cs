@@ -95,11 +95,31 @@ internal static class TypeDefinitionOrder
             return left.IsNullable ? 1 : -1;
         }
 
+        var elementNullable = IsElementNullable(left);
+
+        if (elementNullable != IsElementNullable(right))
+        {
+            return elementNullable ? 1 : -1;
+        }
+
         return CompareTypeArguments(left, right);
     }
 
     private static int KindRank(ITypeDefinition typeDefinition) =>
         typeDefinition is TypeParameterDefinition ? 0 : 1;
+
+    /// <summary>
+    /// Asked by shape rather than through <see cref="ITypeDefinition"/>, which does not carry it -
+    /// see <see cref="BaseTypeDefinition.IsElementNullable"/> for why. An implementation that does
+    /// not model it answers the same as one whose element is not nullable, which is what it means.
+    /// </summary>
+    private static bool IsElementNullable(ITypeDefinition typeDefinition) =>
+        typeDefinition switch
+        {
+            BaseTypeDefinition baseType => baseType.IsElementNullable,
+            TypeParameterDefinition typeParameter => typeParameter.IsElementNullable,
+            _ => false
+        };
 
     private static int CompareContainers(ITypeDefinition? left, ITypeDefinition? right)
     {

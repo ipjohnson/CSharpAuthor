@@ -29,6 +29,13 @@ public class GenericTypeDefinition : BaseTypeDefinition
         _closingTypes = closingTypes;
     }
 
+    internal GenericTypeDefinition(TypeDefinitionEnum classType, string ns, string name, IReadOnlyList<ITypeDefinition> closingTypes,
+        IReadOnlyList<int>? arrayRanks, bool isNullable, bool isElementNullable, ITypeDefinition? containingType)
+        : base(classType, ns, name, arrayRanks, isNullable, isElementNullable, containingType)
+    {
+        _closingTypes = closingTypes;
+    }
+
     /// <inheritdoc cref="TypeDefinition.ToString" />
     public override string ToString()
     {
@@ -135,12 +142,22 @@ public class GenericTypeDefinition : BaseTypeDefinition
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, nullable, ContainingType);
+        return new GenericTypeDefinition(
+            TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, nullable, IsElementNullable, ContainingType);
     }
 
+    /// <inheritdoc cref="TypeDefinition.MakeArray(int)" />
     public override ITypeDefinition MakeArray(int rank)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanksWithOuterRank(rank), IsNullable, ContainingType);
+        return new GenericTypeDefinition(
+            TypeDefinitionEnum,
+            Namespace,
+            Name,
+            _closingTypes,
+            ArrayRanksWithOuterRank(rank),
+            IsNullable,
+            IsElementNullable,
+            ContainingType);
     }
 
     public ITypeDefinition MakeOpenType()

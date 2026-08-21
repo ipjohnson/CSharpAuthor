@@ -70,4 +70,73 @@ public static class ITypeDefinitionExtensions
 
         return stringBuilder.ToString();
     }
+
+    /// <summary>
+    /// An array whose <em>elements</em> are nullable - <c>string?[]</c>, as opposed to the nullable
+    /// array <c>string[]?</c> that <see cref="ITypeDefinition.MakeArray(int)"/> gives.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The two are different types and both compile, so a caller who meant one and was handed the
+    /// other gets no diagnostic anywhere - the defect class V2-HANDOFF.md section 1 is about.
+    /// Until now only <c>string[]?</c> could be written at all.
+    /// </para>
+    /// <para>
+    /// It is a separate call rather than a reading of <c>MakeNullable().MakeArray()</c> because
+    /// that composition already has a meaning here:
+    /// <c>TypeDefinitionTests.ArrayRankTests.NullableGoesAfterTheShape</c> pins it as the nullable
+    /// array, which is what version 1 wrote. Which of the two that composition should mean is
+    /// recorded in docs/v2-open-questions.md as a question for the human rather than decided by
+    /// changing a test.
+    /// </para>
+    /// <para>
+    /// An implementation of <see cref="ITypeDefinition"/> from outside this assembly cannot be
+    /// asked for the shape, so it is refused rather than silently given the other type.
+    /// </para>
+    /// </remarks>
+    public static ITypeDefinition MakeArrayOfNullable(this ITypeDefinition typeDefinition, int rank = 1)
+    {
+        if (typeDefinition == null)
+        {
+            throw new ArgumentNullException(nameof(typeDefinition));
+        }
+
+        switch (typeDefinition)
+        {
+            case GenericTypeDefinition generic:
+                return new GenericTypeDefinition(
+                    generic.TypeDefinitionEnum,
+                    generic.Namespace,
+                    generic.Name,
+                    generic.TypeArguments,
+                    BaseTypeDefinition.WithOuterRank(generic.ArrayRanks, rank),
+                    generic.IsNullable && generic.IsArray,
+                    true,
+                    generic.ContainingType);
+
+            case TypeDefinition type:
+                return new TypeDefinition(
+                    type.TypeDefinitionEnum,
+                    type.Namespace,
+                    type.Name,
+                    BaseTypeDefinition.WithOuterRank(type.ArrayRanks, rank),
+                    type.IsNullable && type.IsArray,
+                    true,
+                    type.ContainingType);
+
+            case TypeParameterDefinition typeParameter:
+                return new TypeParameterDefinition(
+                    typeParameter.Name,
+                    typeParameter.IsNullable && typeParameter.IsArray,
+                    true,
+                    BaseTypeDefinition.WithOuterRank(typeParameter.ArrayRanks, rank));
+
+            default:
+                throw new NotSupportedException(
+                    typeDefinition.GetType().FullName +
+                    " does not model element nullability, so an array of a nullable element cannot " +
+                    "be built from it. Refused rather than written as the nullable array, which is " +
+                    "a different type.");
+        }
+    }
 }

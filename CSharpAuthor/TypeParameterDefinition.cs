@@ -25,10 +25,17 @@ public class TypeParameterDefinition : ITypeDefinition
     /// of this the model needs. Widening it later is not a breaking change.
     /// </remarks>
     internal TypeParameterDefinition(string name, bool isNullable, IReadOnlyList<int>? arrayRanks)
+        : this(name, isNullable, false, arrayRanks)
+    {
+    }
+
+    internal TypeParameterDefinition(
+        string name, bool isNullable, bool isElementNullable, IReadOnlyList<int>? arrayRanks)
     {
         Name = name;
         IsNullable = isNullable;
         ArrayRanks = BaseTypeDefinition.NormalizeRanks(arrayRanks);
+        IsElementNullable = isElementNullable && ArrayRanks.Count > 0;
     }
 
     public string Name { get; }
@@ -40,6 +47,9 @@ public class TypeParameterDefinition : ITypeDefinition
     public bool IsNullable { get; }
 
     public bool IsArray => ArrayRanks.Count > 0;
+
+    /// <inheritdoc cref="BaseTypeDefinition.IsElementNullable" />
+    public bool IsElementNullable { get; }
 
     public IReadOnlyList<int> ArrayRanks { get; }
 
@@ -55,6 +65,13 @@ public class TypeParameterDefinition : ITypeDefinition
     public void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
         builder.Append(Name);
+
+        // T?[] is an array of nullable T; T[]? is a nullable array. The ? goes on the side the
+        // caller asked for it.
+        if (IsElementNullable)
+        {
+            builder.Append('?');
+        }
 
         for (var i = 0; i < ArrayRanks.Count; i++)
         {
@@ -76,7 +93,7 @@ public class TypeParameterDefinition : ITypeDefinition
 
     public ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new TypeParameterDefinition(Name, nullable, ArrayRanks);
+        return new TypeParameterDefinition(Name, nullable, IsElementNullable, ArrayRanks);
     }
 
     public ITypeDefinition MakeArray()
@@ -84,9 +101,11 @@ public class TypeParameterDefinition : ITypeDefinition
         return MakeArray(1);
     }
 
+    /// <inheritdoc cref="TypeDefinition.MakeArray(int)" />
     public ITypeDefinition MakeArray(int rank)
     {
-        return new TypeParameterDefinition(Name, IsNullable, BaseTypeDefinition.WithOuterRank(ArrayRanks, rank));
+        return new TypeParameterDefinition(
+            Name, IsNullable, IsElementNullable, BaseTypeDefinition.WithOuterRank(ArrayRanks, rank));
     }
 
     /// <summary>

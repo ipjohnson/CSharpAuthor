@@ -30,11 +30,17 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     }
 
     private protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable, ITypeDefinition? containingType)
+        : this(typeDefinitionEnum, ns, name, arrayRanks, isNullable, false, containingType)
+    {
+    }
+
+    private protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable, bool isElementNullable, ITypeDefinition? containingType)
     {
         Name = name;
         Namespace = ns;
         IsNullable = isNullable;
         ArrayRanks = NormalizeRanks(arrayRanks);
+        IsElementNullable = isElementNullable && ArrayRanks.Count > 0;
         ContainingType = containingType;
         TypeDefinitionEnum = typeDefinitionEnum;
     }
@@ -61,6 +67,31 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     public TypeDefinitionEnum TypeDefinitionEnum { get; }
 
     public bool IsNullable { get; }
+
+    /// <summary>
+    /// Whether the innermost element of an array type is nullable - <c>string?[]</c> rather than
+    /// <c>string[]?</c>. False for anything that is not an array.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>string?[]</c> and <c>string[]?</c> are different types and both compile, so writing the
+    /// <c>?</c> and the <c>[]</c> in a fixed order does not fail - it hands the caller the other
+    /// type. <c>MakeNullable().MakeArray()</c> is the array of a nullable element;
+    /// <c>MakeArray().MakeNullable()</c> is the nullable array. Which one was asked for is the
+    /// order the calls were made in.
+    /// </para>
+    /// <para>
+    /// Nullability at a level between the two - <c>string[]?[]</c> - is not expressible. Making an
+    /// array of a nullable array carries the <c>?</c> outward, which is what version 1 did.
+    /// </para>
+    /// <para>
+    /// Deliberately not on <see cref="ITypeDefinition"/>. Adding a member to that interface breaks
+    /// every implementation of it outside this assembly, and one exists in this repository's own
+    /// test project - which is the evidence that they exist elsewhere too. Handbook rule 8.4: where
+    /// the spec is silent, keep version 1 source-compatible.
+    /// </para>
+    /// </remarks>
+    public bool IsElementNullable { get; }
 
     /// <inheritdoc />
     public IReadOnlyList<int> ArrayRanks { get; }
@@ -117,10 +148,17 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     }
 
     /// <summary>
-    /// Writes the array specifiers, outermost first, so ranks <c>[2, 1]</c> read as <c>[,][]</c>.
+    /// Writes the array specifiers, outermost first, so ranks <c>[2, 1]</c> read as <c>[,][]</c> -
+    /// preceded by the element's <c>?</c> where it has one, because <c>string?[]</c> and
+    /// <c>string[]?</c> are different types.
     /// </summary>
     private protected void WriteArrayRanks(StringBuilder builder)
     {
+        if (IsElementNullable)
+        {
+            builder.Append('?');
+        }
+
         var ranks = ArrayRanks;
 
         for (var i = 0; i < ranks.Count; i++)
@@ -207,45 +245,6 @@ public abstract class BaseTypeDefinition : ITypeDefinition
         }
 
         return new ReadOnlyCollection<int>(result);
-    }
-
-    private int CompareContainingTypes(ITypeDefinition other)
-    {
-        var container = ContainingType;
-        var otherContainer = other.ContainingType;
-
-        if (container == null)
-        {
-            return otherContainer == null ? 0 : -1;
-        }
-
-        if (otherContainer == null)
-        {
-            return 1;
-        }
-
-        return container.CompareTo(otherContainer);
-    }
-
-    private int CompareArrayRanks(ITypeDefinition other)
-    {
-        var ranks = ArrayRanks;
-        var otherRanks = other.ArrayRanks;
-
-        if (ranks.Count != otherRanks.Count)
-        {
-            return ranks.Count - otherRanks.Count;
-        }
-
-        for (var i = 0; i < ranks.Count; i++)
-        {
-            if (ranks[i] != otherRanks[i])
-            {
-                return ranks[i] - otherRanks[i];
-            }
-        }
-
-        return 0;
     }
 
     /// <summary>
