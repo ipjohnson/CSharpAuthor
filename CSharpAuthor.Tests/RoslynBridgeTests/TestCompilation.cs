@@ -90,6 +90,24 @@ internal static class TestCompilation
         return types;
     }
 
+    /// <summary>The return type of a method declared in the shared holder.</summary>
+    public static ITypeSymbol MethodReturnType(string members, string methodName)
+    {
+        var holder = NamedType(Wrap(members), "BridgeTestNamespace.Holder`1");
+
+        foreach (var member in holder.GetMembers(methodName))
+        {
+            if (member is IMethodSymbol method)
+            {
+                return method.ReturnType;
+            }
+        }
+
+        Assert.True(false, "no method named " + methodName);
+
+        return null!;
+    }
+
     /// <summary>The named type from a whole compilation unit.</summary>
     public static INamedTypeSymbol NamedType(string source, string metadataName)
     {
