@@ -207,6 +207,21 @@ summarize_test_log() {
         SUITES_RUN=$((SUITES_RUN + 1))
     done < <(grep -E '^(Passed!|Failed!)' "$log" 2>/dev/null)
 
+    # A partial build failure is the hole this check exists to close. When a solution-wide run
+    # loses an assembly to a compile error, the assemblies that DID build still print their
+    # summaries, so `found` is non-zero and the missing one leaves no trace in the totals. That is
+    # exactly how a V2 change that broke three Hardened build-task projects - and six test
+    # assemblies with them - stayed invisible for a whole run. Compile errors are now surfaced
+    # whether or not anything managed to report.
+    if [ "$found" -gt 0 ] && grep -qE ': error [A-Z]+[0-9]+' "$log" 2>/dev/null; then
+        local codes
+        codes="$(grep -oE ': error [A-Z]+[0-9]+' "$log" | sed 's/: error //' | sort | uniq -c \
+                 | sort -rn | head -4 | awk '{printf "%sx%s ", $1, $2}')"
+        record "$(printf '  %-46s %-9s  BUILD ERRORS ALONGSIDE RESULTS - assemblies may be missing: %s see %s' \
+                  "$label" "-" "$codes" "${log/#$LOG_DIR\//}")"
+        fail
+    fi
+
     if [ "$found" -eq 0 ]; then
         # No test summary at all: the build broke, or the run never got that far.
         local why="no test results in log"
