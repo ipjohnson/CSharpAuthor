@@ -96,7 +96,10 @@ public enum LanguageFeature
     Records,
 
     /// <summary><c>record struct</c>. As <see cref="Records"/>.</summary>
-    RecordStructs
+    RecordStructs,
+
+    /// <summary>A <c>union</c> declaration. C# 15.</summary>
+    Unions
 }
 
 /// <summary>
@@ -255,7 +258,9 @@ public static class LanguageFeatures
         Row(LanguageFeature.Records, LanguageVersion.CSharp9, FeatureCategory.Impossible,
             DownlevelSupport.None, "record"),
         Row(LanguageFeature.RecordStructs, LanguageVersion.CSharp10, FeatureCategory.Impossible,
-            DownlevelSupport.None, "record struct")
+            DownlevelSupport.None, "record struct"),
+        Row(LanguageFeature.Unions, LanguageVersion.CSharp15, FeatureCategory.Impossible,
+            DownlevelSupport.None, "union")
     };
 
     private static FeatureInfo Row(
