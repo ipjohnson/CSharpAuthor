@@ -332,7 +332,7 @@ sealed class AnonymousObjectCreationExpression : SyntaxNode, IExpression
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Word, "new");
+        writer.Token(TokenRole.FnWord, "new");
         writer.Token(TokenRole.OpenBraceInline, "{");
         writer.List(Initializers, ListStyle.Comma);
         writer.Token(TokenRole.CloseBraceInline, "}");
@@ -427,7 +427,7 @@ sealed class ArrayCreationExpression : SyntaxNode, IExpression
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Word, "new");
+        writer.Token(TokenRole.FnWord, "new");
         writer.Type(Type);
         writer.Node(Initializer);
     }
@@ -699,7 +699,7 @@ sealed class BaseExpression : SyntaxNode, IInstanceExpression
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Word, "base");
+        writer.Token(TokenRole.BareName, "base");
     }
 }
 
@@ -1266,7 +1266,7 @@ sealed class ConstructorConstraint : SyntaxNode, ITypeParameterConstraint
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Word, "new");
+        writer.Token(TokenRole.FnWord, "new");
         writer.Token(TokenRole.OpenParen, "(");
         writer.Token(TokenRole.CloseParen, ")");
     }
@@ -2659,7 +2659,7 @@ sealed class FunctionPointerType : SyntaxNode, IType
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.TypeWord, "delegate");
+        writer.Token(TokenRole.BareName, "delegate");
         writer.Token(TokenRole.Operator, "*");
         writer.Node(CallingConvention);
         writer.Node(ParameterList);
@@ -2926,7 +2926,7 @@ sealed class ImplicitArrayCreationExpression : SyntaxNode, IExpression
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Word, "new");
+        writer.Token(TokenRole.FnWord, "new");
         writer.Token(TokenRole.OpenBracket, "[");
         writer.Tokens(Commas, TokenRole.Raw);
         writer.Token(TokenRole.CloseBracket, "]");
@@ -2975,7 +2975,7 @@ sealed class ImplicitObjectCreationExpression : SyntaxNode, IBaseObjectCreationE
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Word, "new");
+        writer.Token(TokenRole.FnWord, "new");
         writer.Node(ArgumentList);
         writer.Node(Initializer);
     }
@@ -3057,7 +3057,7 @@ sealed class IndexerDeclaration : SyntaxNode, IBasePropertyDeclaration
         writer.Tokens(Modifiers, TokenRole.Word);
         writer.Type(Type);
         writer.Node(ExplicitInterfaceSpecifier);
-        writer.Token(TokenRole.Word, "this");
+        writer.Token(TokenRole.BareName, "this");
         writer.Node(ParameterList);
         writer.Node(AccessorList);
         writer.Node(ExpressionBody);
@@ -3078,7 +3078,7 @@ sealed class IndexerMemberCref : SyntaxNode, IMemberCref
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Word, "this");
+        writer.Token(TokenRole.BareName, "this");
         writer.Node(Parameters);
     }
 }
@@ -3166,9 +3166,9 @@ sealed class InterpolatedStringExpression : SyntaxNode, IExpression
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Operator, StringStartToken);
+        writer.Token(TokenRole.Tight, StringStartToken);
         writer.List(Contents, ListStyle.None);
-        writer.Token(TokenRole.Operator, StringEndToken);
+        writer.Token(TokenRole.Tight, StringEndToken);
     }
 }
 
@@ -3190,7 +3190,7 @@ sealed class InterpolatedStringText : SyntaxNode, IInterpolatedStringContent
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Operator, TextToken);
+        writer.Token(TokenRole.Tight, TextToken);
     }
 }
 
@@ -3212,7 +3212,7 @@ sealed class InterpolationAlignmentClause : SyntaxNode, ISyntax
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Comma, ",");
+        writer.Token(TokenRole.Tight, ",");
         writer.Node(Value);
     }
 }
@@ -3235,8 +3235,8 @@ sealed class InterpolationFormatClause : SyntaxNode, ISyntax
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.ColonTight, ":");
-        writer.Token(TokenRole.Operator, FormatStringToken);
+        writer.Token(TokenRole.Tight, ":");
+        writer.Token(TokenRole.Tight, FormatStringToken);
     }
 }
 
@@ -3260,11 +3260,11 @@ sealed class Interpolation : SyntaxNode, IInterpolatedStringContent
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.OpenBraceInline, "{");
+        writer.Token(TokenRole.Tight, "{");
         writer.Node(Expression);
         writer.Node(AlignmentClause);
         writer.Node(FormatClause);
-        writer.Token(TokenRole.CloseBraceInline, "}");
+        writer.Token(TokenRole.Tight, "}");
     }
 }
 
@@ -3993,7 +3993,7 @@ sealed class ObjectCreationExpression : SyntaxNode, IBaseObjectCreationExpressio
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Word, "new");
+        writer.Token(TokenRole.FnWord, "new");
         writer.Type(Type);
         writer.Node(ArgumentList);
         writer.Node(Initializer);
@@ -4061,7 +4061,7 @@ sealed class OperatorDeclaration : SyntaxNode, IBaseMethodDeclaration
         writer.Node(ExplicitInterfaceSpecifier);
         writer.Token(TokenRole.Word, "operator");
         if (CheckedKeyword) { writer.Token(TokenRole.FnWord, "checked"); }
-        writer.Token(TokenRole.Operator, OperatorToken);
+        writer.Token(TokenRole.BareName, OperatorToken);
         writer.Node(ParameterList);
         writer.Node(Body);
         writer.Node(ExpressionBody);
@@ -4427,7 +4427,7 @@ sealed class PredefinedType : SyntaxNode, IType
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.TypeWord, Keyword);
+        writer.Token(TokenRole.BareName, Keyword);
     }
 }
 
@@ -4683,7 +4683,7 @@ sealed class RangeExpression : SyntaxNode, IExpression
         var writer = SyntaxWriter.For(outputContext);
 
         writer.Node(LeftOperand);
-        writer.Token(TokenRole.Operator, "..");
+        writer.Token(TokenRole.RangeDots, "..");
         writer.Node(RightOperand);
     }
 }
@@ -4842,8 +4842,8 @@ sealed class RefType : SyntaxNode, IType
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.TypeWord, "ref");
-        if (ReadOnlyKeyword) { writer.Token(TokenRole.TypeWord, "readonly"); }
+        writer.Token(TokenRole.BareName, "ref");
+        if (ReadOnlyKeyword) { writer.Token(TokenRole.BareName, "readonly"); }
         writer.Type(Type);
     }
 }
@@ -4940,7 +4940,7 @@ sealed class RelationalPattern : SyntaxNode, IPattern
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.PrefixOperator, OperatorToken);
+        writer.Token(TokenRole.Operator, OperatorToken);
         writer.Node(Expression);
     }
 }
@@ -4984,7 +4984,7 @@ sealed class ScopedType : SyntaxNode, IType
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.TypeWord, "scoped");
+        writer.Token(TokenRole.BareName, "scoped");
         writer.Type(Type);
     }
 }
@@ -5160,7 +5160,7 @@ sealed class SlicePattern : SyntaxNode, IPattern
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Operator, "..");
+        writer.Token(TokenRole.RangeDots, "..");
         writer.Node(Pattern);
     }
 }
@@ -5183,7 +5183,7 @@ sealed class SpreadElement : SyntaxNode, ICollectionElement
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Operator, "..");
+        writer.Token(TokenRole.RangeDots, "..");
         writer.Node(Expression);
     }
 }
@@ -5399,7 +5399,7 @@ sealed class ThisExpression : SyntaxNode, IInstanceExpression
     {
         var writer = SyntaxWriter.For(outputContext);
 
-        writer.Token(TokenRole.Word, "this");
+        writer.Token(TokenRole.BareName, "this");
     }
 }
 

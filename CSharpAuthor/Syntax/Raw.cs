@@ -1,5 +1,6 @@
 #nullable enable
 
+using System;
 using System.Globalization;
 using System.Text;
 
@@ -48,6 +49,11 @@ sealed class Raw : SyntaxNode, IExpression, IStatement, IPattern, IMemberDeclara
                     break;
                 case IOutputComponent component:
                     component.WriteOutput(outputContext);
+                    break;
+                case IFormattable formattable:
+                    // `new Raw(1.5)` must not emit `1,5` because the machine is de-DE.
+                    // Every numeric type reaches output through this branch.
+                    writer.Token(TokenRole.Raw, formattable.ToString(null, CultureInfo.InvariantCulture));
                     break;
                 default:
                     writer.Token(TokenRole.Raw, part.ToString());

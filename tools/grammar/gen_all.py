@@ -154,6 +154,10 @@ def category(name):
     style, attribute-list placement and the type-node token rule.
     """
     c = chain(name)
+    # Checked first: an interpolated string is an expression, but nothing inside one
+    # takes a space - `$"count is {count:N2}"` - so the family wins over the chain.
+    if name.startswith('Interpolat') or 'InterpolatedStringContentSyntax' in c:
+        return 'interpolated'
     if 'StatementSyntax' in c:
         return 'statement'
     if 'MemberDeclarationSyntax' in c:
@@ -227,6 +231,9 @@ ZERO_WIDTH = {
 FN_WORDS = {
     'typeof', 'nameof', 'sizeof', 'default', 'checked', 'unchecked', 'stackalloc',
     '__makeref', '__reftype', '__refvalue', '__arglist',
+    # `new` belongs here for `new()` and `new[] { 1 }`; it still separates from a type
+    # name, because that is the word rule rather than the parenthesis rule.
+    'new',
 }
 
 PREFIX_ONLY_KINDS = {
@@ -247,7 +254,12 @@ PUNCT_ROLE = {
     'MinusGreaterThanToken': 'Dot',
     'QuestionToken': 'QuestionTight',
     'HashToken': 'Directive',
+    'DotDotToken': 'RangeDots',
 }
+
+# Keywords that stand where an identifier would, so they bind to `(` and `[` the same
+# way: the receiver of `this[0]`, the name of an indexer, the target of `base(...)`.
+NAME_LIKE_KEYWORD_KINDS = {'ThisKeyword', 'BaseKeyword'}
 
 
 def token_role(node_name, field, index, flat, node_category, blocks):
@@ -259,6 +271,18 @@ def token_role(node_name, field, index, flat, node_category, blocks):
     ks = kinds_of(field)
     count = len(flat)
     text = TOKENS.get(ks[0]) if len(ks) == 1 else None
+
+    # Everything inside an interpolated string abuts its neighbour, braces included.
+    if node_category == 'interpolated':
+        return 'Tight'
+
+    # `this` and `base` name a member or a receiver, so they bind to `(` and `[`.
+    if len(ks) == 1 and ks[0] in NAME_LIKE_KEYWORD_KINDS:
+        return 'BareName'
+
+    # The `+` of `operator +(...)` names the member being declared.
+    if name == 'OperatorToken' and node_category == 'member':
+        return 'BareName'
 
     # R8: a semicolon that ends a node terminates a line.
     #
@@ -324,7 +348,7 @@ def token_role(node_name, field, index, flat, node_category, blocks):
                 return 'FnWord'
             # R5-adjacent: a keyword inside a type node names a type, so `int[]`
             # and `int?` bind tight the way an identifier does.
-            return 'TypeWord' if node_category == 'type' else 'Word'
+            return 'BareName' if node_category == 'type' else 'Word'
         if ks[0] in PREFIX_ONLY_KINDS and name in ('OperatorToken', 'RefKindKeyword'):
             return 'PrefixOperator'
         return 'Operator'
@@ -339,8 +363,10 @@ def token_role(node_name, field, index, flat, node_category, blocks):
         # Where the operator sits relative to its operand is the whole difference
         # between `!x`, `x++` and `a + b`, and the grammar states it: first field,
         # last field, or between two operands.
+        # A relational pattern also leads with its operator - `is >= 0` - but there it
+        # separates from the operand rather than binding to it.
         if index == 0:
-            return 'PrefixOperator'
+            return 'PrefixOperator' if node_category == 'expression' else 'Operator'
         if index == count - 1:
             return 'PostfixOperator'
         return 'Operator'
@@ -349,7 +375,7 @@ def token_role(node_name, field, index, flat, node_category, blocks):
     if all(TOKENS.get(k, '?')[:1].isalpha() for k in ks if k in TOKENS) and any(k in TOKENS for k in ks):
         # A keyword slot inside a type node names a type - `int`, `string`, `void` -
         # so it binds to `[` and `?` the way an identifier does.
-        return 'TypeWord' if node_category == 'type' else 'Word'
+        return 'BareName' if node_category == 'type' else 'Word'
     return 'Operator'
 
 

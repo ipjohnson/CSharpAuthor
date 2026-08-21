@@ -30,11 +30,24 @@ enum TokenRole
     Name,
 
     /// <summary>
-    /// A keyword that names a type: <c>int</c>, <c>string</c>, <c>void</c>, <c>ref</c>.
-    /// Binds to <c>[</c> and <c>?</c> the way an identifier does - <c>int[]</c>, <c>int?</c> -
-    /// but is never escaped, because it is a keyword and means to be one.
+    /// A token that binds like an identifier but is not one, so it is never escaped:
+    /// a type keyword (<c>int[]</c>, <c>int?</c>), the <c>+</c> of an
+    /// <c>operator +(...)</c> declaration, the <c>this</c> of an indexer or of
+    /// <c>this[0]</c>.
     /// </summary>
-    TypeWord,
+    BareName,
+
+    /// <summary>
+    /// Inside an interpolated string, where every token abuts the next:
+    /// <c>$"count is {count:N2}"</c>. Takes no space before and grants none after.
+    /// </summary>
+    Tight,
+
+    /// <summary>
+    /// The <c>..</c> of a range or a spread. Binds to an operand on either side -
+    /// <c>1..5</c>, <c>[1, ..rest]</c> - but still separates from a comma.
+    /// </summary>
+    RangeDots,
 
     /// <summary>A literal: already-quoted string, number, char.</summary>
     Literal,

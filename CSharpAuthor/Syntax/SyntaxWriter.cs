@@ -417,6 +417,7 @@ sealed class SyntaxWriter
             case TokenRole.QuestionTight:
             case TokenRole.PostfixOperator:
             case TokenRole.OpenAngle:
+            case TokenRole.Tight:
                 return false;
         }
 
@@ -432,6 +433,9 @@ sealed class SyntaxWriter
             case TokenRole.OpenAngle:
             case TokenRole.Dot:
             case TokenRole.PrefixOperator:
+            case TokenRole.Tight:
+            case TokenRole.RangeDots:
+            case TokenRole.Directive:
                 return false;
         }
 
@@ -443,6 +447,7 @@ sealed class SyntaxWriter
             switch (previous)
             {
                 case TokenRole.Name:
+                case TokenRole.BareName:
                 case TokenRole.Literal:
                 case TokenRole.FnWord:
                 case TokenRole.CloseParen:
@@ -461,12 +466,31 @@ sealed class SyntaxWriter
             switch (previous)
             {
                 case TokenRole.Name:
-                case TokenRole.TypeWord:
+                case TokenRole.BareName:
+                case TokenRole.FnWord:
                 case TokenRole.Literal:
                 case TokenRole.CloseParen:
                 case TokenRole.CloseBracket:
                 case TokenRole.CloseAngle:
                 case TokenRole.QuestionTight:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
+        // R2c: `..` binds to whatever it ranges over - `1..5` - but a comma still holds
+        // it off, so a spread reads as `[1, ..rest]`.
+        if (next == TokenRole.RangeDots)
+        {
+            switch (previous)
+            {
+                case TokenRole.Name:
+                case TokenRole.BareName:
+                case TokenRole.Literal:
+                case TokenRole.CloseParen:
+                case TokenRole.CloseBracket:
+                case TokenRole.CloseAngle:
                     return false;
                 default:
                     return true;
@@ -505,21 +529,20 @@ sealed class SyntaxWriter
             case TokenRole.Word:
             case TokenRole.FnWord:
             case TokenRole.Name:
-            case TokenRole.TypeWord:
+            case TokenRole.BareName:
             case TokenRole.Literal:
                 switch (previous)
                 {
                     case TokenRole.Word:
                     case TokenRole.FnWord:
                     case TokenRole.Name:
-                    case TokenRole.TypeWord:
+                    case TokenRole.BareName:
                     case TokenRole.Literal:
                     case TokenRole.CloseParen:
                     case TokenRole.CloseBracket:
                     case TokenRole.CloseBracketAttr:
                     case TokenRole.CloseAngle:
                     case TokenRole.QuestionTight:
-                    case TokenRole.Directive:
                         return true;
                 }
 
