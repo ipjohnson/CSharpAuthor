@@ -1,4 +1,4 @@
-namespace CSharpAuthor.Profiles;
+﻿namespace CSharpAuthor.Profiles;
 
 /// <summary>
 /// A C# feature a node can ask an <see cref="EmitProfile"/> about.
@@ -76,6 +76,12 @@ enum LanguageFeature
     RequiredMembers,
 
     // ---- impossible: no downlevel exists, so emitting anything would be wrong -----------------
+
+    /// <summary>
+    /// <c>file</c> accessibility. No downlevel: <c>internal</c> is the nearest keyword and it
+    /// widens the type to the whole assembly.
+    /// </summary>
+    FileLocalTypes,
 
     /// <summary><c>ref struct</c>. No downlevel: stack-only-ness cannot be expressed otherwise.</summary>
     RefStructs,
@@ -260,6 +266,12 @@ static class LanguageFeatures
             "emitted as an ordinary member, initialisation is no longer enforced"),
 
         // --- impossible ------------------------------------------------------------------------
+        // Impossible rather than lossy: the nearest downlevel is `internal`, which publishes the
+        // type to the whole assembly. That is the same silent widening as emitting `protected` for
+        // `private protected`, and the reason two generators can each emit a `file class Helper`
+        // without colliding is exactly what would stop being true.
+        Row(LanguageFeature.FileLocalTypes, LanguageVersion.CSharp11, FeatureCategory.Impossible,
+            DownlevelSupport.None, "file-local type"),
         Row(LanguageFeature.RefStructs, LanguageVersion.CSharp7_2, FeatureCategory.Impossible,
             DownlevelSupport.None, "ref struct"),
         Row(LanguageFeature.StaticAbstractInterfaceMembers, LanguageVersion.CSharp11, FeatureCategory.Impossible,
