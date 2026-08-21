@@ -38,5 +38,13 @@ public class NewArrayStatement : BaseOutputComponent
             _components.OutputCommaSeparatedList(outputContext);
             outputContext.Write(" }");
         }
+        else if (!_length.HasValue)
+        {
+            // `new int[]` is CS1586 - an array creation needs a size or an initializer, and this
+            // form has neither. An empty initializer is the one that says "no elements", which is
+            // what a caller who handed over an empty collection asked for. The sized form is
+            // untouched: `new int[0]` was always well formed.
+            outputContext.Write(" { }");
+        }
     }
 }

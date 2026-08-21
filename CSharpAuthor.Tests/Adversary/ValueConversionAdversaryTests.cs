@@ -35,7 +35,7 @@ public class ValueConversionAdversaryTests
     /// An enum value becomes its bare member name, with no type in front of it and no namespace
     /// recorded — the §1 defect, reachable without writing a string at all.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: CodeOutputComponent.Get(Lifetime.Singleton) emits 'Singleton' - the member name alone, unqualified, with no namespace tracked. CS0103 in the ordinary case, and where a local of that name exists it compiles and means something else. This is the §1 ServiceLifetime defect at its source.")]
+    [Fact]
     public void EnumValue()
     {
         var output = Emit.Component(CodeOutputComponent.Get(Lifetime.Singleton));
@@ -60,7 +60,7 @@ public class ValueConversionAdversaryTests
     /// rank-2 array yields every element in row-major order, and writes them into a
     /// single-dimensional initializer.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: a rank-2 array is flattened into a rank-1 initializer - new int[2,2]{{1,2},{3,4}} emits 'new int[] { 1, 2, 3, 4 }', a different value of a different type (CS0029 when assigned to int[,])")]
+    [Fact]
     public void TwoDimensionalArrayValue()
     {
         var output = Emit.Component(CodeOutputComponent.Get(new[,] { { 1, 2 }, { 3, 4 } }));
@@ -71,7 +71,7 @@ public class ValueConversionAdversaryTests
     /// <summary>
     /// An empty array writes neither a size nor an initializer.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: an empty array emits 'new int[]' - no size, no initializer - which is CS1586")]
+    [Fact]
     public void EmptyArrayValue()
     {
         RoslynAssert.ExpressionCompiles(Emit.Component(CodeOutputComponent.Get(new int[0])));

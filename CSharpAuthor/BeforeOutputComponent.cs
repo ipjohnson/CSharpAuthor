@@ -4,7 +4,7 @@ using System.Text;
 
 namespace CSharpAuthor;
 
-public class PrefixOutputComponent : BaseOutputComponent
+public class PrefixOutputComponent : BaseOutputComponent, IPrecedenceComponent
 {
     private readonly string _prefix;
     private readonly IOutputComponent _awaitableOutputComponent;
@@ -14,6 +14,13 @@ public class PrefixOutputComponent : BaseOutputComponent
         _prefix = prefix;
         _awaitableOutputComponent = awaitableOutputComponent;
     }
+
+    /// <summary>
+    /// Every prefix this carries - <c>await</c>, and the unary operators - binds looser than a
+    /// member access, so composing one onto it needs parentheses: <c>await x.Y</c> awaits
+    /// <c>x.Y</c>, not <c>x</c>.
+    /// </summary>
+    int IPrecedenceComponent.Precedence => Expressions.ExPrecedence.Unary;
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
