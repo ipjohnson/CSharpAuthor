@@ -6,9 +6,13 @@ name: release
 # The tag is the single source of truth for the published version. Requires a NUGET_API_KEY
 # repository secret with push rights for the CSharpAuthor package id on nuget.org.
 #
-# This replaces AppVeyor's publish_nuget, which versioned from a build_version property in
-# appveyor.yml and a build counter - so the published version was a property of the CI service
-# rather than of the commit, and could not be read from the repository at the version it describes.
+# NOT the path releases currently take. CSharpAuthor is published by a deployment configured on the
+# AppVeyor side, which pushes the artifact appveyor.yml declares - that is how 1.2.0 shipped, and it
+# still works. This workflow is a second path that has never run.
+#
+# Two live publish paths is one too many: a tag would push here while an AppVeyor build pushes the
+# same version there. --skip-duplicate makes that harmless rather than correct. Pick one before
+# relying on this, and if it is this one, turn the AppVeyor deployment off.
 
 on:
   push:

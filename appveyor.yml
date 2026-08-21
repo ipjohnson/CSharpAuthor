@@ -34,19 +34,22 @@ install:
 # Installing the SDK above does not help while the build runs through Visual Studio, because the
 # version that matters is MSBuild's. The CLI carries its own, which is the one the SDK shipped with.
 #
-# Publishing moved to .github/workflows/release.yaml, where the version comes from the release tag
-# rather than from build_version plus a build counter - so the published version is a property of
-# the commit and can be read back from the repository at the version it describes. This file builds
-# and tests; it does not publish.
+# This file does not publish, and that does not mean AppVeyor does not: releases go out through a
+# deployment configured on the AppVeyor side, which takes the artifact declared below and pushes it
+# to nuget.org. 1.2.0 shipped that way. publish_nuget is a different mechanism and was off already.
 build_script:
  - cmd: dotnet build CSharpAuthor.sln --configuration Release
 
 test_script:
  - cmd: dotnet test CSharpAuthor.sln --no-build --configuration Release
-# Packed on every build, so there is a package to download and inspect from any commit - which is
-# what publish_nuget gave before releases moved to a tag. Publishing is what moved; producing the
-# package did not, and a CI that builds a library without ever packing it never exercises the one
-# output anyone consumes.
+# Packed on every build, and the artifact below is what the AppVeyor deployment publishes - so this
+# step and that declaration are the release path, not merely a convenience for downloading a package
+# from a branch.
+#
+# Worth stating plainly, because the old build: block packed as a side effect of publish_nuget and
+# nothing here said the artifact was load-bearing. Moving to dotnet build dropped the pack, and
+# removing the artifacts declaration as dead weight would take the deployment's input away without
+# failing any build - it would publish nothing, quietly.
 after_test:
  - cmd: dotnet pack CSharpAuthor/CSharpAuthor.csproj --no-build --configuration Release --output artifacts
 
