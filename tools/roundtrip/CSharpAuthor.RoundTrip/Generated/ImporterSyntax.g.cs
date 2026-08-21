@@ -1754,7 +1754,6 @@ public sealed partial class SyntaxImporter : ImporterBase
         var __r = new G.RecordDeclaration();
         foreach (var __e in __n.AttributeLists) { var __v = As<G.AttributeList>(Import(__e), __e, "RecordDeclarationSyntax.AttributeLists"); if (__v != null) __r.AttributeLists.Add(__v); }
         foreach (var __t in __n.Modifiers) __r.Modifiers.Add(__t.Text);
-        __r.Keyword = __n.Keyword.Text;
         __r.ClassOrStructKeyword = __n.ClassOrStructKeyword.Text;
         __r.Identifier = __n.Identifier.Text;
         __r.TypeParameterList = As<G.TypeParameterList>(Import(__n.TypeParameterList), __n.TypeParameterList, "RecordDeclarationSyntax.TypeParameterList");

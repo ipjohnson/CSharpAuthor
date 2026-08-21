@@ -125,6 +125,12 @@ def kinds_of(field):
     """
     kinds = [k.get('Name') for k in field.findall('Kind')]
 
+    # RecordDeclarationSyntax.Keyword declares <ContextualKind>, not <Kind> - it is the
+    # only field in the grammar that does. Without this it resolves to no kind at all and
+    # falls through to a raw value token, which emits `publicrecordFoo(...)` with no spaces.
+    if not kinds:
+        kinds = [k.get('Name') for k in field.findall('ContextualKind')]
+
     if not kinds and field.get('Name') in TOKENS:
         return [field.get('Name')]
 

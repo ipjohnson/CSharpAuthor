@@ -4696,7 +4696,6 @@ sealed class RecordDeclaration : SyntaxNode, ITypeDeclaration
 {
     public List<AttributeList> AttributeLists { get; } = new();  // LineEach
     public List<string> Modifiers { get; } = new();
-    public string Keyword { get; set; } = "";
     public string ClassOrStructKeyword { get; set; } = "";
     public string Identifier { get; set; } = "";
     public TypeParameterList? TypeParameterList { get; set; }
@@ -4707,9 +4706,8 @@ sealed class RecordDeclaration : SyntaxNode, ITypeDeclaration
     public List<IMemberDeclaration> Members { get; } = new();  // Blank
     public bool CloseBraceToken { get; set; } = true;
     public bool SemicolonToken { get; set; }
-    public RecordDeclaration(string keyword, string identifier)
+    public RecordDeclaration(string identifier)
     {
-        Keyword = keyword;
         Identifier = identifier;
     }
 
@@ -4721,7 +4719,7 @@ sealed class RecordDeclaration : SyntaxNode, ITypeDeclaration
 
         writer.List(AttributeLists, ListStyle.LineEach);
         writer.Tokens(Modifiers, TokenRole.Word);
-        writer.Token(TokenRole.Raw, Keyword);
+        writer.Token(TokenRole.Word, "record");
         writer.Token(TokenRole.Word, ClassOrStructKeyword);
         writer.Token(TokenRole.Name, Identifier);
         writer.Node(TypeParameterList);

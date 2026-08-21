@@ -80,6 +80,10 @@ class Grammar:
 
     def kinds_of(self, field):
         kinds = [k.get('Name') for k in field.findall('Kind')]
+        # Mirrors gen_all.py: RecordDeclarationSyntax.Keyword declares <ContextualKind>
+        # rather than <Kind>, and is the only field in the grammar that does.
+        if not kinds:
+            kinds = [k.get('Name') for k in field.findall('ContextualKind')]
         if not kinds and field.get('Name') in self.tokens:
             return [field.get('Name')]
         return kinds
