@@ -12,6 +12,25 @@
 		<PackageLicenseUrl>https://github.com/ipjohnson/CSharpAuthor/blob/main/LICENSE</PackageLicenseUrl>
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/ipjohnson/CSharpAuthor</RepositoryUrl>
+
+		<!--
+			CSharpAuthor.Syntax - the ~250 generated grammar nodes and the writer that
+			spaces them - is public in the assembly and internal everywhere else.
+
+			The types carry `#if CSHARPAUTHOR_PUBLIC_SYNTAX / public / #endif`. Only this
+			project defines the symbol, so a binary reference to CSharpAuthor.dll gets a
+			usable grammar API, while *any* form of source inclusion - the package's own
+			build/CSharpAuthor.targets, or a consumer that simply globs these .cs files -
+			leaves them at C#'s default accessibility for a top-level type, which is
+			internal. (V2-HANDOFF.md 3.)
+
+			The polarity matters. Defining the symbol only in the assembly build means a
+			source-including host that has never heard of it still gets the safe answer;
+			the opposite arrangement would leak 250 types into that host's public API the
+			moment anyone wired the source in by hand, which is exactly how it is wired in
+			practice.
+		-->
+		<DefineConstants>$(DefineConstants);CSHARPAUTHOR_PUBLIC_SYNTAX</DefineConstants>
 	</PropertyGroup>
 
 	<ItemGroup>

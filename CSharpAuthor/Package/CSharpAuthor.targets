@@ -1,4 +1,19 @@
 <Project>
+  <!--
+    Source inclusion. The consumer compiles CSharpAuthor's own .cs files into its assembly,
+    which is why a source generator can use this library without a dependency it would then
+    have to ship.
+
+    The grammar nodes under src/CSharpAuthor/Syntax stay out of the consumer's public API
+    on their own: they carry `#if CSHARPAUTHOR_PUBLIC_SYNTAX / public / #endif`, and only
+    CSharpAuthor.csproj defines that symbol. Compiled here without it, they take C#'s
+    default accessibility for a top-level type, which is internal. Nothing needs to be set
+    below, and nothing may unset it - defining CSHARPAUTHOR_PUBLIC_SYNTAX in a consumer
+    would put roughly 250 node types into that consumer's public API surface.
+
+    The Compile glob is recursive, so CSharpAuthor/Syntax/*.cs is picked up with no change
+    here at all.
+  -->
   <ItemGroup Condition="'$(PackageCSharpAuthorIncludeSource)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)../src/**/*.cs" Visible="false"/>
   </ItemGroup>
