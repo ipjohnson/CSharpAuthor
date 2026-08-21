@@ -31,7 +31,7 @@ Writes tools/roundtrip/CSharpAuthor.RoundTrip/Generated/*.g.cs (in THIS reposito
 never in the repository under test) and prints a machine-readable summary to stderr.
 """
 
-import argparse, json, os, re, sys
+import argparse, importlib.util, json, os, re, sys
 import xml.etree.ElementTree as ET
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -759,6 +759,37 @@ def main():
         'RoundTrip.Rt', with_prelude=True)
     rt_importer = emit_importer(rt_layer, reachable(rt_nodes), 'RtImporter', 'RoundTrip.Rt', {}, depth, readable)
 
+    # ---- the SHIPPING layer, CSharpAuthor.Syntax --------------------------
+    shipping_xml = os.path.join(repo, 'tools', 'grammar', 'Syntax.xml')
+    shipping_tokens = os.path.join(repo, 'tools', 'grammar', 'tokens.json')
+    shipping_nodes = os.path.join(repo, 'CSharpAuthor', 'Syntax', 'Nodes.g.cs')
+    shipping = None
+    shipping_count = 0
+    if os.path.exists(shipping_xml) and os.path.exists(shipping_nodes):
+        spec = importlib.util.spec_from_file_location(
+            'gen_shipping', os.path.join(HERE, 'gen_shipping.py'))
+        gs = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gs)
+        grammar = gs.Grammar(shipping_xml, shipping_tokens)
+
+        def ship_readable(node_name, field_name):
+            if roslyn_members is None:
+                return True
+            return f'{node_name}.{field_name}' in roslyn_members
+
+        ship_depth = {}
+        for n in grammar.concrete:
+            d, cur = 0, grammar.concrete[n].get('Base')
+            while cur:
+                d += 1
+                nxt = grammar.concrete.get(cur) or grammar.abstract.get(cur)
+                cur = nxt.get('Base') if nxt is not None else None
+            ship_depth[n] = d
+        ship_names = [n for n in grammar.concrete
+                      if roslyn_known is None or n in roslyn_known]
+        shipping = gs.emit_importer(grammar, ship_names, ship_readable, ship_depth)
+        shipping_count = len(ship_names)
+
     tk_public = True
     if nodes_cs and os.path.exists(nodes_cs):
         tk_public = 'internal static class Tk' not in open(nodes_cs, errors='replace').read()
@@ -770,6 +801,11 @@ def main():
 
     os.makedirs(OUT_DIR, exist_ok=True)
     write(os.path.join(OUT_DIR, 'ProtoHand.g.cs'), proto_hand)
+    ship_path = os.path.join(OUT_DIR, 'ImporterSyntax.g.cs')
+    if shipping is not None:
+        write(ship_path, shipping)
+    elif os.path.exists(ship_path):
+        os.remove(ship_path)
     write(os.path.join(OUT_DIR, 'TypeModel.g.cs'), type_model)
     write(os.path.join(OUT_DIR, 'NodesSkipped.g.cs'), skipped_src)
     write(os.path.join(OUT_DIR, 'ImporterProto.g.cs'), proto_importer)
@@ -787,6 +823,8 @@ def main():
         'nodesJsonOutOfStepWithSyntaxXml': walk_mismatch_detail,
         'unreachableAtThisRoslynVersion': unreachable,
         'fieldsAbsentAtThisRoslynVersion': sorted(set(absent_fields)),
+        'shippingLayer': shipping is not None,
+        'shippingImporterCases': shipping_count,
         'typeModelMultiRankArrays': multi_rank,
         'rtSpacing': args.rt_spacing,
         'rtDelta': LAYER_RT_DELTA + ([] if args.rt_spacing == 'gen_all' else [
@@ -800,6 +838,7 @@ def main():
     print(f"dropped by nodes.json     : {len(skipped)} -> {', '.join(sorted(n['name'] for n in skipped))}", file=e)
     print(f"proto node namespace      : {proto_ns}  ({nodes_cs})", file=e)
     print(f"type model ArrayRanks     : {multi_rank}", file=e)
+    print(f"shipping importer cases   : {shipping_count if shipping is not None else 'none (CSharpAuthor/Syntax not in this checkout)'}", file=e)
     print(f"proto importer cases      : {len(reachable(proto_all))}", file=e)
     print(f"rt node classes           : {len(rt_nodes)}  (spacing: {args.rt_spacing})", file=e)
     print(f"unreachable (Roslyn)      : {len(unreachable)} -> {', '.join(unreachable) or '-'}", file=e)

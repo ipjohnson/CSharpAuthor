@@ -61,4 +61,14 @@
     <Compile Include="$(ProtoHandFile)" Link="Measured\Hand.cs" Condition="'$(ProtoHandFile)' != ''" />
   </ItemGroup>
 
+  <!--
+    The shipping node layer (CSharpAuthor.Syntax) only exists in a checkout where grammar
+    has landed. Against an older one the generator writes no ImporterSyntax.g.cs, so the
+    hand-written half of that importer must not be compiled either.
+  -->
+  <ItemGroup Condition="!Exists('$(CSharpAuthorRepo)\CSharpAuthor\Syntax\Nodes.g.cs')">
+    <Compile Remove="SyntaxTypeImport.cs" />
+    <Compile Remove="Generated\ImporterSyntax.g.cs" />
+  </ItemGroup>
+
 </Project>

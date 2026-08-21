@@ -22,6 +22,11 @@ public enum TypeImportMode
     /// represent it. Diagnostic only - it isolates emitter/grammar failures from type-model
     /// failures, and the difference between the two runs IS the type model's contribution.</summary>
     Verbatim,
+
+    /// <summary>ITypeDefinition when the type model can hold the shape, a grammar type node
+    /// when it cannot. The shipping layer's TypeRef accepts both on purpose, so this is the
+    /// layer used as designed. Shipping layer only; the prototype has no such slot.</summary>
+    Auto,
 }
 
 /// <summary>One failure, classified. The three buckets are kept apart on purpose: an
@@ -122,7 +127,7 @@ public abstract class ImporterBase
         return null;
     }
 
-    private ITypeDefinition? TryImportType(TypeSyntax type, out string reason)
+    protected ITypeDefinition? TryImportType(TypeSyntax type, out string reason)
     {
         reason = "";
         switch (type)

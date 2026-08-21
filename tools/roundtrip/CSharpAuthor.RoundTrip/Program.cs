@@ -23,7 +23,7 @@ using RoslynLanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace RoundTrip;
 
-internal enum LayerKind { Proto, Rt }
+internal enum LayerKind { Proto, Rt, Syntax }
 
 internal sealed class FileResult
 {
@@ -56,11 +56,20 @@ internal static class Program
                 case "--corpus": corpus = args[++i]; break;
                 case "--layer":
                     foreach (var l in args[++i].Split(','))
-                        layers.Add(l.Trim().Equals("rt", StringComparison.OrdinalIgnoreCase) ? LayerKind.Rt : LayerKind.Proto);
+                        layers.Add(l.Trim().ToLowerInvariant() switch
+                        {
+                            "rt" => LayerKind.Rt,
+                            "proto" => LayerKind.Proto,
+                            _ => LayerKind.Syntax,
+                        });
                     break;
                 case "--types":
-                    typeMode = args[++i].Equals("verbatim", StringComparison.OrdinalIgnoreCase)
-                        ? TypeImportMode.Verbatim : TypeImportMode.Model;
+                    typeMode = args[++i].ToLowerInvariant() switch
+                    {
+                        "verbatim" => TypeImportMode.Verbatim,
+                        "model" => TypeImportMode.Model,
+                        _ => TypeImportMode.Auto,
+                    };
                     break;
                 case "--out": outPath = args[++i]; break;
                 case "--only": only = args[++i]; break;
@@ -79,7 +88,7 @@ internal static class Program
             return 2;
         }
 
-        if (layers.Count == 0) layers.Add(LayerKind.Proto);
+        if (layers.Count == 0) layers.Add(LayerKind.Syntax);
 
         var sets = CorpusSets(repo, consumers, corpus);
         if (sets.Count == 0)
@@ -244,6 +253,19 @@ internal static class Program
             if (layer == LayerKind.Proto)
             {
                 var importer = new ProtoImporter(report, typeMode);
+                var tree = importer.Import(originalRoot);
+                if (report.ImportFailed || tree == null)
+                {
+                    if (tree == null && !report.ImportFailed)
+                        report.Add(Bucket.Import, originalRoot.Kind().ToString(), "importer produced no tree");
+                    result.Failures = report.Failures;
+                    return result;
+                }
+                tree.WriteOutput(context);
+            }
+            else if (layer == LayerKind.Syntax)
+            {
+                var importer = new SyntaxImporter(report, typeMode);
                 var tree = importer.Import(originalRoot);
                 if (report.ImportFailed || tree == null)
                 {

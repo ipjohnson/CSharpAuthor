@@ -51,7 +51,9 @@
     "ContinueStatementSyntax.Name",
     "IgnoredDirectiveTriviaSyntax.Content"
   ],
-  "typeModelMultiRankArrays": false,
+  "shippingLayer": true,
+  "shippingImporterCases": 245,
+  "typeModelMultiRankArrays": true,
   "rtSpacing": "gen_all",
   "rtDelta": [
     "every SyntaxToken field carries its source text and is nullable; an absent optional token is null and is not emitted (proto hard-codes single-kind tokens and emits them unconditionally)",
