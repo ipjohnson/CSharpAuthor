@@ -1,0 +1,31 @@
+=== ShortName ===
+using System.Collections.Generic;
+
+namespace Acme.Reporting
+{
+    public class Report
+    {
+
+        public List<string> Lines { get; set; }
+
+        public string Render()
+        {
+            return string.Join(", ", Lines);
+        }
+    }
+}
+
+=== Global ===
+namespace Acme.Reporting
+{
+    public class Report
+    {
+
+        public global::System.Collections.Generic.List<string> Lines { get; set; }
+
+        public string Render()
+        {
+            return string.Join(", ", Lines);
+        }
+    }
+}

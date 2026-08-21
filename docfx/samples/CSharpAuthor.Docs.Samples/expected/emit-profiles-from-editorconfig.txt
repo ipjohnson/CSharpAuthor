@@ -1,0 +1,10 @@
+profile.IndentWidth=2  profile.Braces=KAndR  profile.FileScopedNamespace=False
+
+namespace Acme.Model
+{
+  public class Pet
+  {
+
+    public string Name { get; set; }
+  }
+}

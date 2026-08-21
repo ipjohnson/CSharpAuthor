@@ -1,0 +1,25 @@
+=== written as a string: does not compile ===
+namespace Acme.Startup
+{
+    public class ServiceRegistration
+    {
+
+        public static void Describe()
+        {
+            var lifetime = ServiceLifetime.Singleton;
+        }
+    }
+}
+
+=== written as a type plus a member ===
+namespace Acme.Startup
+{
+    public class ServiceRegistration
+    {
+
+        public static void Describe()
+        {
+            var lifetime = global::Microsoft.Extensions.DependencyInjection.ServiceLifetime.Singleton;
+        }
+    }
+}
