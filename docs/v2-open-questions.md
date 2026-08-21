@@ -1,0 +1,55 @@
+# V2 open questions
+
+Defaults taken where the handoff was silent, each with the reasoning, for a human to confirm or
+overturn. Every one of these took the option that keeps V1 source-compatible.
+
+<!-- Each build area appends its own section. Keep sections separate so they merge cleanly. -->
+
+## Type model
+
+### `nint`/`nuint` need a language-version gate that only the profile can apply
+
+§7 lists `nint`→`IntPtr` as a missing-keyword defect, so `typeof(IntPtr)` now writes `nint`.
+Unlike `float`, `char` and `sbyte` — C# 1 keywords, safe everywhere — `nint` and `nuint` need
+**C# 9** in the consuming code, and reflection cannot distinguish `nint` from `IntPtr` to let the
+caller choose.
+
+**Taken:** always write the keyword, as §7 asks.
+**For the `profiles` agent:** this is a capability-gated keyword. `EmitProfile.Target < CSharp9`
+should select `IntPtr`/`UIntPtr`. The choice belongs in the writer, not the tree — the type model
+holds one value for the type either way.
+
+### Nullability sits on the array, not on the element
+
+`ITypeDefinition` carries one `IsNullable` flag, and it is written after the array ranks, so
+`Get(typeof(int)).MakeNullable().MakeArray()` writes `int[]?` — a nullable array of `int` — not
+`int?[]`, an array of nullable `int`. The two are different types. `MakeArray().MakeNullable()` also
+writes `int[]?`, which is right, so the flag is not wrong so much as unable to express one of the two
+readings.
+
+**Taken:** V1 behaviour preserved exactly — nullability always applies to the outermost array. Fixing
+it means a nullability marker per array rank plus one for the element, which changes `IsNullable`'s
+meaning for every caller. Not in the §7 defect list, and no consumer writes `int?[]` today.
+
+### Interface additions over base-class-only extension
+
+`ContainingType`, `ArrayRanks` and `MakeArray(int rank)` went on `ITypeDefinition`, which breaks
+outside implementors of the interface (`netstandard2.0` has no default interface members).
+
+**Taken:** put them on the interface. Everything in the library and in both consumers passes types
+around as `ITypeDefinition`, so members reachable only through `BaseTypeDefinition` would be
+unreachable at every call site that matters — the bridge could build a nested type but nothing
+downstream could read it. Verified: neither `DependencyModules` nor `Hardened.Framework` implements
+`ITypeDefinition`; both only construct through `TypeDefinition.Get` and `new GenericTypeDefinition`,
+whose existing signatures are untouched.
+
+### `ToString()` on a type definition is now the C# type name
+
+It was `$"{Namespace}.{Name}"`, which hashed `int` and `int[]` — and `Ns.Outer.Inner` and
+`Ns.Other.Inner` — to the same value, because `GetHashCode` is `ToString().GetHashCode()`. It now
+renders the fully-qualified C# name including containers, generic arguments, array ranks and
+nullability.
+
+**Taken:** make it the full name. Nothing in the library or either consumer parses `ToString()`; the
+old value was ambiguous by construction, and a hash that collides across distinct types is what
+`Dictionary<ITypeDefinition, …>` in `ConventionMatcher` is keyed on.

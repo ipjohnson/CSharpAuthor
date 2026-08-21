@@ -250,6 +250,16 @@ public class TypeDefinition : BaseTypeDefinition
         return new TypeDefinition(typeDefinition, type.Namespace!, type.Name, type.IsArray);
     }
 
+    /// <summary>
+    /// The C# keyword for every predefined type, so a type reaches output as the compiler spells it
+    /// rather than as reflection names it.
+    /// </summary>
+    /// <remarks>
+    /// A keyword carries no namespace, so writing one imports nothing and it reads the same in every
+    /// <see cref="TypeOutputMode"/>. <c>nint</c> and <c>nuint</c> are the same runtime types as
+    /// <see cref="IntPtr"/> and <see cref="UIntPtr"/> and cannot be told apart by reflection; they are
+    /// written as the keywords, which requires C# 9 in the consuming code.
+    /// </remarks>
     private static readonly Dictionary<Type, ITypeDefinition> _knownTypes = new()
     {
         { typeof(object), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "object", false) },
@@ -261,9 +271,14 @@ public class TypeDefinition : BaseTypeDefinition
         { typeof(short), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "short", false) },
         { typeof(ushort), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "ushort", false) },
         { typeof(byte), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "byte", false) },
+        { typeof(sbyte), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "sbyte", false) },
+        { typeof(char), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "char", false) },
+        { typeof(float), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "float", false) },
         { typeof(double), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "double", false) },
         { typeof(decimal), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "decimal", false) },
         { typeof(bool), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "bool", false) },
+        { typeof(IntPtr), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "nint", false) },
+        { typeof(UIntPtr), new TypeDefinition(TypeDefinitionEnum.ClassDefinition, "", "nuint", false) },
     };
     private static readonly Dictionary<Type, ITypeDefinition> _knownArrayTypes = new()
     {
