@@ -157,6 +157,18 @@ public class OutputContext : IOutputContext
     private int _chunkCount;
     private int _segmentCount;
 
+    // A running tally of how long the file will be, kept apart from the things whose width is only
+    // decided at serialization - line breaks, indents and braces are counted, not measured, because
+    // the newline string and the indent width can still change. It buys the output builder one
+    // allocation of the right size instead of the ten doublings a default StringBuilder does.
+    private int _textChars;
+    private int _typeNameChars;
+    private int _typeQualifierChars;
+    private int _typeRefCount;
+    private int _lineCount;
+    private int _indentUnits;
+    private int _braceCount;
+
     /// <summary>Namespaces asked for by name. User intent, not derived from anything written.</summary>
     private readonly HashSet<string> _explicitNamespaces = new HashSet<string>();
 
@@ -337,6 +349,39 @@ public class OutputContext : IOutputContext
 
     private void Add(Segment segment)
     {
+        switch (segment.Kind)
+        {
+            case SegmentKind.Text:
+                _textChars += segment.Text!.Length;
+                break;
+
+            case SegmentKind.NewLine:
+                _lineCount++;
+                break;
+
+            case SegmentKind.Indent:
+                _indentUnits += segment.Depth;
+                break;
+
+            case SegmentKind.ScopeOpen:
+            case SegmentKind.ScopeClose:
+                _indentUnits += segment.Depth;
+                _braceCount++;
+                _lineCount++;
+                break;
+
+            case SegmentKind.TypeReference:
+                // What the name will be is not known yet - that is the point of the whole design -
+                // so the parts it could be built from are counted separately and the output mode
+                // decides which of them to believe.
+                var type = segment.Type!;
+
+                _typeRefCount++;
+                _typeNameChars += NameAllowance(type);
+                _typeQualifierChars += type.Namespace.Length + 1;
+                break;
+        }
+
         var chunk = _chunk;
         var index = _chunkCount;
 
@@ -349,6 +394,28 @@ public class OutputContext : IOutputContext
         chunk[index] = segment;
         _chunkCount = index + 1;
         _segmentCount++;
+    }
+
+    /// <summary>
+    /// Room for a type's own name, its arguments included, without its namespace.
+    /// </summary>
+    private static int NameAllowance(ITypeDefinition type)
+    {
+        // 4 covers the angle brackets, a `?` and a `[]`; the arguments are counted because they are
+        // written inside this reference rather than recorded as ones of their own.
+        var allowance = type.Name.Length + 4;
+
+        var typeArguments = type.TypeArguments;
+
+        if (typeArguments != null)
+        {
+            for (var i = 0; i < typeArguments.Count; i++)
+            {
+                allowance += NameAllowance(typeArguments[i]) + 1;
+            }
+        }
+
+        return allowance;
     }
 
     private Segment[] GrowChunk()
@@ -553,7 +620,7 @@ public class OutputContext : IOutputContext
     {
         var namePlan = BuildNamePlan();
 
-        var builder = new StringBuilder();
+        var builder = new StringBuilder(EstimateOutputLength(namePlan));
 
         if (_generateUsings)
         {
@@ -563,6 +630,46 @@ public class OutputContext : IOutputContext
         Serialize(builder, namePlan);
 
         return builder.ToString();
+    }
+
+    /// <summary>
+    /// Roughly how long the file will be, so the output builder is allocated once at the right size.
+    /// </summary>
+    /// <remarks>
+    /// A StringBuilder given no capacity starts at 16 characters and reaches a few thousand by
+    /// allocating a chunk per doubling, and the chunk it allocates is as long as everything written
+    /// so far - so it ends up holding about twice the file in memory it will never use. On this
+    /// library's own benchmark payload that was 16 KB of chunks for an 8.7 KB file. Nothing here has
+    /// to be exact: an estimate that is short only costs the growth it would have cost anyway.
+    /// </remarks>
+    private int EstimateOutputLength(NamePlan namePlan)
+    {
+        var estimate = _textChars + _typeNameChars
+            + _lineCount * Options.NewLine.Length
+            + _indentUnits * Options.IndentCharCount
+            + _braceCount;
+
+        // A short name carries no namespace; the other two modes write one in front of every
+        // reference, and Global writes `global::` as well.
+        if (Options.TypeOutputMode != TypeOutputMode.ShortName)
+        {
+            estimate += _typeQualifierChars;
+        }
+
+        if (Options.TypeOutputMode == TypeOutputMode.Global)
+        {
+            estimate += _typeRefCount * 8;
+        }
+
+        if (_generateUsings)
+        {
+            estimate += namePlan.UsingsLength(Options.NewLine.Length);
+        }
+
+        // A sixteenth of headroom. An estimate that is short costs a growth, and a growth allocates
+        // as much again as everything written so far, so it is worth a little slack - but only a
+        // little, because slack is memory the file never uses.
+        return estimate + (estimate >> 4) + 16;
     }
 
     private void WriteUsings(StringBuilder builder, NamePlan namePlan)
@@ -716,6 +823,25 @@ public class OutputContext : IOutputContext
 
         /// <summary>Whether any type is written as something other than what it writes itself as.</summary>
         public bool HasRenames => AliasFor.Count > 0 || Qualified.Count > 0;
+
+        /// <summary>How many characters the directives at the top of the file will take.</summary>
+        public int UsingsLength(int newLineLength)
+        {
+            // "using " and ";" around a namespace; " = " as well around an alias.
+            var length = 0;
+
+            foreach (var ns in Namespaces)
+            {
+                length += 7 + ns.Length + newLineLength;
+            }
+
+            foreach (var alias in Aliases)
+            {
+                length += 10 + alias.Key.Length + alias.Value.Length + newLineLength;
+            }
+
+            return length == 0 ? 0 : length + newLineLength;
+        }
     }
 
     /// <summary>One short name several types want, and the namespaces wanting it.</summary>
@@ -736,9 +862,7 @@ public class OutputContext : IOutputContext
 
         if (Options.TypeOutputMode == TypeOutputMode.ShortName)
         {
-            var written = CollectWrittenTypes();
-
-            CollectDerivedNamespaces(namePlan);
+            var written = CollectWrittenTypes(namePlan);
 
             var groups = GroupByShortName(written);
 
@@ -781,8 +905,18 @@ public class OutputContext : IOutputContext
         return namePlan;
     }
 
-    /// <summary>Every type written, plus every type reached as an argument of one, in write order.</summary>
-    private List<ITypeDefinition> CollectWrittenTypes()
+    /// <summary>
+    /// Every type written, plus every type reached as an argument of one, in write order - and, in
+    /// the same pass, the namespaces they bring with them.
+    /// </summary>
+    /// <remarks>
+    /// The namespaces are taken from the deduplicated list rather than from every reference.
+    /// <c>KnownNamespaces</c> is an iterator on every implementation of it, so asking a type that has
+    /// already answered allocates a state machine for an answer that is already held - and a file
+    /// writes the same handful of types over and over. Nothing declares these namespaces, so nothing
+    /// can forget to.
+    /// </remarks>
+    private List<ITypeDefinition> CollectWrittenTypes(NamePlan namePlan)
     {
         var written = new List<ITypeDefinition>();
         var seen = new HashSet<ITypeDefinition>();
@@ -798,6 +932,22 @@ public class OutputContext : IOutputContext
                     CollectType(chunk[i].Type!, written, seen);
                 }
             }
+        }
+
+        for (var i = 0; i < written.Count; i++)
+        {
+            foreach (var knownNamespace in written[i].KnownNamespaces)
+            {
+                if (!string.IsNullOrEmpty(knownNamespace))
+                {
+                    namePlan.Namespaces.Add(knownNamespace);
+                }
+            }
+        }
+
+        foreach (var ns in _typeNamespaces)
+        {
+            namePlan.Namespaces.Add(ns);
         }
 
         return written;
@@ -822,39 +972,6 @@ public class OutputContext : IOutputContext
         for (var i = 0; i < typeArguments.Count; i++)
         {
             CollectType(typeArguments[i], written, seen);
-        }
-    }
-
-    /// <summary>
-    /// The namespaces the file needs, taken from the types it actually wrote. Nothing declares
-    /// them, so nothing can forget to.
-    /// </summary>
-    private void CollectDerivedNamespaces(NamePlan namePlan)
-    {
-        for (var chunkIndex = 0; chunkIndex < ChunkCount; chunkIndex++)
-        {
-            var chunk = ChunkAt(chunkIndex, out var used);
-
-            for (var i = 0; i < used; i++)
-            {
-                if (chunk[i].Kind != SegmentKind.TypeReference)
-                {
-                    continue;
-                }
-
-                foreach (var knownNamespace in chunk[i].Type!.KnownNamespaces)
-                {
-                    if (!string.IsNullOrEmpty(knownNamespace))
-                    {
-                        namePlan.Namespaces.Add(knownNamespace);
-                    }
-                }
-            }
-        }
-
-        foreach (var ns in _typeNamespaces)
-        {
-            namePlan.Namespaces.Add(ns);
         }
     }
 
