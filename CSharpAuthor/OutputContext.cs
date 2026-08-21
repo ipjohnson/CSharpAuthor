@@ -132,6 +132,18 @@ public class OutputContext : IOutputContext
     private int _indentIndex;
     private bool _generateUsings;
 
+    /// <summary>
+    /// How many segments belong above the generated <c>using</c> directives.
+    /// </summary>
+    /// <remarks>
+    /// The usings are worked out after the whole file has been written, so they are prepended - and
+    /// anything the file wrote before its namespace was pushed below them. That is wrong for exactly
+    /// one thing and it matters: <c>// &lt;auto-generated/&gt;</c> has to be line one, because
+    /// analyzers, StyleCop and the IDE all read line one to decide whether to skip the file. This
+    /// records where the header ended so the directives go after it rather than before it.
+    /// </remarks>
+    private int _headerSegmentCount;
+
     public OutputContextOptions Options { get; }
 
     public OutputContext(OutputContextOptions? options = null)
@@ -315,6 +327,21 @@ public class OutputContext : IOutputContext
     }
 
     /// <summary>
+    /// Everything written so far is the file's header, and the generated <c>using</c> directives
+    /// belong after it.
+    /// </summary>
+    /// <remarks>
+    /// Called by <see cref="CSharpFileDefinition"/> once its leading traits and its comment have
+    /// been written and before its namespace is opened. Without it a
+    /// <c>// &lt;auto-generated/&gt;</c> marker attached to the file ends up on the line after the
+    /// last <c>using</c>, where nothing reads it.
+    /// </remarks>
+    public void MarkEndOfFileHeader()
+    {
+        _headerSegmentCount = _segments.Count;
+    }
+
+    /// <summary>
     /// Says that the file declares this namespace, so a <c>using</c> for it is redundant.
     /// </summary>
     /// <remarks>
@@ -404,12 +431,18 @@ public class OutputContext : IOutputContext
 
         var builder = new StringBuilder();
 
+        var headerEnd = _headerSegmentCount > _segments.Count ? _segments.Count : _headerSegmentCount;
+
+        // The header - a leading trait, a file comment - is written before the directives it must
+        // stay above, and everything else after them.
+        Serialize(builder, namePlan, 0, headerEnd);
+
         if (_generateUsings)
         {
             WriteUsings(builder, namePlan);
         }
 
-        Serialize(builder, namePlan);
+        Serialize(builder, namePlan, headerEnd, _segments.Count);
 
         return builder.ToString();
     }
@@ -444,14 +477,14 @@ public class OutputContext : IOutputContext
         }
     }
 
-    private void Serialize(StringBuilder builder, NamePlan namePlan)
+    private void Serialize(StringBuilder builder, NamePlan namePlan, int start, int end)
     {
         var indentChar = Options.IndentChar;
         var indentWidth = Options.IndentCharCount;
         var newLine = Options.NewLine;
         var kAndR = Options.BraceStyle == BraceStyle.KAndR;
 
-        for (var i = 0; i < _segments.Count; i++)
+        for (var i = start; i < end; i++)
         {
             var segment = _segments[i];
 

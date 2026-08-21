@@ -22,6 +22,9 @@ internal readonly struct BaseTypeReference
 
     public ITypeDefinition Type { get; }
 
+    /// <summary>How many arguments this entry carries, so a repeat call can be told from a fuller one.</summary>
+    public int ArgumentCount => _arguments?.Count ?? 0;
+
     public void WriteOutput(IOutputContext outputContext)
     {
         outputContext.Write(Type);

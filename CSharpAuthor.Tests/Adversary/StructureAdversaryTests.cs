@@ -79,7 +79,7 @@ public class StructureAdversaryTests
     /// <c>new string(char, count)</c> - an exception naming a count, from a stack that says nothing
     /// about which component was unbalanced.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: CloseScope past zero throws ArgumentOutOfRangeException from new string(char, -4), rather than reporting an unbalanced scope")]
+    [Fact]
     public void ClosingAnUnopenedScope()
     {
         var context = new OutputContext();

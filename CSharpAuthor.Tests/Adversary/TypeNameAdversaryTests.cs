@@ -69,7 +69,7 @@ namespace Probe
     /// An array of a constructed generic. The arity marker from the CLR name is written straight
     /// into the source, and the rank is written twice.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: TypeDefinition.Get(typeof(List<int>[])) emits List`1[][] - the CLR arity backtick reaches the source and the [] from Type.Name is written again by IsArray")]
+    [Fact]
     public void ArrayOfConstructedGeneric()
     {
         var type = TypeDefinition.Get(typeof(List<int>[]));
@@ -83,7 +83,7 @@ namespace Probe
     /// A generic type nested in a generic type. The outer type's arguments are merged into the
     /// inner's list, producing the name of a type that may well exist and is not this one.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: typeof(OuterG<int>.InnerG<string>) emits InnerG<int,string> - the container is dropped AND its type arguments are merged into the nested type's list, naming a different type of a different arity")]
+    [Fact]
     public void GenericNestedInGeneric()
     {
         var type = TypeDefinition.Get(typeof(OuterG<int>.InnerG<string>));
@@ -94,7 +94,7 @@ namespace Probe
     /// <summary>
     /// The same, asked of the compiler: whatever is written has to name a type that exists.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: emits InnerG<int,string>, which is CS0246 - no such type - because the real one is OuterG<int>.InnerG<string>")]
+    [Fact]
     public void GenericNestedInGeneric_NamesATypeThatExists()
     {
         var type = TypeDefinition.Get(typeof(OuterG<int>.InnerG<string>));
@@ -108,7 +108,7 @@ namespace Probe
     /// §7 already records that a nested type loses its container. This states it as a compile
     /// question so the fix is verified rather than asserted.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP (§7 'Nested types'): emits Inner, and Probe.Inner does not exist - the container Outer is dropped")]
+    [Fact]
     public void NestedType_KeepsItsContainer()
     {
         var type = TypeDefinition.Get(typeof(Outer.Inner));
@@ -118,7 +118,7 @@ namespace Probe
             preamble: NestedTypes);
     }
 
-    [Fact(Skip = "ADVERSARY GAP (§7 'Nested types'): emits Deepest for Outer.Inner.Deepest - two levels of container dropped")]
+    [Fact]
     public void DeeplyNestedType_KeepsItsContainers()
     {
         var type = TypeDefinition.Get(typeof(Outer.Inner.Deepest));
@@ -139,7 +139,7 @@ namespace Probe
         Assert.Contains("CSharpAuthor.Tests.Adversary", type.KnownNamespaces);
     }
 
-    [Fact(Skip = "ADVERSARY GAP (§7 'typeof(int[,])'): emits Int32[,][] - the rank specifier from Type.Name is kept and IsArray adds another")]
+    [Fact]
     public void MultiDimensionalArray()
     {
         var type = TypeDefinition.Get(typeof(int[,]));
@@ -163,7 +163,7 @@ namespace Probe
         Assert.Equal("int[,][]", Emit.TypeName(type));
     }
 
-    [Fact(Skip = "ADVERSARY GAP (§7 'MakeArray().MakeArray()'): emits int[] - IsArray is a bool, so a second rank has nowhere to be recorded")]
+    [Fact]
     public void MakeArrayTwice()
     {
         var type = TypeDefinition.Get(typeof(int)).MakeArray().MakeArray();
@@ -255,7 +255,7 @@ namespace Probe
     /// Global mode on a nested type. It writes <c>global::</c> and the namespace, then the wrong
     /// name - so the qualification machinery is correct and the name is not.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: Global mode on a nested type emits global::CSharpAuthor.Tests.Adversary.Inner - correctly qualified to a type that does not exist")]
+    [Fact]
     public void NestedType_InGlobalMode()
     {
         var type = TypeDefinition.Get(typeof(Outer.Inner));

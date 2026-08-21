@@ -18,6 +18,12 @@ public class TypeDefinition : BaseTypeDefinition
 
     }
 
+    internal TypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable, bool isElementNullable, ITypeDefinition? containingType)
+        : base(typeDefinitionEnum, ns, name, arrayRanks, isNullable, isElementNullable, containingType)
+    {
+
+    }
+
     public override IEnumerable<string> KnownNamespaces
     {
         get
@@ -45,7 +51,7 @@ public class TypeDefinition : BaseTypeDefinition
 
         WriteQualifier(builder, typeOutputMode);
 
-        builder.Append(Name);
+        builder.Append(WrittenName());
 
         WriteArrayRanks(builder);
 
@@ -57,12 +63,27 @@ public class TypeDefinition : BaseTypeDefinition
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanks, nullable, ContainingType);
+        return new TypeDefinition(
+            TypeDefinitionEnum, Namespace, Name, ArrayRanks, nullable, IsElementNullable, ContainingType);
     }
 
+    /// <remarks>
+    /// The <c>?</c> stays on the outside - <c>string?</c> made into an array is <c>string[]?</c> -
+    /// which is version 1's reading and the one
+    /// <c>TypeDefinitionTests.ArrayRankTests.NullableGoesAfterTheShape</c> pins. The other reading,
+    /// <c>string?[]</c>, is a different type and is reached through
+    /// <see cref="ITypeDefinitionExtensions.MakeArrayOfNullable"/>.
+    /// </remarks>
     public override ITypeDefinition MakeArray(int rank)
     {
-        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanksWithOuterRank(rank), IsNullable, ContainingType);
+        return new TypeDefinition(
+            TypeDefinitionEnum,
+            Namespace,
+            Name,
+            ArrayRanksWithOuterRank(rank),
+            IsNullable,
+            IsElementNullable,
+            ContainingType);
     }
 
     public override IReadOnlyList<ITypeDefinition> TypeArguments => Array.Empty<ITypeDefinition>();
@@ -83,6 +104,10 @@ public class TypeDefinition : BaseTypeDefinition
     /// </remarks>
     public override string ToString()
     {
+        // The leading dot on a type with no namespace - `.int` - is part of that shape, and
+        // V1CallShapeTests.ToStringKeepsItsV1Shape pins it inside a generic argument because
+        // Hardened builds a cache key out of it. That leaves adversary #70 open; the hash it
+        // complains about no longer uses this string. See docs/migration-v1-v2.md.
         return $"{Namespace}.{Name}";
     }
 

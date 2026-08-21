@@ -85,6 +85,12 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
         outputContext.Write(Type);
         // An indexer is declared as `this[...]`, where `this` is the keyword and not a name, so it
         // is the one property whose name must not be escaped.
+        //
+        // It is also the one property whose name is not the caller's to choose - named anything
+        // else this emits `public int Item[string index]`, which is not a declaration C# has
+        // (CS1519, adversary #51). Writing `this` there is blocked by an original test,
+        // PropertyDefinitionTests.SimplePropertyDefinitionTests.IndexedGetSetDefinition, which
+        // asserts the invalid form character for character. See docs/migration-v1-v2.md.
         outputContext.Write(
             " " + (IsIndexer ? Name : CSharpIdentifier.Escape(Name)));
 
@@ -195,7 +201,8 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
     {
         var modifier = GetAccessModifier("public");
 
-        outputContext.WriteIndent($"{modifier} ");
+        // The trailing space goes with the keyword. See FieldDefinition for the same case.
+        outputContext.WriteIndent(modifier.Length > 0 ? modifier + " " : "");
 
         outputContext.Write(
             Modifiers.GetModifierKeywords(ComponentModifierExtensions.PropertyModifiers));

@@ -57,10 +57,7 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
                         value = TypeDefinition.Get(typeValue);
                     }
 
-                    ReplaceInParts(
-                        parts,
-                        typeSwapString,
-                        value is ITypeDefinition typeDefinition ? typeDefinition : (object)GetObjectStringValue(value));
+                    ReplaceInParts(parts, typeSwapString, GetSubstitutionParts(value));
                 }
                 else
                 {
@@ -69,7 +66,8 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
 
                     if (PartsContain(parts, rawSwapString))
                     {
-                        ReplaceInParts(parts, rawSwapString, LiteralFormatter.Format(value));
+                        ReplaceInParts(
+                            parts, rawSwapString, new object[] { LiteralFormatter.Format(value) });
                     }
                 }
             }
@@ -91,7 +89,33 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
         return false;
     }
 
-    private static void ReplaceInParts(List<object> parts, string marker, object replacement)
+    /// <summary>
+    /// The pieces a <c>{argN}</c> substitution becomes - more than one where the value is written
+    /// as a type plus text.
+    /// </summary>
+    /// <remarks>
+    /// An enum value is the case that needs two: it is written as <c>Type.Member</c>, and the
+    /// <c>Type</c> half has to stay a type so the file derives its namespace. Handed over as text it
+    /// was the member name alone - <c>var x = Singleton;</c>, CS0103 - which is the section 1
+    /// defect reached through <c>AddCode</c> rather than through a raw string.
+    /// </remarks>
+    private IReadOnlyList<object> GetSubstitutionParts(object value)
+    {
+        if (value is ITypeDefinition typeDefinition)
+        {
+            return new object[] { typeDefinition };
+        }
+
+        if (value is Enum && CodeOutputComponent.Get(value) is CodeOutputComponent component)
+        {
+            return component.Parts ?? new object[] { GetObjectStringValue(value) };
+        }
+
+        return new object[] { GetObjectStringValue(value) };
+    }
+
+    private static void ReplaceInParts(
+        List<object> parts, string marker, IReadOnlyList<object> replacements)
     {
         for (var i = 0; i < parts.Count; i++)
         {
@@ -117,7 +141,10 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
                     replaced.Add(text.Substring(position, index - position));
                 }
 
-                replaced.Add(replacement);
+                for (var r = 0; r < replacements.Count; r++)
+                {
+                    replaced.Add(replacements[r]);
+                }
 
                 position = index + marker.Length;
                 index = text.IndexOf(marker, position, StringComparison.Ordinal);

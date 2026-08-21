@@ -39,7 +39,8 @@ public static class SyntaxHelpers
 
     public static IndexStatement Index(this IOutputComponent component, object index)
     {
-        return new IndexStatement(component, CodeOutputComponent.Get(index));
+        return new IndexStatement(
+            ExpressionPrecedence.AsPrimary(component), CodeOutputComponent.Get(index));
     }
     
     public static IOutputComponent Increment(object outputComponent)
@@ -115,7 +116,7 @@ public static class SyntaxHelpers
     public static IOutputComponent InvokeGeneric(this IOutputComponent outputComponent, string methodName, IReadOnlyList<ITypeDefinition> genericArgs, params object[] parameters)
     {
         return new CombineOutputComponent(
-            outputComponent, 
+            ExpressionPrecedence.AsPrimary(outputComponent),
             new InvokeGenericDefinition(".", methodName, genericArgs, parameters) { Indented = false }
         );
     }
@@ -123,7 +124,7 @@ public static class SyntaxHelpers
     public static IOutputComponent Invoke(this IOutputComponent outputComponent, string methodName, params object[] parameters)
     {
         return new CombineOutputComponent(
-            outputComponent,
+            ExpressionPrecedence.AsPrimary(outputComponent),
             new InvokeDefinition(".", methodName, parameters) { Indented = false }
         );
     }
@@ -154,7 +155,7 @@ public static class SyntaxHelpers
 
     public static IOutputComponent Property(IOutputComponent outputComponent, string propertyName)
     {
-        return new LogicStatement(".", outputComponent, propertyName)
+        return new LogicStatement(".", ExpressionPrecedence.AsPrimary(outputComponent), propertyName)
         {
             PrintParentheses = false, 
             Indented = false

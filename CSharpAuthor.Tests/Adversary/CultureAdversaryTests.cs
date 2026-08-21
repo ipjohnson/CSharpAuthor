@@ -87,7 +87,7 @@ public class CultureAdversaryTests
         Assert.Contains("Measure(1.5)", output);
     }
 
-    [Fact(Skip = "ADVERSARY GAP: AddCode's [argN] substitution calls ToString() with the ambient culture - var x = 1,5; is CS1002")]
+    [Fact]
     public void AddCodeRawArgument()
     {
         var output = Emit.InCulture(German, () =>
@@ -102,7 +102,7 @@ public class CultureAdversaryTests
         RoslynAssert.MemberCompiles(output);
     }
 
-    [Fact(Skip = "ADVERSARY GAP: a field initializer written from a double uses the ambient culture - private double f = 1,5; is CS1002")]
+    [Fact]
     public void FieldInitializer()
     {
         var output = Emit.InCulture(German, () =>
@@ -158,7 +158,7 @@ public class CultureAdversaryTests
     /// actually establish - stronger than checking the sites one at a time, and it will catch a
     /// site nobody thought of.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: a file containing any non-integer number differs between cultures - the property that should hold is that emission does not depend on the ambient culture at all")]
+    [Fact]
     public void AWholeFileIsIdenticalAcrossCultures()
     {
         static string Build()

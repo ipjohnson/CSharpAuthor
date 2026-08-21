@@ -180,14 +180,18 @@ internal static class ComponentModifierExtensions
             return KeyWords.Private + " " + KeyWords.Protected;
         }
 
-        if ((modifiers & ComponentModifier.Internal) == ComponentModifier.Internal)
-        {
-            return KeyWords.Internal;
-        }
-
+        // Public before Internal, and both before the single-keyword levels they contain. Read in
+        // the other order a component carrying both came out `internal` - narrower than what was
+        // asked for, and invisible until something outside the assembly failed to find it. Where a
+        // caller says two things, the wider one is the one they can still take back.
         if ((modifiers & ComponentModifier.Public) == ComponentModifier.Public)
         {
             return KeyWords.Public;
+        }
+
+        if ((modifiers & ComponentModifier.Internal) == ComponentModifier.Internal)
+        {
+            return KeyWords.Internal;
         }
 
         if ((modifiers & ComponentModifier.Protected) == ComponentModifier.Protected)

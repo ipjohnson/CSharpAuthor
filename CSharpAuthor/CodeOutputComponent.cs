@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace CSharpAuthor;
@@ -16,6 +17,12 @@ public class CodeOutputComponent : BaseOutputComponent
     private readonly IReadOnlyList<object>? _parts;
 
     private List<ITypeDefinition>? _typeDefinitions;
+
+    /// <summary>
+    /// The pieces this was built from, for a caller that is composing a larger statement out of
+    /// them - <c>AddCode</c> substituting a value into a line. Null when the statement is only text.
+    /// </summary>
+    internal IReadOnlyList<object>? Parts => _parts;
 
     public CodeOutputComponent(string statement)
     {
@@ -97,7 +104,10 @@ public class CodeOutputComponent : BaseOutputComponent
     {
         return value switch
         {
-            null => new CodeOutputComponent("") { Indented = indented },
+            // The value null is the literal `null`. Written as nothing it made an initializer
+            // `private string f = ;` - CS1525 - and a caller could not tell the two apart, because
+            // "no value" and "the value null" arrive here as the same thing.
+            null => new CodeOutputComponent(LiteralFormatter.Format(null)) { Indented = indented },
 
             IOutputComponent outputComponent => outputComponent,
 
@@ -118,9 +128,21 @@ public class CodeOutputComponent : BaseOutputComponent
     }
 
     private static IOutputComponent DefaultComponent(object value, bool indented) {
+        // Before the string check: an enum is not IEnumerable<string>, but it is the one value whose
+        // ToString() looks like working C# and is not.
+        if (value is Enum enumValue)
+        {
+            return GetEnumValue(enumValue, indented);
+        }
+
         if (value is IEnumerable<string> stringValues)
         {
             return GetNewStringArray(stringValues, indented);
+        }
+
+        if (value is Array { Rank: > 1 } multiDimensional)
+        {
+            return GetNewMultiDimensionalArray(multiDimensional, indented);
         }
 
         if (value is Array values)
@@ -132,6 +154,130 @@ public class CodeOutputComponent : BaseOutputComponent
         // denotes the type it came from, and quoted where C# requires quotes. A bare `1.5` for a
         // float is CS0664 and a bare `a` for a char is CS0103 - both were emitted here.
         return new CodeOutputComponent(LiteralFormatter.Format(value)) { Indented = indented };
+    }
+
+    /// <summary>
+    /// An enum value as the C# that denotes it - <c>Lifetime.Singleton</c>, with the type left
+    /// unrendered so the file derives the namespace it needs.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the section 1 defect at its source. The value used to fall through to
+    /// <c>ToString()</c>, which answers with the member name alone: <c>Singleton</c>. That is
+    /// CS0103 in the ordinary case, and where a local of that name is in scope it compiles and
+    /// means something else entirely. Nothing recorded the namespace either, so even the qualified
+    /// reading had nothing to resolve against.
+    /// </para>
+    /// <para>
+    /// Three shapes. A named member is <c>Type.Member</c>. A combination of flags is
+    /// <c>Type.A | Type.B</c> - <c>ToString()</c> gives <c>"A, B"</c> for it, which is a list, not
+    /// an expression. A value with no name at all is a cast of its number, which is what C# has for
+    /// it and what a round trip through the enum would produce.
+    /// </para>
+    /// </remarks>
+    private static IOutputComponent GetEnumValue(Enum value, bool indented)
+    {
+        var enumType = TypeDefinition.Get(value.GetType());
+        var text = value.ToString();
+
+        if (text.Length > 0 && (char.IsLetter(text[0]) || text[0] == '_'))
+        {
+            var names = text.Split(new[] { ", " }, StringSplitOptions.None);
+            var parts = new List<object>(names.Length * 3);
+
+            for (var i = 0; i < names.Length; i++)
+            {
+                if (i > 0)
+                {
+                    parts.Add(" | ");
+                }
+
+                parts.Add(enumType);
+                parts.Add("." + CSharpIdentifier.Escape(names[i]));
+            }
+
+            return WithIndent(FromParts(parts), indented);
+        }
+
+        var underlying = Convert.ChangeType(
+            value, Enum.GetUnderlyingType(value.GetType()), CultureInfo.InvariantCulture);
+
+        return WithIndent(
+            FromParts(new object[] { "(", enumType, ")", LiteralFormatter.FormatNumeric(underlying) }),
+            indented);
+    }
+
+    /// <summary>
+    /// A rank-2-or-higher array as a C# array creation of the same shape.
+    /// </summary>
+    /// <remarks>
+    /// Every array used to go through the rank-1 path, which iterates - and iterating a rank-2
+    /// array yields its elements in row-major order with nothing to say where the rows ended. A
+    /// <c>new int[2,2] { { 1, 2 }, { 3, 4 } }</c> came out as <c>new int[] { 1, 2, 3, 4 }</c>: a
+    /// different value, of a different type, that only fails to compile if something happens to
+    /// assign it to an <c>int[,]</c>.
+    /// </remarks>
+    private static IOutputComponent GetNewMultiDimensionalArray(Array values, bool indented)
+    {
+        var elementType = values.GetType().GetElementType();
+        var parts = new List<object>
+        {
+            "new ",
+            TypeDefinition.Get(elementType ?? typeof(object)),
+            "[" + new string(',', values.Rank - 1) + "] "
+        };
+
+        var indices = new int[values.Rank];
+
+        AppendArrayDimension(parts, values, indices, 0);
+
+        return WithIndent(FromParts(parts), indented);
+    }
+
+    private static void AppendArrayDimension(
+        List<object> parts, Array values, int[] indices, int dimension)
+    {
+        parts.Add("{ ");
+
+        var lower = values.GetLowerBound(dimension);
+        var upper = values.GetUpperBound(dimension);
+
+        for (var i = lower; i <= upper; i++)
+        {
+            if (i > lower)
+            {
+                parts.Add(", ");
+            }
+
+            indices[dimension] = i;
+
+            if (dimension == values.Rank - 1)
+            {
+                var element = values.GetValue(indices);
+
+                if (element is ITypeDefinition typeDefinition)
+                {
+                    parts.Add(typeDefinition);
+                }
+                else
+                {
+                    parts.Add(LiteralFormatter.Format(element));
+                }
+            }
+            else
+            {
+                AppendArrayDimension(parts, values, indices, dimension + 1);
+            }
+        }
+
+        parts.Add(" }");
+    }
+
+    private static CodeOutputComponent WithIndent(CodeOutputComponent component, bool indented)
+    {
+        component.Indented = indented;
+
+        return component;
     }
 
     private static IOutputComponent GetNewStringArray(IEnumerable<string> stringValues, bool indented)

@@ -25,10 +25,17 @@ public class TypeParameterDefinition : ITypeDefinition
     /// of this the model needs. Widening it later is not a breaking change.
     /// </remarks>
     internal TypeParameterDefinition(string name, bool isNullable, IReadOnlyList<int>? arrayRanks)
+        : this(name, isNullable, false, arrayRanks)
+    {
+    }
+
+    internal TypeParameterDefinition(
+        string name, bool isNullable, bool isElementNullable, IReadOnlyList<int>? arrayRanks)
     {
         Name = name;
         IsNullable = isNullable;
         ArrayRanks = BaseTypeDefinition.NormalizeRanks(arrayRanks);
+        IsElementNullable = isElementNullable && ArrayRanks.Count > 0;
     }
 
     public string Name { get; }
@@ -40,6 +47,9 @@ public class TypeParameterDefinition : ITypeDefinition
     public bool IsNullable { get; }
 
     public bool IsArray => ArrayRanks.Count > 0;
+
+    /// <inheritdoc cref="BaseTypeDefinition.IsElementNullable" />
+    public bool IsElementNullable { get; }
 
     public IReadOnlyList<int> ArrayRanks { get; }
 
@@ -54,7 +64,16 @@ public class TypeParameterDefinition : ITypeDefinition
 
     public void WriteTypeName(StringBuilder builder, TypeOutputMode typeOutputMode = TypeOutputMode.ShortName)
     {
-        builder.Append(Name);
+        // Always escaped: a type parameter's name is only ever an identifier the caller chose, so
+        // there is no keyword alias to confuse it with. `class Box<int>` is CS1001.
+        builder.Append(CSharpIdentifier.Escape(Name));
+
+        // T?[] is an array of nullable T; T[]? is a nullable array. The ? goes on the side the
+        // caller asked for it.
+        if (IsElementNullable)
+        {
+            builder.Append('?');
+        }
 
         for (var i = 0; i < ArrayRanks.Count; i++)
         {
@@ -76,7 +95,7 @@ public class TypeParameterDefinition : ITypeDefinition
 
     public ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new TypeParameterDefinition(Name, nullable, ArrayRanks);
+        return new TypeParameterDefinition(Name, nullable, IsElementNullable, ArrayRanks);
     }
 
     public ITypeDefinition MakeArray()
@@ -84,44 +103,20 @@ public class TypeParameterDefinition : ITypeDefinition
         return MakeArray(1);
     }
 
+    /// <inheritdoc cref="TypeDefinition.MakeArray(int)" />
     public ITypeDefinition MakeArray(int rank)
     {
-        return new TypeParameterDefinition(Name, IsNullable, BaseTypeDefinition.WithOuterRank(ArrayRanks, rank));
+        return new TypeParameterDefinition(
+            Name, IsNullable, IsElementNullable, BaseTypeDefinition.WithOuterRank(ArrayRanks, rank));
     }
 
+    /// <summary>
+    /// The shared ordering. Answering -1 to everything that was not another type parameter made
+    /// this smaller than every type and, read the other way, larger than none of them.
+    /// </summary>
     public int CompareTo(ITypeDefinition other)
     {
-        if (other is not TypeParameterDefinition typeParameter)
-        {
-            return -1;
-        }
-
-        var nameCompare = string.Compare(Name, typeParameter.Name, StringComparison.Ordinal);
-
-        if (nameCompare != 0)
-        {
-            return nameCompare;
-        }
-
-        if (ArrayRanks.Count != typeParameter.ArrayRanks.Count)
-        {
-            return ArrayRanks.Count - typeParameter.ArrayRanks.Count;
-        }
-
-        for (var i = 0; i < ArrayRanks.Count; i++)
-        {
-            if (ArrayRanks[i] != typeParameter.ArrayRanks[i])
-            {
-                return ArrayRanks[i] - typeParameter.ArrayRanks[i];
-            }
-        }
-
-        if (IsNullable != typeParameter.IsNullable)
-        {
-            return IsNullable ? 1 : -1;
-        }
-
-        return 0;
+        return TypeDefinitionOrder.Compare(this, other);
     }
 
     /// <summary>

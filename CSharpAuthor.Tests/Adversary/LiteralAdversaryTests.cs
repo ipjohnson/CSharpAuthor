@@ -20,7 +20,7 @@ public class LiteralAdversaryTests
         return Emit.Component(classDefinition);
     }
 
-    [Fact(Skip = "ADVERSARY GAP (§7 'String literals unescaped'): QuoteString concatenates quotes, so a value containing \" ends the literal early")]
+    [Fact]
     public void StringContainingAQuote()
     {
         RoslynAssert.Compiles(
@@ -32,7 +32,7 @@ public class LiteralAdversaryTests
     /// <c>\n</c> are valid escapes - it just silently becomes a tab and a newline, and the path is
     /// wrong at run time rather than at build time.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: a backslash is not escaped, so \"C:\\temp\\new\" compiles into a string containing a tab and a newline - silently the wrong value, with no diagnostic anywhere")]
+    [Fact]
     public void StringContainingBackslashes()
     {
         var quoted = QuoteString(@"C:\temp\new");
@@ -40,14 +40,14 @@ public class LiteralAdversaryTests
         Assert.Equal(@"""C:\\temp\\new""", quoted);
     }
 
-    [Fact(Skip = "ADVERSARY GAP: a newline in a value is written literally into a non-verbatim literal - CS1010, newline in constant")]
+    [Fact]
     public void StringContainingANewline()
     {
         RoslynAssert.Compiles(
             FieldOf(typeof(string), "f", CodeOutputComponent.Get(QuoteString("line1\nline2"))));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: a NUL is written as a raw U+0000 byte into the source rather than \\0")]
+    [Fact]
     public void StringContainingNul()
     {
         Assert.Equal("\"a\\0b\"", QuoteString("a\0b"));
@@ -70,7 +70,7 @@ public class LiteralAdversaryTests
             FieldOf(typeof(string), "f", CodeOutputComponent.Get(QuoteString("emoji \U0001F600 done"))));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: AddCode quotes a string argument by concatenation, so {arg1} with an embedded quote produces var x = \"he said \"hi\"\";")]
+    [Fact]
     public void AddCodeStringArgumentContainingAQuote()
     {
         var method = new MethodDefinition("M");
@@ -80,26 +80,26 @@ public class LiteralAdversaryTests
         RoslynAssert.MemberCompiles(Emit.Component(method));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: CodeOutputComponent.Get(string[]) quotes each element by concatenation - new string[] { \"a\"b\", \"c\\d\" }")]
+    [Fact]
     public void StringArrayElementsContainingQuotes()
     {
         RoslynAssert.ExpressionCompiles(
             Emit.Component(CodeOutputComponent.Get(new[] { "a\"b", "c\\d" })));
     }
 
-    [Fact(Skip = "ADVERSARY GAP (§7 'char literal'): emits = a, which is CS0103 - an unknown identifier, not a character")]
+    [Fact]
     public void CharLiteral()
     {
         RoslynAssert.Compiles(FieldOf(typeof(char), "f", CodeOutputComponent.Get('a')));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: a char that is itself a quote emits = ', which cannot become a literal at all")]
+    [Fact]
     public void CharLiteralThatIsAQuote()
     {
         RoslynAssert.Compiles(FieldOf(typeof(char), "f", CodeOutputComponent.Get('\'')));
     }
 
-    [Fact(Skip = "ADVERSARY GAP (§7 'float literal'): emits = 1.5, which is a double - CS0664 without the f suffix")]
+    [Fact]
     public void FloatLiteral()
     {
         RoslynAssert.Compiles(FieldOf(typeof(float), "f", CodeOutputComponent.Get(1.5f)));
@@ -109,7 +109,7 @@ public class LiteralAdversaryTests
     /// The same defect as <c>float</c>, at a type §7 does not name. <c>decimal</c> has no implicit
     /// conversion from <c>double</c> at all, so this is CS0664 too.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: decimal needs an m suffix and does not get one - emits = 1.5, CS0664")]
+    [Fact]
     public void DecimalLiteral()
     {
         RoslynAssert.Compiles(FieldOf(typeof(decimal), "f", CodeOutputComponent.Get(1.5m)));
@@ -119,7 +119,7 @@ public class LiteralAdversaryTests
     /// The worst literal in the set. <c>double.PositiveInfinity.ToString()</c> is <c>"∞"</c> on
     /// .NET Core, and U+221E is a math symbol - not a letter - so it cannot even be an identifier.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: double.PositiveInfinity emits the character ∞ into the source (CS1056) and double.NaN emits the bare word NaN (CS0103) - neither is a literal C# has")]
+    [Fact]
     public void NonFiniteDoubleLiterals()
     {
         var classDefinition = new ClassDefinition("Host");
@@ -138,7 +138,7 @@ public class LiteralAdversaryTests
     /// <c>CodeOutputComponent.Get(null)</c> returns an empty component, so an initializer written
     /// from a null value emits <c>= ;</c>.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: CodeOutputComponent.Get(null) emits the empty string, so a null value becomes 'private string f = ;' - CS1525")]
+    [Fact]
     public void NullValueBecomesTheNullLiteral()
     {
         RoslynAssert.Compiles(FieldOf(typeof(string), "f", CodeOutputComponent.Get(null)));

@@ -314,6 +314,10 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
     {
         foreach (var existing in _baseTypes)
         {
+            // Deduplicated on the type alone, so a second call carrying constructor arguments is
+            // discarded and a record loses the arguments its base needs - CS7036, adversary #32.
+            // ClassDefinitionTests.BaseTypeArgumentTests.ABaseTypeIsNotAddedTwice pins this exact
+            // reading, so it stays. See docs/migration-v1-v2.md.
             if (existing.Type.Equals(typeDefinition))
             {
                 return this;

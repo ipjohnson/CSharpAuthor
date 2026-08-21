@@ -23,7 +23,7 @@ public class ExpressionAdversaryTests
     /// a generic type loses its arguments, an array loses its brackets, and the output mode never
     /// reaches it.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: SyntaxHelpers.Is writes typeDefinition.Name, so 'x is List<int>' is emitted 'x is List' - a different type where a non-generic one exists (IEnumerable, Task, Nullable), and CS0246 where it does not")]
+    [Fact]
     public void IsWithAGenericType()
     {
         var expression = Is(
@@ -41,7 +41,7 @@ public class ExpressionAdversaryTests
     /// becomes a test against the non-generic interface - true for a <c>List&lt;string&gt;</c>,
     /// which the caller was trying to exclude.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: 'x is IEnumerable<int>' is emitted 'x is IEnumerable', which compiles and is true for values the caller meant to reject")]
+    [Fact]
     public void IsWithAGenericTypeThatHasANonGenericTwin()
     {
         var expression = Is(
@@ -53,7 +53,7 @@ public class ExpressionAdversaryTests
         Assert.Equal("x is IEnumerable<int>", Emit.Component(expression));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: SyntaxHelpers.Is writes Name, so an array type loses its brackets - 'x is string[]' is emitted 'x is string'")]
+    [Fact]
     public void IsWithAnArrayType()
     {
         var expression = Is(
@@ -63,7 +63,7 @@ public class ExpressionAdversaryTests
         Assert.Equal("x is string[]", Emit.Component(expression));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: SyntaxHelpers.Is bypasses IOutputContext.Write(ITypeDefinition), so TypeOutputMode never reaches it - the type stays a bare short name in a Global-mode file")]
+    [Fact]
     public void IsInGlobalMode()
     {
         var expression = Is(CodeOutputComponent.Get("x"), TypeDefinition.Get("Probe", "Dog"));
@@ -80,7 +80,7 @@ public class ExpressionAdversaryTests
     /// alongside one. Here it is also incomplete - only the outer type's namespace is added, so a
     /// generic argument from a third namespace is never imported.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: Is adds only the outer type's namespace by hand (violating invariant 1), so a generic argument's namespace is never imported")]
+    [Fact]
     public void IsImportsItsTypeArgumentsNamespaces()
     {
         var file = new CSharpFileDefinition("Consumer");

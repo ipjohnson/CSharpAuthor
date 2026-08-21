@@ -55,7 +55,7 @@ public class StatementAdversaryTests
     /// <c>BaseBlockDefinition</c> creates one - so a caller who finds the type and constructs it by
     /// hand gets a component that writes nothing at all, silently swallowing its own body.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP (§7 'ForDefinition'): WriteComponentOutput is empty, so a for loop and everything added to it is written as nothing - no loop, no body, no diagnostic")]
+    [Fact]
     public void ForLoopWritesItsBody()
     {
         var loop = new ForDefinition();

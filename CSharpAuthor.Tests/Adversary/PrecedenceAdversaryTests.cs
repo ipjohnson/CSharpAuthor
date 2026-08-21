@@ -34,7 +34,7 @@ namespace Probe
     /// Here the caller asked for the <c>Breed</c> of a cast value and got a cast of <c>Value</c> -
     /// two different expressions, one of which happens to be well-typed.
     /// </remarks>
-    [Fact(Skip = "ADVERSARY GAP: Property(StaticCast(T, x), \"M\") emits (T)x.M, which parses as (T)(x.M) - the cast binds looser than the member access and silently applies to the wrong operand")]
+    [Fact]
     public void CastThenMemberAccess()
     {
         var expression = Property(
@@ -49,7 +49,7 @@ namespace Probe
     /// <c>Breed</c>, so <c>(Dog)animal.Breed</c> cannot bind - the member access happens first, on
     /// the uncast value.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: emits (Dog)animal.Breed - CS1061, because the member access binds before the cast")]
+    [Fact]
     public void CastThenMemberAccess_Compiles()
     {
         var expression = Property(
@@ -64,7 +64,7 @@ namespace Probe
     /// <summary>
     /// Invoking on a cast has the same shape and the same defect.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: Invoke on a cast emits (T)x.M(), which parses as (T)(x.M()) - the cast applies to the result of the call rather than to its receiver")]
+    [Fact]
     public void CastThenInvoke()
     {
         var expression = StaticCast(TypeDefinition.Get("Probe", "Dog"), "animal")
@@ -141,7 +141,7 @@ namespace Probe
     /// Indexing a cast has the same shape: <c>(Foo)x[0]</c> parses as <c>(Foo)(x[0])</c>, so the
     /// cast applies to the element rather than to the thing being indexed.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: Index on a cast emits (T)x[0], which parses as (T)(x[0]) - the cast lands on the element rather than on the receiver")]
+    [Fact]
     public void CastThenIndex()
     {
         var expression = StaticCast(TypeDefinition.Get("Probe", "Dog"), "animals").Index(0);
@@ -154,7 +154,7 @@ namespace Probe
     /// awaited call means <c>(await GetAsync()).Length</c>; what is written is
     /// <c>await GetAsync().Length</c>, which awaits the member rather than the call.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: PrefixOutputComponent adds no parentheses, so Property(Await(x), \"Y\") emits 'await x.Y' - the await applies to the member access, not to x")]
+    [Fact]
     public void AwaitThenMemberAccess()
     {
         var expression = Property(Await(Invoke("GetAsync")), "Length");
