@@ -7,9 +7,26 @@
 
   <ItemGroup>
     <!--
-      Adversary suite only. The adversary's assertion is "the emitted string compiles", which needs
-      a compiler. This is the TEST project; CSharpAuthor.csproj takes no new dependency (handoff §3).
+      Two things live here, both TEST-project only, so CSharpAuthor.csproj still takes no new
+      dependency (handoff section 3).
+
+      Roslyn is referenced for the adversary suite, whose assertion is "the emitted string
+      compiles" - which needs a compiler.
+
+      The Roslyn bridge is not compiled into the library; it is packed as a second source folder
+      and compiled into consumers that opt in. Including it here the same way a consumer does is
+      what tests it, and it is also what proves the source-inclusion path compiles at all.
+
+      EmitProfile.Roslyn.cs is the one exclusion: it is a partial of a type that already exists
+      in the referenced assembly, so it only compiles in the source-include configuration it
+      ships for. Its sibling EmitProfileRoslynExtensions.cs is a separate type and links fine.
     -->
+    <Compile Include="..\CSharpAuthor\Roslyn\**\*.cs"
+             Exclude="..\CSharpAuthor\Roslyn\EmitProfile.Roslyn.cs"
+             LinkBase="RoslynBridge" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="SimpleFixture.NSubstitute" Version="4.0.0-RC190" />
@@ -22,22 +39,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CSharpAuthor\CSharpAuthor.csproj" />
-  </ItemGroup>
-
-  <!--
-    Roslyn is a test-time reference only. The shipped library still targets netstandard2.0 with no
-    Roslyn dependency; this is here so the emitter's output can be handed to a real compiler
-    instead of compared against a string somebody typed, and so the Roslyn-gated source folder is
-    actually compiled by something.
-
-    EmitProfileRoslynExtensions.cs is linked rather than referenced because it is excluded from the
-    library assembly by design. Its sibling EmitProfile.Roslyn.cs is deliberately NOT linked: it is
-    a partial of a type that already exists in the referenced assembly, so it only compiles in the
-    source-include configuration it ships for.
-  -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
-    <Compile Include="..\CSharpAuthor\Roslyn\EmitProfileRoslynExtensions.cs" Link="Roslyn\EmitProfileRoslynExtensions.cs" />
   </ItemGroup>
 
 </Project>

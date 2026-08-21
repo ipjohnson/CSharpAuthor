@@ -8,8 +8,8 @@ namespace RoundTrip;
 
 internal static class TypeModel
 {
-    /// <summary>ITypeDefinition carries ArrayRanks in this checkout: False.</summary>
-    public const bool MultiRankArrays = false;
+    /// <summary>ITypeDefinition carries ArrayRanks in this checkout: True.</summary>
+    public const bool MultiRankArrays = true;
 
     /// <summary>Wrap <paramref name="element"/> in the given array ranks, outermost
     /// first - the order C# writes them. Null when the model cannot hold that shape.</summary>
@@ -17,22 +17,9 @@ internal static class TypeModel
     {
         reason = "";
         if (ranks.Count == 0) return element;
-        // One bool cannot tell int[] from int[][] from int[,] - 7's defect list.
-        if (ranks.Count != 1)
-        {
-            reason = $"array with {ranks.Count} rank specifiers - ITypeDefinition.IsArray is one bool";
-            return null;
-        }
-        if (ranks[0] != 1)
-        {
-            reason = $"array of rank {ranks[0]} - ITypeDefinition.IsArray is one bool";
-            return null;
-        }
-        if (element.IsArray)
-        {
-            reason = "jagged array - MakeArray() on an array drops a rank";
-            return null;
-        }
-        return element.MakeArray();
+        // MakeArray puts the new array on the OUTSIDE, so apply innermost first.
+        var result = element;
+        for (var i = ranks.Count - 1; i >= 0; i--) result = result.MakeArray(ranks[i]);
+        return result;
     }
 }

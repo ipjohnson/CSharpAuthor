@@ -42,7 +42,7 @@
 
   <ItemGroup Condition="'$(_LocalCSharpAuthorActive)' == 'true'">
     <Compile Include="$(_LocalCSharpAuthorSrc)/**/*.cs"
-             Exclude="$(_LocalCSharpAuthorSrc)/obj/**/*.cs;$(_LocalCSharpAuthorSrc)/bin/**/*.cs"
+             Exclude="$(_LocalCSharpAuthorSrc)/obj/**/*.cs;$(_LocalCSharpAuthorSrc)/bin/**/*.cs;$(_LocalCSharpAuthorSrc)/Roslyn/**/*.cs"
              Visible="false"/>
   </ItemGroup>
 

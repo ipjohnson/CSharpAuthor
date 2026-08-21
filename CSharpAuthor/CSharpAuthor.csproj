@@ -33,6 +33,18 @@
 		<DefineConstants>$(DefineConstants);CSHARPAUTHOR_PUBLIC_SYNTAX</DefineConstants>
 	</PropertyGroup>
 
+	<!--
+		The Roslyn bridge is source that this library does not compile. It is written against
+		Microsoft.CodeAnalysis, and this project deliberately has no reference to it: a netstandard2.0
+		library that takes a Roslyn dependency imposes it on everyone, and the bridge is only useful
+		inside a project that already has one. It is removed from the compile here and packed to its
+		own folder, so it reaches a consumer only through the opt-in in CSharpAuthor.targets.
+	-->
+	<ItemGroup>
+		<Compile Remove="Roslyn\**\*.cs" />
+		<None Remove="Roslyn\**\*.cs" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<!-- Test-only. An MSBuild item rather than a source attribute, so it is generated into obj/
 		     and is not one of the .cs files a consumer source-includes. -->
@@ -54,7 +66,12 @@
 			<PackagePath>build\</PackagePath>
 			<PackageCopyToOutput>true</PackageCopyToOutput>
 		</Content>
-		<Content Include="**\*.cs" Exclude="**\obj\**;**\bin\**;Roslyn\**" Visible="true">
+		<!--
+			Roslyn\** is excluded here as well as from the compile. This glob is what
+			PackageCSharpAuthorIncludeSource compiles into the consumer, so a Roslyn-dependent file
+			left in it would be compiled into every consumer that asked only for the source.
+		-->
+		<Content Include="**\*.cs" Exclude="**\obj\**;**\bin\**;Roslyn\**\*.cs" Visible="true">
 			<Pack>true</Pack>
 			<PackagePath>src\CSharpAuthor\</PackagePath>
 			<PackageCopyToOutput>true</PackageCopyToOutput>
