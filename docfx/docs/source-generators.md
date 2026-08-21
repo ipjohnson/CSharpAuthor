@@ -33,8 +33,8 @@ Here is the whole of what those targets do:
 
 [!code-xml[](../../CSharpAuthor/Package/CSharpAuthor.targets)]
 
-Measured cost of source-including the library, including the ~250 generated grammar nodes:
-**5,565 → 11,034 lines, build 0.28 s → 0.40 s, assembly 75 KB → 203 KB.**
+Cost of source-including the library, including the ~250 generated grammar nodes, as measured
+during 2.0 development: **5,565 → 11,034 lines, build 0.28 s → 0.40 s, assembly 75 KB → 203 KB.**
 
 Two consequences to know about:
 
