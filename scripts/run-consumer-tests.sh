@@ -68,7 +68,9 @@ usage() {
 usage: run-consumer-tests.sh <path-to-CSharpAuthor-checkout> [options]
 
   --consumers DIR   directory holding the DependencyModules and Hardened.Framework scratch
-                    clones. Default: $CONSUMERS_DIR, else <script>/../../../consumers.
+                    clones. Default: $CONSUMERS_DIR, else the nearest "consumers" directory
+                    found by walking up from this script (works from any clone under
+                    scratchpad/work/* as well as from scratchpad/v2).
   --log-dir DIR     where to write build/test logs and harvested .received.txt snapshots.
                     Default: $LOG_DIR, else <consumers>/../logs.
   --only WHICH      dm | hardened | both            (default: both)
@@ -116,7 +118,23 @@ if [ ! -f "$INJECT_TARGETS" ]; then
     exit 2
 fi
 
-if [ -z "$CONSUMERS_DIR" ]; then CONSUMERS_DIR="$SCRIPT_DIR/../../../consumers"; fi
+# Walk up rather than hard-coding a depth: this script is copied between clones, and it has
+# to resolve the same scratchpad/consumers from scratchpad/work/<agent>/scripts and from
+# scratchpad/v2/scripts alike.
+if [ -z "$CONSUMERS_DIR" ]; then
+    _probe="$SCRIPT_DIR"
+    while [ "$_probe" != "/" ]; do
+        if [ -d "$_probe/consumers/DependencyModules" ] && [ -d "$_probe/consumers/Hardened.Framework" ]; then
+            CONSUMERS_DIR="$_probe/consumers"; break
+        fi
+        _probe="$(dirname "$_probe")"
+    done
+fi
+if [ -z "$CONSUMERS_DIR" ]; then
+    echo "could not find a consumers/ directory holding DependencyModules and Hardened.Framework" >&2
+    echo "above $SCRIPT_DIR - pass --consumers DIR or set \$CONSUMERS_DIR" >&2
+    exit 2
+fi
 if [ ! -d "$CONSUMERS_DIR" ]; then echo "no consumers directory: $CONSUMERS_DIR" >&2; exit 2; fi
 CONSUMERS_DIR="$(cd "$CONSUMERS_DIR" && pwd)"
 
