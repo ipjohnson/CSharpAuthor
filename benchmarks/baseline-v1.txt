@@ -1,0 +1,49 @@
+CSharpAuthor V1 baseline for gate 9, measured on THIS machine.
+Read by scripts/run-benchmark.sh when it is given a single checkout.
+
+commit    : 7ab7145 (V1 library, netstandard2.0, unmodified)
+measured  : 2026-08-20
+machine   : Darwin 25.5.0 arm64, Mac15,6, 11 CPUs
+runtime   : .NET SDK 11.0.100-preview.7.26381.103, harness on Microsoft.NETCore.App 8.0.8
+config    : Release, workstation GC (server GC off), concurrent GC on, InvariantGlobalization
+method    : 2000 measured iterations x 3 in-process repetitions x 3 processes = 9 per run,
+            preceded by a discarded warmup of >=1000 iterations AND >=1500 ms;
+            per-iteration Stopwatch timing and GC.GetAllocatedBytesForCurrentThread() deltas
+load      : 1-minute load average 3.7 - 7.7 across the runs; other agents were building
+            concurrently on the same box
+
+5 independent full runs of scripts/run-benchmark.sh with its defaults (45 repetitions):
+
+  scenario       ms/file (median)                            KB/file
+  tree           0.0124  0.0126  0.0123  0.0125  0.0126      77.430 (identical in all 5 runs)
+  stringbuilder  0.0013  0.0012  0.0013  0.0013  0.0013      21.352 (identical in all 5 runs)
+
+  V1 tree, taken together: 0.0125 ms/file, range 0.0123 - 0.0126 (2.4%), 77.4 KB/file
+
+A 6th run taken while the box was at load 13.2 - another agent had started a heavy build -
+gave 0.0135 ms/file for the same unchanged code (+8%), with the mean at 0.0780 and the
+StringBuilder row's spread at 99%. Allocation did not move at all: still 77.430 KB.
+The median holds up far better than the mean, but it does move with load. That is the whole
+argument for measuring V1 and V2 in ONE invocation rather than comparing a fresh V2 number
+against a number recorded in this file.
+
+Roslyn reference point, one run with --with-roslyn:
+
+  roslyn         0.5837 ms/file                      544.042 KB/file
+
+Against the handoff's §10 figures (V1 0.0477 ms / 78.4 KB; StringBuilder 0.0073 / 29.5;
+Roslyn + NormalizeWhitespace 0.7234 / 396.5):
+
+  * allocation carries across almost exactly - 77.4 KB here vs 78.4 KB there - which is the
+    evidence that this payload is the §10 payload. Allocation is a property of the code, not
+    of the machine.
+  * time does not carry across. This machine runs the tree payload ~3.8x faster than whatever
+    produced 0.0477. The StringBuilder and Roslyn reference points move by similar factors.
+
+So gate 9's bar of "<= 0.048 ms and <= 78 KB" cannot be applied as an absolute here: the
+absolute time bar is met roughly 4x over by V1 itself, and would be met by a V2 that was 3x
+slower than V1. Gate 9 is a RELATIVE comparison. Run V1 and V2 through the script together:
+
+  scripts/run-benchmark.sh <v1-checkout> <v2-checkout>
+
+which measures both back to back, interleaved, under the same load, and prints the verdict.
