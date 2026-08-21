@@ -50,6 +50,21 @@ compatible unless the handoff said otherwise.
    `ArrayTypeDefinition`. This keeps the common case comparing equal to what callers build by
    hand.
 
+### Merging with the type model
+
+The bridge's five type implementations already answer `ArrayRanks`, `ContainingType` and
+`MakeArray(int)` — the members the type model is adding — in the terms the model asks them in,
+so they satisfy the wider interface without an edit. Compiling the bridge folder against that
+work produces exactly one error, and it is in `NullableValueTypeDefinition`: it derives from
+`TypeDefinition`, and the no-argument `MakeArray()` it overrides stops being virtual there. The
+two overloads collapse into `public override ITypeDefinition MakeArray(int rank)`. With that one
+edit the two compile clean together, warnings-as-errors included — measured, not assumed.
+
+Once the model carries ranks and a containing type of its own, `ArrayTypeDefinition` and
+`NestedTypeDefinition` stop earning their place: the conversion can build the model's own type
+directly and the bridge sheds two classes. That is a simplification, not a fix, and it belongs
+after both are merged.
+
 ### Still open
 
 - `ArrayTypeDefinition`, `TupleTypeDefinition`, `PointerTypeDefinition`,

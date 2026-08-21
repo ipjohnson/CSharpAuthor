@@ -53,6 +53,36 @@ public class NestedTypeConversionTests
         Assert.DoesNotContain("<>", written);
     }
 
+    /// <summary>
+    /// The same symbol, converted the way the consumers convert it today, to show what the flag
+    /// answers and what building on it produces.
+    /// </summary>
+    /// <remarks>
+    /// Not a test of the bridge - a test of the premise. If Roslyn ever stopped reporting
+    /// <c>IsGenericType</c> for a non-generic type nested in a generic one, this would fail and the
+    /// special case it justifies could go.
+    /// </remarks>
+    [Fact]
+    public void TheFlagBothConsumersReadSaysGenericHere()
+    {
+        var symbol = Assert.IsAssignableFrom<Microsoft.CodeAnalysis.INamedTypeSymbol>(
+            TestCompilation.FieldType(Nested, "plainInsideGeneric"));
+
+        Assert.True(symbol.IsGenericType);
+        Assert.Equal(0, symbol.Arity);
+        Assert.Empty(symbol.TypeArguments);
+
+        // What both consumers build from exactly that: a generic definition closed over the empty
+        // argument list.
+        var asTheConsumersBuildIt = new GenericTypeDefinition(
+            TypeDefinitionEnum.ClassDefinition,
+            "BridgeTestNamespace",
+            "Outer.PlainInner",
+            System.Array.Empty<ITypeDefinition>());
+
+        Assert.Equal("Outer.PlainInner<>", TestCompilation.Write(asTheConsumersBuildIt));
+    }
+
     [Fact]
     public void NestedTypeQualifiesFromItsNamespace()
     {

@@ -188,6 +188,39 @@ public sealed class NestedTypeDefinition : ITypeDefinition
         return new ArrayTypeDefinition(this);
     }
 
+    /// <summary>An array of this type with the given rank.</summary>
+    public ITypeDefinition MakeArray(int rank)
+    {
+        return new ArrayTypeDefinition(this, rank);
+    }
+
+    /// <summary>This type is not an array.</summary>
+    public IReadOnlyList<int> ArrayRanks => Array.Empty<int>();
+
+    /// <summary>
+    /// The container, with its own arguments — the <c>Outer&lt;int&gt;</c> of
+    /// <c>Outer&lt;int&gt;.Inner&lt;string&gt;</c>, and null when there is only one segment.
+    /// </summary>
+    public ITypeDefinition? ContainingType
+    {
+        get
+        {
+            if (_segments.Count < 2)
+            {
+                return null;
+            }
+
+            var containerSegments = new NestedTypeSegment[_segments.Count - 1];
+
+            for (var i = 0; i < containerSegments.Length; i++)
+            {
+                containerSegments[i] = _segments[i];
+            }
+
+            return new NestedTypeDefinition(TypeDefinitionEnum, Namespace, containerSegments);
+        }
+    }
+
     public int CompareTo(ITypeDefinition? other)
     {
         if (ReferenceEquals(other, null))

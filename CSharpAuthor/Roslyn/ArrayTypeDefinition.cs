@@ -155,6 +155,40 @@ public sealed class ArrayTypeDefinition : ITypeDefinition
         return new ArrayTypeDefinition(this);
     }
 
+    /// <summary>An array of this type with the given rank, wrapped on the outside.</summary>
+    public ITypeDefinition MakeArray(int rank)
+    {
+        return new ArrayTypeDefinition(this, rank);
+    }
+
+    /// <summary>
+    /// The rank of each level, outermost first — the order the specifiers are written in.
+    /// <c>int[,][]</c> is <c>[2, 1]</c>; <c>int[][,]</c> is <c>[1, 2]</c>.
+    /// </summary>
+    public IReadOnlyList<int> ArrayRanks
+    {
+        get
+        {
+            var ranks = new List<int>();
+
+            ITypeDefinition current = this;
+
+            while (current is ArrayTypeDefinition array)
+            {
+                ranks.Add(array.Rank);
+                current = array.ElementType;
+            }
+
+            return ranks;
+        }
+    }
+
+    /// <summary>
+    /// An array is declared inside nothing, which is what an array symbol reports. The element's
+    /// container belongs to the element.
+    /// </summary>
+    public ITypeDefinition? ContainingType => null;
+
     public int CompareTo(ITypeDefinition? other)
     {
         if (ReferenceEquals(other, null))

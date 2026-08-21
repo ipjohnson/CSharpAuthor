@@ -72,9 +72,22 @@ public sealed class NullableValueTypeDefinition : TypeDefinition
     /// <c>int?[]</c>, not <c>int[]?</c> — the array is of the nullable type, so the annotation stays
     /// on the element.
     /// </summary>
+    /// <remarks>
+    /// MERGE NOTE, and the only one in the bridge: when the type model gains <c>MakeArray(int)</c>
+    /// and its no-argument overload stops being virtual, these two collapse into
+    /// <c>public override ITypeDefinition MakeArray(int rank)</c> returning
+    /// <c>new ArrayTypeDefinition(this, rank)</c>, and the base forwards the no-argument form to it.
+    /// Compiling this folder against that branch produces exactly one error, here, and nothing else.
+    /// </remarks>
     public override ITypeDefinition MakeArray()
     {
         return new ArrayTypeDefinition(this);
+    }
+
+    /// <summary>An array of this type with the given rank, with the annotation still on the element.</summary>
+    public ITypeDefinition MakeArray(int rank)
+    {
+        return new ArrayTypeDefinition(this, rank);
     }
 
     public override int CompareTo(ITypeDefinition other)

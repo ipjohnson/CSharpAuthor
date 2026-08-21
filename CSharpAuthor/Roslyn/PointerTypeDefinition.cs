@@ -53,6 +53,24 @@ public sealed class PointerTypeDefinition : ITypeDefinition
         return new ArrayTypeDefinition(this);
     }
 
+    /// <summary>
+    /// The rank of each array wrapping this type, outermost first. Empty: this type is not an array.
+    /// </summary>
+    /// <remarks>
+    /// Present so the bridge's types satisfy the type model's array-rank contract without a change
+    /// at merge time.
+    /// </remarks>
+    public IReadOnlyList<int> ArrayRanks => Array.Empty<int>();
+
+    /// <summary>The type this one is declared inside. A pointer is declared inside nothing, which is what a pointer symbol reports.</summary>
+    public ITypeDefinition? ContainingType => null;
+
+    /// <summary>An array of this type with the given rank.</summary>
+    public ITypeDefinition MakeArray(int rank)
+    {
+        return new ArrayTypeDefinition(this, rank);
+    }
+
     public int CompareTo(ITypeDefinition? other)
     {
         if (ReferenceEquals(other, null))
