@@ -17,12 +17,19 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     {
     }
 
-    protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable)
+    /// <remarks>
+    /// The rank-carrying constructors and the write helpers below are <c>private protected</c>: they
+    /// are how this assembly's own type definitions are built and written, not surface a consumer
+    /// needs. The 1.x <c>protected</c> constructor above is untouched, so an outside subclass still
+    /// has the entry point it always had. Widening one of these later is not a breaking change;
+    /// narrowing it would be.
+    /// </remarks>
+    private protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable)
         : this(typeDefinitionEnum, ns, name, arrayRanks, isNullable, null)
     {
     }
 
-    protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable, ITypeDefinition? containingType)
+    private protected BaseTypeDefinition(TypeDefinitionEnum typeDefinitionEnum, string ns, string name, IReadOnlyList<int>? arrayRanks, bool isNullable, ITypeDefinition? containingType)
     {
         Name = name;
         Namespace = ns;
@@ -151,7 +158,7 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     /// <summary>
     /// Writes the array specifiers, outermost first, so ranks <c>[2, 1]</c> read as <c>[,][]</c>.
     /// </summary>
-    protected void WriteArrayRanks(StringBuilder builder)
+    private protected void WriteArrayRanks(StringBuilder builder)
     {
         var ranks = ArrayRanks;
 
@@ -177,7 +184,7 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     /// <c>Ns.Inner</c>. The container writes itself in the same mode, so it picks up <c>global::</c> or
     /// the namespace exactly once, at the outermost type, and the chain below it stays plain.
     /// </remarks>
-    protected void WriteQualifier(StringBuilder builder, TypeOutputMode typeOutputMode)
+    private protected void WriteQualifier(StringBuilder builder, TypeOutputMode typeOutputMode)
     {
         if (ContainingType != null)
         {
@@ -190,7 +197,7 @@ public abstract class BaseTypeDefinition : ITypeDefinition
         WriteNamespacePrefix(builder, typeOutputMode);
     }
 
-    protected void WriteNamespacePrefix(StringBuilder builder, TypeOutputMode typeOutputMode)
+    private protected void WriteNamespacePrefix(StringBuilder builder, TypeOutputMode typeOutputMode)
     {
         if (string.IsNullOrEmpty(Namespace))
         {
@@ -214,7 +221,7 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     /// An array of this type: the new rank goes on the outside, so making an array of <c>int[]</c>
     /// gives <c>int[][]</c> rather than losing a dimension.
     /// </summary>
-    protected IReadOnlyList<int> ArrayRanksWithOuterRank(int rank)
+    private protected IReadOnlyList<int> ArrayRanksWithOuterRank(int rank)
     {
         return WithOuterRank(ArrayRanks, rank);
     }

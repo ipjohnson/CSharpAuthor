@@ -148,10 +148,10 @@ public class EquatableArrayTests
     {
         Assert.Equal(
             new EquatableArray<int>(new[] { 1, 2, 3 }),
-            Enumerable.Range(1, 3).ToEquatableArray());
+            EquatableArray<int>.From(Enumerable.Range(1, 3)));
 
         Assert.Equal(EquatableArray<int>.Empty, EquatableArray<int>.From(null));
-        Assert.Equal(EquatableArray<int>.Empty, Enumerable.Empty<int>().ToEquatableArray());
+        Assert.Equal(EquatableArray<int>.Empty, EquatableArray<int>.From(Enumerable.Empty<int>()));
     }
 
     [Fact]

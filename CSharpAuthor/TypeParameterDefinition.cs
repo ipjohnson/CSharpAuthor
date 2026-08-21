@@ -20,7 +20,11 @@ public class TypeParameterDefinition : ITypeDefinition
     {
     }
 
-    public TypeParameterDefinition(string name, bool isNullable, IReadOnlyList<int>? arrayRanks)
+    /// <remarks>
+    /// Internal: an array shape is reached through <see cref="MakeArray(int)"/>, which is the part
+    /// of this the model needs. Widening it later is not a breaking change.
+    /// </remarks>
+    internal TypeParameterDefinition(string name, bool isNullable, IReadOnlyList<int>? arrayRanks)
     {
         Name = name;
         IsNullable = isNullable;

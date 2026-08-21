@@ -35,6 +35,21 @@ their hand-written comparers.
 can adopt it file by file while their own version still exists. If the human prefers it in
 `CSharpAuthor`, the move is one line plus a `using` in each consumer that adopts it.
 
+### New public surface trimmed to what §7 mandates
+
+`DependencyModules.Tests` snapshots the generator assembly's public API, and CSharpAuthor is
+source-compiled into it, so every public member here lands in that snapshot. Rather than approve a
+wider diff, anything §7 does not name was demoted before the diff was recorded: the write and rank
+helpers on `BaseTypeDefinition` and its two rank-carrying constructors are `private protected`, the
+rank-carrying `TypeParameterDefinition` constructor is `internal`, and the `ToEquatableArray`
+extension method was deleted in favour of `EquatableArray<T>.From`.
+
+**Taken:** demote now. §3 sets the precedent ("mark generated node types `internal` when
+source-included so they don't leak into consumer API surface"), both consumers source-include the
+library so `internal` remains fully usable to them, and widening later is not a breaking change while
+narrowing is. The 1.x `protected` `BaseTypeDefinition` constructor is untouched, so an outside
+subclass keeps the entry point it always had.
+
 ### Nullability sits on the array, not on the element
 
 `ITypeDefinition` carries one `IsNullable` flag, and it is written after the array ranks, so

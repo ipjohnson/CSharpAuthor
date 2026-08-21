@@ -198,11 +198,3 @@ public readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IReadO
         public T Current => _items![_index];
     }
 }
-
-public static class EquatableArrayExtensions
-{
-    public static EquatableArray<T> ToEquatableArray<T>(this IEnumerable<T>? items)
-    {
-        return EquatableArray<T>.From(items);
-    }
-}

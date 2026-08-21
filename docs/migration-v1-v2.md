@@ -6,6 +6,78 @@ Every behaviour change, with the mechanical fix.
 
 ## Type model
 
+### Snapshot diff: `PublicApiTests.SourceGeneratorApi` (DependencyModules) — 1 test, per TFM
+
+`DependencyModules.Tests` snapshots the **public API surface** of its generator assembly, and
+CSharpAuthor is source-compiled into it, so every public member of this library is in that snapshot.
+Adding the three `ITypeDefinition` members §7 requires therefore changes it, by construction. It is
+the one consumer test that fails, once on `net8.0` and once on `net10.0`:
+
+```
+DependencyModules.Tests   net8.0    734 passed   1 failed
+DependencyModules.Tests   net10.0   734 passed   1 failed
+Hardened.SourceGenerator.Tests      468 passed   0 failed
+```
+
+**The load-bearing fact: all nine of DependencyModules' generator-*output* snapshots stay clean.**
+`ModuleGenerationSnapshotTests.{SimpleModule, RecordModule, GenericServiceRegistrations,
+KeyedAndAsRegistrations, RegistrationTypeVariants, ModuleWithAllServiceLifetimes,
+ModuleWithConstructorParametersAndProperties, ModuleWithEnvironmentConditions,
+ModuleWithCoverageExclusionDisabled}` all pass, so **the generated C# is byte-identical** — this is an
+API-shape diff, not an output diff. The only `.received.txt` the run harvests is the API one.
+
+This is the expected shape for any branch that adds public surface: the `declarations` branch was
+measured independently and produced the same single failure.
+
+Not re-baselined (rule 8.1). `APPROVE_PUBLIC_API` was never set.
+
+#### The diff, and why each part of it has to be there
+
+Every line is surface §7 mandates. Incidental helpers were demoted rather than approved: the write
+and rank helpers on `BaseTypeDefinition` and its two rank-carrying constructors are now
+`private protected`, the rank-carrying `TypeParameterDefinition` constructor is `internal`, and the
+`ToEquatableArray` extension method was deleted in favour of `EquatableArray<T>.From`. That follows
+§3's precedent for generated nodes, and costs the consumers nothing — both source-include the
+library. Widening any of them later is not a breaking change; the reverse would be.
+
+**`ITypeDefinition` — three members (the §7 defects):**
+
+```
++   IReadOnlyList<int> ArrayRanks { get; }        // int[] vs int[][] vs int[,] - a bool cannot
++   ITypeDefinition? ContainingType { get; }      // Outer.Inner, not Inner
++   ITypeDefinition MakeArray(int rank);          // int[,], and MakeArray().MakeArray() == int[][]
+```
+
+These could not be given default bodies: `netstandard2.0` has no default interface members. Verified
+that neither consumer implements `ITypeDefinition` — both construct through `TypeDefinition.Get` and
+`new GenericTypeDefinition`, whose existing signatures are untouched.
+
+**Their implementations**, on `BaseTypeDefinition`, `TypeDefinition`, `GenericTypeDefinition` and
+`TypeParameterDefinition`, plus one constructor and two factories to build the shapes they describe:
+
+```
++   public static TypeDefinition Get(TypeDefinitionEnum, string ns, string name,
++                                    IReadOnlyList<int>? arrayRanks, bool isNullable = false,
++                                    ITypeDefinition? containingType = null)
++   public static TypeDefinition GetNested(ITypeDefinition containingType, string name,
++                                          TypeDefinitionEnum definitionEnum = ClassDefinition)
++   public GenericTypeDefinition(TypeDefinitionEnum, string ns, string name,
++                                IReadOnlyList<ITypeDefinition> closingTypes,
++                                IReadOnlyList<int>? arrayRanks, bool isNullable = false,
++                                ITypeDefinition? containingType = null)
++   public TypeDefinition(TypeDefinitionEnum, string ns, string name,
++                         IReadOnlyList<int>? arrayRanks, bool isNullable = false,
++                         ITypeDefinition? containingType = null)
+```
+
+**Moves, not removals.** `Equals`, `GetHashCode` and `MakeArray()` appear as removed from
+`TypeDefinition` and `GenericTypeDefinition` and added on `BaseTypeDefinition`. They are the same
+members, deduplicated onto the base class; every call site binds exactly as it did. `ToString()` stays
+where it was, on both subclasses, in its 1.x shape.
+
+**`CSharpAuthor.Collections.EquatableArray<T>`** — new, and §7 asks for it by name. It is in a
+sub-namespace rather than `CSharpAuthor`; see `docs/v2-open-questions.md` for why.
+
 ### `typeof(IntPtr)` and `typeof(UIntPtr)` now write `nint` and `nuint`
 
 `float`, `char` and `sbyte` used to reach output under their reflection names — `Single`, `Char`,
