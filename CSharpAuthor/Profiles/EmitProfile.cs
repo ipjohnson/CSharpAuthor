@@ -329,7 +329,15 @@ public sealed partial class EmitProfile
             NewLine = NewLine,
             TypeOutputMode = TypeMode,
             BreakInvokeLines = BreakInvokeLines,
-            GenerateDocumentation = GenerateDocumentation
+            GenerateDocumentation = GenerateDocumentation,
+
+            // These three were declared on the profile and never carried, so a profile asking for
+            // K&R braces, or turning aliasing off, or naming its containing namespace, was read and
+            // then dropped on the floor. FromEditorConfig made it worse: it parsed
+            // csharp_new_line_before_open_brace into Braces, where nothing would ever look at it.
+            BraceStyle = Braces,
+            AliasCollisions = AliasCollisions,
+            ContainingNamespace = ContainingNamespace
         };
 
     /// <summary>
@@ -351,6 +359,9 @@ public sealed partial class EmitProfile
         profile.TypeMode = options.TypeOutputMode;
         profile.BreakInvokeLines = options.BreakInvokeLines;
         profile.GenerateDocumentation = options.GenerateDocumentation;
+        profile.Braces = options.BraceStyle;
+        profile.AliasCollisions = options.AliasCollisions;
+        profile.ContainingNamespace = options.ContainingNamespace;
 
         return profile;
     }
