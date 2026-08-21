@@ -109,6 +109,16 @@ public static class TypeDefinitionIdentity
     }
 
     /// <summary>
+    /// Enough for a namespace, a name and a little punctuation, which is what almost every key is.
+    /// </summary>
+    /// <remarks>
+    /// The default builder starts at 16 characters and grows in chunks, so a key of ordinary length
+    /// costs three allocations and a walk to gather them. Asking for the room up front is the
+    /// difference between building a key and building it three times.
+    /// </remarks>
+    private const int TypicalKeyLength = 64;
+
+    /// <summary>
     /// Builds the key. Called once per type definition in this assembly, and on every ask for one
     /// that does not cache it.
     /// </summary>
@@ -118,7 +128,7 @@ public static class TypeDefinitionIdentity
     /// </remarks>
     internal static string Build(ITypeDefinition type)
     {
-        var builder = new StringBuilder();
+        var builder = new StringBuilder(TypicalKeyLength);
 
         builder.Append((int)type.TypeDefinitionEnum);
         builder.Append(':');
