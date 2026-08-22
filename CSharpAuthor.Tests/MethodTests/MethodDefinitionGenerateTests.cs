@@ -63,7 +63,11 @@ public class MethodDefinitionGenerateTests
         var methodDefinition = new MethodDefinition("HelloWorld")
             .SetReturnType(typeof(string));
 
-        methodDefinition.AddCode("return {arg1} + typeof({arg2}) + {arg3};", "Hello World", typeof(string), 15);
+        methodDefinition.AddCode(
+            "return {arg1} + typeof({arg2}) + {arg3};",
+            SyntaxHelpers.QuoteString("Hello World"),
+            typeof(string),
+            15);
 
         var context = new OutputContext();
 

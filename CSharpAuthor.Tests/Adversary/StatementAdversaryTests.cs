@@ -10,19 +10,28 @@ namespace CSharpAuthor.Tests.Adversary;
 public class StatementAdversaryTests
 {
     /// <summary>
-    /// A <c>case</c> label built from a string is written unquoted, so switching on a string - which
-    /// is most of what generated switches do - emits <c>case abc:</c>. The value has become an
-    /// identifier reference.
+    /// A <c>case</c> label built from a string is code, consistently with every other entry point.
+    /// A literal label asks for a literal.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: SwitchBlockDefinition.AddCase routes through CodeOutputComponent.Get, which writes a string as code - 'case abc:' rather than 'case \"abc\":', CS0103")]
+    /// <remarks>
+    /// The placeholder this replaces treated <c>case abc:</c> as the defect. It is the contract:
+    /// <c>AddCase(name)</c> is how a generated switch reaches a <c>const</c> or an enum member by
+    /// name, which is most of what generated switches do.
+    /// </remarks>
+    [Fact]
     public void SwitchCaseOnAStringValue()
     {
         var method = new MethodDefinition("M");
 
         method.AddCode("var x = \"a\";");
-        method.Switch(CodeOutputComponent.Get("x")).AddCase("abc").AddCode("break;");
+        method.Switch(CodeOutputComponent.Get("x"))
+            .AddCase(SyntaxHelpers.QuoteString("abc"))
+            .AddCode("break;");
 
-        RoslynAssert.MemberCompiles(Emit.Component(method));
+        var emitted = Emit.Component(method);
+
+        Assert.Contains("case \"abc\":", emitted);
+        RoslynAssert.MemberCompiles(emitted);
     }
 
     /// <summary>
@@ -65,69 +74,22 @@ public class StatementAdversaryTests
         Assert.Contains("Work();", Emit.Component(loop));
     }
 
-    [Fact(Skip = "ADVERSARY GAP (§7 'Continue()'): there is no Continue on BaseBlockDefinition, though Break and Return are both there")]
+    /// <summary>
+    /// <c>Continue()</c> exists on <see cref="BaseBlockDefinition"/>, alongside <c>Break()</c>.
+    /// The placeholder this replaces said it did not.
+    /// </summary>
+    [Fact]
     public void ContinueStatement()
     {
-        Assert.True(false, "no API for continue");
-    }
+        var method = new MethodDefinition("M");
+        var loop = method.For("i", 0, 10);
 
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no do/while emitter; WhileDefinition writes the pre-test form only")]
-    public void DoWhileStatement()
-    {
-        Assert.True(false, "no API for do/while");
-    }
+        loop.Continue();
 
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no using statement or using declaration emitter, so generated code cannot dispose anything without writing the block by hand")]
-    public void UsingStatementAndDeclaration()
-    {
-        Assert.True(false, "no API for using statements or using declarations");
-    }
+        var emitted = Emit.Component(method);
 
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no lock emitter")]
-    public void LockStatement()
-    {
-        Assert.True(false, "no API for lock");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no goto emitter, no label emitter, and so no labelled break or continue either")]
-    public void GotoAndLabels()
-    {
-        Assert.True(false, "no API for goto, labels, or labelled break/continue");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - YieldReturn exists but there is no 'yield break', so an iterator cannot terminate early")]
-    public void YieldBreak()
-    {
-        Assert.True(false, "no API for yield break");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no local function emitter")]
-    public void LocalFunctions()
-    {
-        Assert.True(false, "no API for local functions");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no checked or unchecked emitter, in statement or expression position")]
-    public void CheckedAndUnchecked()
-    {
-        Assert.True(false, "no API for checked / unchecked");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no 'throw' expression (only ThrowNewExceptionStatement, which is a statement), and no rethrow: a bare 'throw;' inside a catch cannot be written except as a raw string")]
-    public void ThrowExpressionAndRethrow()
-    {
-        Assert.True(false, "no API for throw expressions or bare rethrow");
-    }
-
-    /// <summary>
-    /// <c>ForEachDefinition</c> hard-codes <c>var</c>, so the element type cannot be stated - which
-    /// matters when the sequence is <c>IEnumerable</c> rather than <c>IEnumerable&lt;T&gt;</c> and
-    /// <c>var</c> would infer <c>object</c>. There is no <c>await foreach</c> either.
-    /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: ForEachDefinition writes 'foreach(var x in ...)' with the type fixed as var, so a non-generic sequence cannot be iterated as its element type; and there is no await foreach")]
-    public void ForEachWithAnExplicitElementType()
-    {
-        Assert.True(false, "no API for a typed foreach or await foreach");
+        Assert.Contains("continue;", emitted);
+        RoslynAssert.MemberCompiles(emitted);
     }
 
     // ---- statements that do work, kept as guards ----

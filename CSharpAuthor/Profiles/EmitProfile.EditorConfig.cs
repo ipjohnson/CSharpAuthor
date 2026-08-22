@@ -39,8 +39,6 @@ sealed partial class EmitProfile
         ApplyNewLine(profile, lookup);
         ApplyBraces(profile, lookup);
         ApplyNamespaceStyle(profile, lookup);
-        ApplyVar(profile, lookup);
-        ApplyExpressionBodies(profile, lookup);
 
         return profile;
     }
@@ -239,32 +237,6 @@ sealed partial class EmitProfile
         else if (string.Equals(value, "block_scoped", StringComparison.OrdinalIgnoreCase))
         {
             profile.FileScopedNamespace = false;
-        }
-    }
-
-    private static void ApplyVar(EmitProfile profile, EditorConfigOptionLookup lookup)
-    {
-        // Three keys, one flag. Generated code declares locals where the type is apparent far more
-        // often than anywhere else, so that key decides when it is present.
-        var value = ReadBool(lookup, "csharp_style_var_when_type_is_apparent") ??
-                    ReadBool(lookup, "csharp_style_var_elsewhere") ??
-                    ReadBool(lookup, "csharp_style_var_for_built_in_types");
-
-        if (value.HasValue)
-        {
-            profile.PreferVar = value.Value;
-        }
-    }
-
-    private static void ApplyExpressionBodies(EmitProfile profile, EditorConfigOptionLookup lookup)
-    {
-        var value = ReadBool(lookup, "csharp_style_expression_bodied_methods") ??
-                    ReadBool(lookup, "csharp_style_expression_bodied_properties") ??
-                    ReadBool(lookup, "csharp_style_expression_bodied_accessors");
-
-        if (value.HasValue)
-        {
-            profile.PreferExpressionBodied = value.Value;
         }
     }
 

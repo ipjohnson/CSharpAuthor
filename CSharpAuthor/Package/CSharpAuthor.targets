@@ -38,4 +38,33 @@
   <ItemGroup Condition="'$(PackageCSharpAuthorIncludeSource)' == 'true' AND '$(PackageCSharpAuthorIncludeRoslyn)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)../srcRoslyn/**/*.cs" Visible="false"/>
   </ItemGroup>
+  <!--
+    Source inclusion and the assembly are mutually exclusive, and nothing until now enforced it.
+
+    The package carries both lib/netstandard2.0/CSharpAuthor.dll and src/**/*.cs. A consumer that
+    sets PackageCSharpAuthorIncludeSource=true on a plain PackageReference gets the source compiled
+    in by the ItemGroup above *and* the assembly resolved as a reference, so all 135 types are
+    declared twice: CS0436 on every one of them, and CS0121 where overload resolution can no longer
+    pick a winner. The build fails before the consumer has written a line.
+
+    The documented cure was to write IncludeAssets="build" on the PackageReference, which is how
+    the comment at the top of this file describes the normal case - but the README never said so,
+    which made the documented install the broken one. Removing the reference here is what makes
+    the property self-sufficient: IncludeAssets="build" remains correct and is still what the
+    README teaches, and a consumer that omits it now gets the same result instead of 10,272
+    warnings.
+
+    Scoped by NuGetPackageId so it can only ever remove this package's own assembly. A consumer
+    that deliberately references CSharpAuthor as a library does not set the property at all, so
+    this target does not run for them.
+  -->
+  <Target Name="CSharpAuthorDropAssemblyWhenSourceIncluded"
+          AfterTargets="ResolveAssemblyReferences"
+          Condition="'$(PackageCSharpAuthorIncludeSource)' == 'true'">
+    <ItemGroup>
+      <ReferencePath Remove="@(ReferencePath)"
+                     Condition="'%(ReferencePath.NuGetPackageId)' == 'CSharpAuthor'" />
+    </ItemGroup>
+  </Target>
+
 </Project>

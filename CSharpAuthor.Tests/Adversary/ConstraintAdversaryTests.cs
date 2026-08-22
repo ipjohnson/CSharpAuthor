@@ -154,21 +154,4 @@ public class ConstraintAdversaryTests
         Assert.Contains("global::Far.Away.IThing", output);
     }
 
-    [Fact(Skip = "ADVERSARY GAP: no API - 'allows ref struct' (C# 13) has no method on ConstraintDefinition, so a generic that accepts a ref struct argument cannot be declared")]
-    public void AllowsRefStruct()
-    {
-        Assert.True(false, "no ConstraintDefinition.AllowsRefStruct()");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - a base-class constraint cannot be distinguished from an interface constraint. Implements() takes both, and C# requires the base class first, so the ordering rule the class documents as 'the caller's to keep' is unenforceable and produces CS0406 when a caller adds them in the order a symbol reports them.")]
-    public void BaseClassConstraintOrdering()
-    {
-        Assert.True(false, "no separate base-class constraint");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - an interface cannot be generic at all, so an interface's type parameters cannot be constrained either")]
-    public void InterfaceConstraints()
-    {
-        Assert.True(false, "InterfaceDefinition has no type parameters or constraints");
-    }
 }

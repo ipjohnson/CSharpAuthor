@@ -109,80 +109,18 @@ public class ExpressionAdversaryTests
 
     // ---- expressions with no entry point at all ----
 
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no lambda emitter. None of the four forms (x => e, (x) => e, (T x) => e, delegate { }) can be built, so any generator emitting a LINQ query, an event handler or a factory has to hand AddCode a string.")]
-    public void Lambdas()
-    {
-        Assert.True(false, "no API for lambda expressions");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no switch expression emitter. SwitchBlockDefinition writes the statement form only, so 'x switch { ... }' cannot be produced.")]
-    public void SwitchExpressions()
-    {
-        Assert.True(false, "no API for switch expressions");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no interpolated string emitter, so $\"{a}\" cannot be built, and neither can the alignment/format clauses ({a,-10:N2}) or the escaping a nested quote needs")]
-    public void InterpolatedStrings()
-    {
-        Assert.True(false, "no API for interpolated strings");
-    }
-
     /// <summary>
-    /// A tuple has no type either: <c>ITypeDefinition</c> can name <c>ValueTuple&lt;int,string&gt;</c>
-    /// but not <c>(int Count, string Name)</c>, and the element names are the entire point.
+    /// <c>nameof</c> has an emitter - <see cref="CSharpAuthor.Profiles.NameOfStatement"/> - which
+    /// the placeholder this replaces said did not exist. It is the expression a generated
+    /// diagnostic or argument check is built from.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: no API - a tuple type cannot be expressed. ValueTuple<int,string> can, but (int Count, string Name) cannot, so the element names are unreachable; nor is there a tuple literal or a deconstruction.")]
-    public void TuplesAndDeconstruction()
-    {
-        Assert.True(false, "no API for tuple types, tuple literals or deconstruction");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no 'with' expression emitter, so a record cannot be copied with a change, which is the reason records were used in the first place")]
-    public void WithExpressions()
-    {
-        Assert.True(false, "no API for with-expressions");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no range or index emitter. IndexStatement writes x[i]; x[1..^1] and x[^1] have no component.")]
-    public void RangesAndIndices()
-    {
-        Assert.True(false, "no API for ranges or from-end indices");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no collection expression emitter, so [1, 2, ..rest] cannot be built. NewArrayStatement writes the new T[] { } form only.")]
-    public void CollectionExpressionsAndSpreads()
-    {
-        Assert.True(false, "no API for collection expressions or spread elements");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no stackalloc emitter")]
-    public void StackAlloc()
-    {
-        Assert.True(false, "no API for stackalloc");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no nameof emitter, which is the expression a generated diagnostic or argument check needs most")]
+    [Fact]
     public void NameOf()
     {
-        Assert.True(false, "no API for nameof");
-    }
+        var emitted = Emit.Component(new CSharpAuthor.Profiles.NameOfStatement("value"));
 
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no conditional (?:) emitter; LogicStatement takes one infix operator and a ternary needs two")]
-    public void ConditionalExpression()
-    {
-        Assert.True(false, "no API for the conditional operator");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no 'as' emitter, nor a safe-cast pairing with 'is'")]
-    public void AsExpression()
-    {
-        Assert.True(false, "no API for the as operator");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no object or collection initializer emitter that names members. NewStatement.AddInitValue writes bare values into { }, so 'new Foo { Bar = 1 }' can only be produced by passing the whole assignment as a preformatted string.")]
-    public void ObjectInitializerWithNamedMembers()
-    {
-        Assert.True(false, "no API for named-member object initializers");
+        Assert.Equal("nameof(value)", emitted);
+        RoslynAssert.StatementCompiles("var value = 1; var n = " + emitted + ";");
     }
 
     // ---- expressions that do work, kept as guards ----

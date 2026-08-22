@@ -123,7 +123,7 @@ public class OutputContextAdversaryTests
     /// Usings are sorted as plain strings, so <c>System</c> sorts among the rest. Every C# style
     /// guide, and the default IDE behaviour, puts the <c>System</c> namespaces first.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: GenerateUsingStatements sorts ordinally, so System namespaces are interleaved with the rest - 'using Aaa; using System.Text; using Zzz;' - which every consuming repository's formatter will want to rewrite")]
+    [Fact(Skip = "ADVERSARY GAP: GenerateUsingStatements sorts ordinally, so System namespaces are interleaved with the rest - 'using Aaa; using System.Text; using Zzz;' - which every consuming repository's formatter will want to rewrite DEFERRED, not unknown: the fix is agreed and held only by the nine DependencyModules snapshots it would diff - see 'A note on release sequencing'.")]
     public void SystemUsingsSortFirst()
     {
         var file = new CSharpFileDefinition("Probe");

@@ -47,7 +47,7 @@ silently didn't?"**
 ## Verifying your work
 
 ```bash
-dotnet test CSharpAuthor.Tests                          # 1559 passed / 0 failed / 93 skipped
+dotnet test CSharpAuthor.Tests                          # 1634 passed / 0 failed / 18 skipped
 ./scripts/run-consumer-tests.sh <checkout> --scope core  # the real oracle
 ./scripts/run-roundtrip.sh   <checkout> --corpus all     # 1,315 / 1,373 = 95.8%
 ./scripts/run-benchmark.sh   <v1-checkout> <v2-checkout> # both, in ONE invocation
@@ -65,7 +65,8 @@ genuinely in the compile set. **Always use the script.**
 ### The unit tests are not the oracle — the consumers are
 
 Two real generators depend on this library, and both are cloned locally. Changes have passed all
-1,559 unit tests while breaking three consumer projects outright. `--scope core` runs the two gate
+the entire unit suite (1,559 tests at the time) while breaking three consumer projects
+outright. `--scope core` runs the two gate
 suites in ~15 s; `--scope full` runs all 35 assemblies and is the only thing that catches a project
 that fails to *build*.
 
@@ -141,7 +142,7 @@ usings and collision aliasing.
 | `CSharpAuthor/Profiles/` | `EmitProfile`, language versions, downlevelling, diagnostics |
 | `tools/grammar/` | `gen_all.py` + `Syntax.xml` — the node generator |
 | `tools/roundtrip/` | the importer and the 1,373-file fidelity harness |
-| `docs/` | migration guide, open questions, adversary findings |
+| `docs/` | migration guide, open questions, adversary findings, [api-gaps.md](docs/api-gaps.md) |
 | `CSharpAuthor.Tests/Adversary/` | 280 tests / 305 cases asserting emitted code **compiles**, not that it matches a string |
 
 ---

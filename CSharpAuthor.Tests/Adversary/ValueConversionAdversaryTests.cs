@@ -78,23 +78,33 @@ public class ValueConversionAdversaryTests
     }
 
     /// <summary>
-    /// A string handed to <c>AddAttribute</c> is written as code rather than as a literal.
+    /// A string handed to <c>AddAttribute</c> is code, and so is a string handed to <c>AddCode</c>'s
+    /// <c>{argN}</c>. They agree.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: AddAttribute routes its arguments through CodeOutputComponent.Get, which writes a string as code - AddAttribute(type, \"hello\") emits [My(hello)], CS0103 - while AddCode's {argN} quotes the same value")]
+    /// <remarks>
+    /// The placeholder this replaces recorded the two disagreeing - <c>AddAttribute</c> writing code
+    /// while <c>{argN}</c> quoted - and asserted that attributes should quote. It was resolved the
+    /// other way: <c>{argN}</c> stopped quoting, because a string meaning code is what lets
+    /// <c>AddAttribute(type, $"nameof({member})")</c> work at all.
+    /// </remarks>
+    [Fact]
     public void StringAttributeArgument()
     {
-        var classDefinition = new ClassDefinition("Host");
+        var asCode = new ClassDefinition("Host");
+        asCode.AddAttribute(TypeDefinition.Get("Probe", "MyAttribute"), "Names.Greeting");
+        Assert.Contains("[My(Names.Greeting)]", Emit.Component(asCode));
 
-        classDefinition.AddAttribute(TypeDefinition.Get("Probe", "MyAttribute"), "hello");
-
-        Assert.Contains("[My(\"hello\")]", Emit.Component(classDefinition));
+        var asLiteral = new ClassDefinition("Host");
+        asLiteral.AddAttribute(
+            TypeDefinition.Get("Probe", "MyAttribute"), SyntaxHelpers.QuoteString("hello"));
+        Assert.Contains("[My(\"hello\")]", Emit.Component(asLiteral));
     }
 
     /// <summary>
     /// A placeholder with no matching argument is written into the output verbatim, so a typo or an
     /// off-by-one in the argument list reaches the generated file as text.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: AddCode leaves an unmatched {argN} or [argN] placeholder in the output as literal text rather than reporting it - 'X(1,[arg9]);' reaches the generated file")]
+    [Fact(Skip = "OPEN GAP (documented, deliberate): AddCode does not check placeholder count, so an unmatched {argN} or [argN] reaches the generated file as text - see README 'Placeholder mismatches are silent'. Kept skipped because the assertion states the wanted behaviour, not the current one; closing it means adding a diagnostic, which is an API decision")]
     public void UnmatchedPlaceholder()
     {
         var method = new MethodDefinition("M");

@@ -124,18 +124,27 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
     /// <c>{argN}</c> keeps an <see cref="ITypeDefinition"/> as a type. It is qualified by whatever
     /// <see cref="OutputContextOptions.TypeOutputMode"/> is in force, aliased if its short name is
     /// contested, and its namespace is added to the file's <c>using</c> list. A value that is not a
-    /// type is formatted as the C# literal that denotes it, so a <see cref="string"/> arrives
-    /// quoted and an <c>enum</c> arrives as <c>Type.Member</c> with the type still a type.
+    /// type is formatted as the C# expression that denotes it, and an <c>enum</c> arrives as
+    /// <c>Type.Member</c> with the type still a type.
     /// </description></item>
     /// <item><description>
     /// <c>[argN]</c> substitutes text, on the spot. A type becomes
     /// <see cref="object.ToString"/> - the 1.x identity string, not the C# name - and no
-    /// <c>using</c> is derived for it, because nothing recorded that a type was ever mentioned. A
-    /// string arrives <em>unquoted</em>. An <c>enum</c> arrives as the bare member name, which is
-    /// CS0103 unless something of that name happens to be in scope, in which case it compiles and
-    /// means something else.
+    /// <c>using</c> is derived for it, because nothing recorded that a type was ever mentioned. An
+    /// <c>enum</c> arrives as the bare member name, which is CS0103 unless something of that name
+    /// happens to be in scope, in which case it compiles and means something else. For a value
+    /// that is neither a type nor an <c>enum</c>, the two spellings agree.
     /// </description></item>
     /// </list>
+    /// <para>
+    /// <strong>A <see cref="string"/> value is code, not a literal.</strong>
+    /// <c>AddCode("var s = {arg1};", "hello")</c> emits <c>var s = hello;</c> - an identifier
+    /// reference - because throughout this library a string is a fragment of C#. That is the rule
+    /// <see cref="LiteralFormatter.Format"/> states and every other entry point already followed;
+    /// <c>{argN}</c> was the one place that did not. For a string <em>literal</em>, ask for one:
+    /// <c>AddCode("var s = {arg1};", SyntaxHelpers.QuoteString("hello"))</c> emits
+    /// <c>var s = "hello";</c>.
+    /// </para>
     /// <example>
     /// The same call, one character apart:
     /// <code>
@@ -312,11 +321,6 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
     /// </remarks>
     private string GetObjectStringValue(object value)
     {
-        if (value is string stringValue)
-        {
-            return LiteralFormatter.QuoteString(stringValue);
-        }
-
         return LiteralFormatter.Format(value);
     }
 

@@ -122,17 +122,41 @@ public class StringEscapingTests
             outputContext.Output());
     }
 
+    /// <summary>
+    /// A quoted string routed through <c>{argN}</c> is escaped. The escaping is
+    /// <see cref="SyntaxHelpers.QuoteString"/>'s job, not the substitution's - the substitution
+    /// only has to leave the result alone.
+    /// </summary>
     [Fact]
-    public void AddCodeArgumentSubstitutionEscapesTheString()
+    public void AddCodeArgumentSubstitutionEscapesAQuotedString()
     {
         var method = new MethodDefinition("Test");
 
-        method.AddCode("Log({arg1});", "he said \"hi\"");
+        method.AddCode("Log({arg1});", SyntaxHelpers.QuoteString("he said \"hi\""));
 
         var outputContext = new OutputContext();
 
         method.WriteOutput(outputContext);
 
         AssertEqual.ContainsWithoutNewLine("Log(\"he said \\\"hi\\\"\");", outputContext.Output());
+    }
+
+    /// <summary>
+    /// The other half of the contract: a bare string is a fragment of code, so nothing is quoted
+    /// and nothing is escaped. Passing text that is not valid C# produces text that is not valid
+    /// C#, which is the caller's decision to make.
+    /// </summary>
+    [Fact]
+    public void AddCodeArgumentSubstitutionLeavesABareStringAlone()
+    {
+        var method = new MethodDefinition("Test");
+
+        method.AddCode("Log({arg1});", "Greeting.Value");
+
+        var outputContext = new OutputContext();
+
+        method.WriteOutput(outputContext);
+
+        AssertEqual.ContainsWithoutNewLine("Log(Greeting.Value);", outputContext.Output());
     }
 }

@@ -477,13 +477,17 @@ it is written down here rather than asked about.
 
 ### Left undone, on purpose
 
-- `BraceStyle.KAndR` is carried, mapped from .editorconfig and queryable, but `OutputContext`
-  writes characters as it goes and can only produce Allman. `proto/deferred/DeferredContext.cs`
-  already implements both; the profile is the object it should take instead of its own
-  `StyleOptions`, whose fields are already named identically.
-- `PreferVar`, `PreferExpressionBodied`, `FieldKeyword` and `ParamsCollections` are answered
-  correctly by the capability table but no writer in this slice consults them - the writers that
-  own those constructs have to.
+- ~~`BraceStyle.KAndR` is carried, mapped from .editorconfig and queryable, but `OutputContext`
+  writes characters as it goes and can only produce Allman.~~ **Landed.** `OutputContextOptions`
+  has `BraceStyle`, and both styles emit correctly; section 3 below is stale for the same reason.
+- ~~`PreferVar`, `PreferExpressionBodied`, `FieldKeyword` and `ParamsCollections` are answered
+  correctly by the capability table but no writer in this slice consults them.~~ **Partly landed,
+  partly removed.** `FieldKeyword` is consulted - `FieldKeywordComponent` asks the session and
+  falls back to the caller's backing field below C# 14. `PreferVar` and `PreferExpressionBodied`
+  were deleted rather than implemented: both are chosen at the call site (`ToVar` against
+  `ToLocal`, `LambdaSyntax` against a block body), so the profile had no veto to exercise and
+  shipping them would have made two no-op knobs permanent public API. `ParamsCollections` is
+  still table-only.
 
 ### 16. The profile types live in `CSharpAuthor.Profiles`, not `CSharpAuthor`
 
@@ -613,6 +617,10 @@ statements, members and catch clauses, but changes `}` + `else` from Allman to K
 needs the brace-style option from (1) landing first.
 
 ### 3. Brace style is Allman, and not configurable yet
+
+> **STALE as of 2.0.0-preview1002.** `OutputContextOptions.BraceStyle` exists and both styles
+> emit correctly - the switch point the last paragraph predicted did turn out to be one place.
+> Kept for the reasoning; do not triage from it.
 
 **Chosen:** Allman, unconditionally, matching V1's existing output.
 
