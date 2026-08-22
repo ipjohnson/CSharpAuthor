@@ -524,6 +524,23 @@ public class TypeDefinition : BaseTypeDefinition
                 genericTypeDefinition.Namespace!, className, closingTypes, null, false, containingType);
         }
 
+        if (type.IsGenericTypeDefinition)
+        {
+            // An unbound generic - typeof(List<>). Type.Name is `List`1`, which is not C# and was
+            // written straight through. C# spells this as the name with empty type arguments, so
+            // the arity is carried as that many empty parameters: List<>, Dictionary<,>.
+            var arity = type.GetGenericArguments().Length;
+            var unbound = new ITypeDefinition[arity];
+
+            for (var i = 0; i < arity; i++)
+            {
+                unbound[i] = new TypeParameterDefinition("");
+            }
+
+            return new GenericTypeDefinition(
+                typeDefinition, type.Namespace ?? "", type.GetGenericName(), unbound, null, false, containingType);
+        }
+
         return new TypeDefinition(typeDefinition, type.Namespace ?? "", type.Name, null, false, containingType);
     }
 

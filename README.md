@@ -4,10 +4,14 @@ Programmatically generate C# source. Built for **Roslyn source generators**, whe
 **25× faster** than `SyntaxFactory` + `NormalizeWhitespace` — 0.019 ms against 0.489 ms per file,
 measured on the same machine in the same run.
 
-You build a tree of definitions; it emits formatted C#. Types stay unrendered until the whole file
-is known, so namespaces are *derived* from what you actually wrote rather than declared on the side.
+You build a tree of definitions and expressions; it emits formatted C#. Nothing is a string until
+serialization — types stay unrendered, so namespaces are *derived* from what you actually wrote, and
+expressions stay structured, so precedence and escaping are handled for you.
 
 ```csharp
+using CSharpAuthor;
+using CSharpAuthor.Expressions;
+
 var file = new CSharpFileDefinition("Sample.Generated");
 
 var widget = file.AddClass("Widget");
@@ -19,12 +23,17 @@ name.Modifiers = ComponentModifier.Public;
 var describe = widget.AddMethod("Describe");
 describe.Modifiers = ComponentModifier.Public;
 describe.SetReturnType(typeof(string));
-describe.Return(SyntaxHelpers.QuoteString("widget"));
+describe.Return(Ex.Interpolate("widget ", Ex.Id("Name")));
 
-var items = widget.AddMethod("Items");
-items.Modifiers = ComponentModifier.Public;
-items.SetReturnType(TypeDefinition.IEnumerable(typeof(string)));
-items.AddIndentedStatement("yield break");
+var rank = widget.AddMethod("Rank");
+rank.Modifiers = ComponentModifier.Public;
+rank.SetReturnType(typeof(int));
+rank.Return(Ex.Switch(Ex.Id("Name"),
+    Ex.Arm(Pat.Null, Ex.Int(0)),
+    Ex.Arm(Pat.Declaration(TypeDefinition.Get(typeof(string)), "s"),
+           Ex.Id("s").Dot("Length").Is(Pat.GreaterThan(Ex.Int(8))),
+           Ex.Int(2)),
+    Ex.Arm(Pat.Discard, Ex.Int(1))));
 
 var context = new OutputContext();
 
@@ -34,8 +43,6 @@ var outputString = context.Output();
 ```
 
 ```csharp
-using System.Collections.Generic;
-
 namespace Sample.Generated
 {
     public partial class Widget
@@ -45,31 +52,40 @@ namespace Sample.Generated
 
         public string Describe()
         {
-            return "widget";
+            return $"widget {Name}";
         }
 
-        public IEnumerable<string> Items()
+        public int Rank()
         {
-            yield break;
+            return Name switch
+            {
+                null => 0,
+                string s when s.Length is > 8 => 2,
+                _ => 1
+            };
         }
     }
 }
 ```
 
-Note `SyntaxHelpers.QuoteString` on the return value, and the derived `using System.Collections.Generic;`
-that nothing asked for. Both are explained below.
+Nothing in that input was a fragment of C# text. `Ex.Interpolate` decided where the `$"…{…}"` holes
+go; `Ex.Switch` laid out the arms and indented them; `Pat` built the guard. That is the library
+working as intended, and it is what the rest of this page is about.
 
 ## Install
 
 ```
-dotnet add package CSharpAuthor
+dotnet add package CSharpAuthor --prerelease
 ```
+
+`--prerelease` is required while 2.0 is in preview. Without it you get **1.2.0**, the previous
+major — and silently, because the sample above compiles there too. Drop the flag once 2.0.0 ships.
 
 CSharpAuthor ships as **source**, compiled into your project, so a source generator can use it
 without taking on a dependency it would then have to redistribute. In a generator project:
 
 ```xml
-<PackageReference Include="CSharpAuthor" Version="2.0.0">
+<PackageReference Include="CSharpAuthor" Version="2.0.0-preview1003">
   <PrivateAssets>all</PrivateAssets>
   <IncludeAssets>build</IncludeAssets>
 </PackageReference>
@@ -106,7 +122,153 @@ gives you shorter names, derived `using` directives and automatic collision alia
 
 `ShortName` is the default, so a generator has to opt in to the mode it wants.
 
-## Writing statements: `AddCode`
+## Building statements
+
+Statements are built the same way types are: out of objects that stay unrendered until the end.
+`Ex` builds expressions, `Pat` builds patterns. Both live in `CSharpAuthor.Expressions`.
+
+```csharp
+using CSharpAuthor.Expressions;
+```
+
+### Expressions — `Ex`
+
+`Ex.Id` is an identifier, `Ex.Str` a string literal, and the difference matters:
+
+```csharp
+Ex.Id("Name")       // Name        — an identifier, keyword-escaped
+Ex.Str("Name")      // "Name"      — a string literal, with escaping
+Ex.Int(42)          // 42
+Ex.Value(1.5m)      // 1.5M        — the suffix, because `decimal d = 1.5;` is CS0664
+```
+
+Identifiers are escaped for you, which is the whole reason to build them as objects:
+
+```csharp
+Ex.Id("class")                        // @class
+Ex.On(targetsType, "new")             // AttributeTargets.@new
+```
+
+Member access, calls and null-conditionals chain:
+
+```csharp
+Ex.Id("sb").Call("Append", Ex.Str("hi"))          // sb.Append("hi")
+Ex.Id("sb").NullCall("Clear")                     // sb?.Clear()
+Ex.New(TypeDefinition.Get(typeof(StringBuilder))) // new StringBuilder()
+Ex.Id("items").Call("Select", Ex.Lambda("x", Ex.Id("x").Dot("Name")))
+                                                  // items.Select(x => x.Name)
+```
+
+**Precedence is handled, so you never parenthesise by hand.** `Ex` knows where each operator sits
+and brackets only what needs it:
+
+```csharp
+Ex.Multiply(Ex.Add(Ex.Int(1), Ex.Int(2)), Ex.Int(3))   // (1 + 2) * 3
+Ex.Add(Ex.Int(1), Ex.Multiply(Ex.Int(2), Ex.Int(3)))   //  1 + 2 * 3
+```
+
+One trap worth knowing: `&` and `|` on `Ex` are the **short-circuiting** operators, because that is
+what generated code usually wants. For a `[Flags]` combination you want `Ex.BitOr`, not `|`:
+
+```csharp
+Ex.On(t, "Class") | Ex.On(t, "Struct")             // AttributeTargets.Class || …   ⚠ CS0019
+Ex.BitOr(Ex.On(t, "Class"), Ex.On(t, "Struct"))    // AttributeTargets.Class | …
+```
+
+### Patterns — `Pat`
+
+Every pattern form C# has, including the combinators. Patterns are used through `Ex.Is`, or as
+switch arms:
+
+```csharp
+Ex.Id("value").Is(Pat.NotNull())                      // value is not null
+Ex.Id("value").Is(Pat.Declaration(stringType, "s"))   // value is string s
+Ex.Id("value").Is(Pat.GreaterThan(Ex.Int(8)))         // value is > 8
+
+Ex.Id("value").Is(Pat.Or(Pat.Constant(Ex.Int(1)),
+                         Pat.Constant(Ex.Int(2))))    // value is 1 or 2
+```
+
+`Pat.Null`, `Pat.Discard`, `Pat.Type`, `Pat.Var`, `Pat.VarTuple`, `Pat.Relational`, `Pat.Not`,
+`Pat.And` and property patterns via `Pat.Prop` cover the rest.
+
+### Putting them in a method
+
+An `Ex` goes into a method body through the statement API — there is no template step:
+
+```csharp
+method.Assign(Ex.New(sbType)).ToVar("sb");        // var sb = new StringBuilder();
+method.AddIndentedStatement(Ex.Id("sb").Call("Append", Ex.Str("hi")));
+method.Return(Ex.Id("sb").Call("ToString"));      // return sb.ToString();
+
+var block = method.If(Ex.Id("sb").Dot("Length").Is(Pat.GreaterThan(Ex.Int(0))));
+block.Return(null);                               // if (sb.Length is > 0) { return; }
+```
+
+### Blocks
+
+`If`, `ForEach`, `For`, `While` and `Lock` each open a real scope, so the body indents itself and
+closes itself. `Block` takes a header for anything with no node of its own:
+
+```csharp
+var guarded = method.Lock(Ex.Id("_gate"));        // lock (_gate) { … }
+guarded.AddIndentedStatement(Ex.Id("_count").Assign(Ex.Int(1)));
+
+var checkedBlock = method.Block("checked");       // checked { … }
+var unsafeBlock  = method.Block("unsafe");        // unsafe  { … }
+```
+
+`AddCode` is not a substitute — it writes a line and returns without opening a scope, so a
+hand-written `{` leaves the body at the wrong indent and the closing brace to you.
+
+### Expression bodies, and initializers that do not fit on a line
+
+`LambdaSyntax` writes `=> expression;` instead of a block, on a method or an accessor. A `Return`
+is unwrapped for you, because an expression body takes the expression:
+
+```csharp
+method.LambdaSyntax = true;
+method.Return(Ex.Str("x"));                       // public string Describe() => "x";
+```
+
+The array and collection factories write one line, which is right for a few short elements and
+wrong for a table. The `MultiLine` forms write one element per line:
+
+```csharp
+field.InitializeValue = Ex.NewArrayMultiLine(rowType, row1, row2, row3);
+// = new Row[]
+// {
+//     row1,
+//     row2,
+//     row3,
+// };
+```
+
+### Comments
+
+`Comment` is a `///` documentation comment, and its text is XML — it is escaped for you, so
+`List<string>` in a comment does not corrupt the file. For an ordinary `//` line:
+
+```csharp
+method.AddLineComment("why this is here");        // // why this is here
+
+file.AddAutoGeneratedHeader();                    // // <auto-generated/>, above the usings
+file.AddHeaderComment("built by the widget tool");
+```
+
+Every generated file wants `AddAutoGeneratedHeader` — it is what stops analyzers and style tools
+reporting on code nobody wrote.
+
+## Text templates: `AddCode`
+
+`AddCode` is the escape hatch for C# you would rather write as text than build. Prefer `Ex` — it
+escapes identifiers, tracks types and handles precedence, none of which a template can do.
+
+An `Ex` can be substituted into a template like any other value, so the two mix:
+
+```csharp
+method.AddCode("var sum = {arg1};", Ex.Add(Ex.Int(42), Ex.Int(1)));   // var sum = 42 + 1;
+```
 
 `AddCode` takes a template plus positional values. **`N` is 1-based**, and the brackets decide what
 happens to the value:
@@ -176,9 +338,13 @@ declaration that caused it, naming the feature, the version it needs and the ver
 
 ## Documentation
 
+This page is the manual — there is no documentation site. Beyond it:
+
 - **[Migrating from 1.x](https://github.com/ipjohnson/CSharpAuthor/blob/main/docs/migration-v1-v2.md)**
 - **[Known API gaps](https://github.com/ipjohnson/CSharpAuthor/blob/main/docs/api-gaps.md)** —
-  constructs the hand-written facade has no entry point for, and what to do instead
+  constructs with no first-class entry point. Written against preview1002 and **partly stale**: the
+  expression and pattern sections have been corrected, the rest has not. Try a construct before
+  believing it is missing.
 - **[AGENTS.md](https://github.com/ipjohnson/CSharpAuthor/blob/main/AGENTS.md)** — conventions,
   invariants and traps, for humans and AI agents working on the library itself
 

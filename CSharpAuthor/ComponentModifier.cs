@@ -163,6 +163,18 @@ public enum ComponentModifier
     /// </remarks>
     File = 32768,
 
+    /// <summary>
+    /// <c>volatile</c> on a field.
+    /// </summary>
+    /// <remarks>
+    /// Worth more than its size suggests. A generator emitting a double-checked lock without it
+    /// produces code that is correct on x86 - where the memory model hides the missing barrier -
+    /// and racy on ARM64, which is the kind of defect that ships. There was no way to write the
+    /// keyword at all before this, so the only correct double-checked lock a generator could emit
+    /// was one that went through <c>Volatile.Read</c>/<c>Volatile.Write</c> instead.
+    /// </remarks>
+    Volatile = 65536,
+
 }
 /// <summary>
 /// Reading a <see cref="ComponentModifier"/> as the C# keywords that spell it.
@@ -195,6 +207,7 @@ internal static class ComponentModifierExtensions
         (ComponentModifier.Sealed, "sealed"),
         (ComponentModifier.Override, "override"),
         (ComponentModifier.Readonly, "readonly"),
+        (ComponentModifier.Volatile, "volatile"),
         (ComponentModifier.Async, "async"),
         (ComponentModifier.Partial, "partial"),
     };
@@ -277,7 +290,7 @@ internal static class ComponentModifierExtensions
     /// </remarks>
     public const ComponentModifier FieldModifiers =
         ComponentModifier.Static | ComponentModifier.Readonly | ComponentModifier.Const |
-        ComponentModifier.New;
+        ComponentModifier.New | ComponentModifier.Volatile;
 
     /// <summary>
     /// The accessibility keywords <paramref name="modifiers"/> declares, or

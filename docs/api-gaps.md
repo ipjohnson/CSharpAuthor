@@ -1,7 +1,36 @@
 # API gaps
 
-Constructs CSharpAuthor's hand-written facade cannot express, as of 2.0.0-preview1002.
+Constructs CSharpAuthor's hand-written facade cannot express.
 
+> ## ⚠ This file went stale, and it is being corrected in place
+>
+> The inventory below was written against **2.0.0-preview1002**. `CSharpAuthor.Expressions` —
+> `Ex`, `Pat`, `Raw` — closed a large part of it in **preview1003**, and this file was not updated.
+>
+> **The `Expressions` and `Patterns` sections were wrong in their entirety.** All 11 expression
+> entries and 12 of the 13 pattern entries describe constructs that are emitted correctly today;
+> each has been replaced below with the call that builds it and the output it produces, verified
+> against preview1003.
+>
+> Five more entries have since been checked by running them. Two are **closed**
+> (`Base Class Constraint Ordering`, `Volatile Fields`), one was **partly wrong**
+> (`Operator Declarations` — reachable by an unobvious route), and two are **confirmed still open**
+> with the failing output recorded (`Conversion Operators`, `Destructors`). Everything not marked
+> that way has **not** been re-verified and should be treated as unreliable.
+>
+> If a construct here looks like something you need, **try it before believing this file**. Reach
+> for `AddCode` on its authority and you will write a string where an object would have worked.
+>
+> The irony is not lost: the section immediately below explains how the previous version of this
+> inventory went stale, and then the same thing happened to this one.
+>
+> **Every entry this file makes a verified claim about is now pinned by a test** —
+> `CSharpAuthor.Tests/Adversary/ApiGapLedgerTests.cs`. Each runs the construct and fails when
+> reality moves *either* way: a closed gap that stops working fails, and — the direction prose can
+> never catch — **an open gap that starts working fails too**. That is the failure mode that made
+> this file misleading rather than merely incomplete, and it is the one the skipped-test shape
+> described below could not catch either. A failure there is not necessarily a defect; it means the
+> documentation and the library disagree, and the fix may be to either.
 
 ## Why this file exists
 
@@ -31,28 +60,33 @@ So each entry below is an ergonomics and type-safety gap, not an expressiveness 
 ## Inventory (50)
 
 
-### Expressions
+### Expressions — ✅ all 11 closed in preview1003
 
-| Construct | What is missing |
-|---|---|
-| `As Expression` | There is no 'as' emitter, nor a safe-cast pairing with 'is' |
-| `Collection Expressions And Spreads` | There is no collection expression emitter, so [1, 2, ..rest] cannot be built. NewArrayStatement writes the new T[] { } form only. |
-| `Conditional Expression` | There is no conditional (?:) emitter; LogicStatement takes one infix operator and a ternary needs two |
-| `Interpolated Strings` | There is no interpolated string emitter, so $"{a}" cannot be built, and neither can the alignment/format clauses ({a,-10:N2}) or the escaping a nested quote needs |
-| `Lambdas` | There is no lambda emitter. None of the four forms (x => e, (x) => e, (T x) => e, delegate { }) can be built, so any generator emitting a LINQ query, an event handler or a factory has to hand AddCode a string. |
-| `Object Initializer With Named Members` | There is no object or collection initializer emitter that names members. NewStatement.AddInitValue writes bare values into { }, so 'new Foo { Bar = 1 }' can only be produced by passing the whole assignment as a preformatted string. |
-| `Ranges And Indices` | There is no range or index emitter. IndexStatement writes x[i]; x[1..^1] and x[^1] have no component. |
-| `Stack Alloc` | There is no stackalloc emitter |
-| `Switch Expressions` | There is no switch expression emitter. SwitchBlockDefinition writes the statement form only, so 'x switch { ... }' cannot be produced. |
-| `Tuples And Deconstruction` | A tuple type cannot be expressed. ValueTuple<int,string> can, but (int Count, string Name) cannot, so the element names are unreachable; nor is there a tuple literal or a deconstruction. |
-| `With Expressions` | There is no 'with' expression emitter, so a record cannot be copied with a change, which is the reason records were used in the first place |
+Every entry that was here is emitted correctly today. Verified output, `x` being `Ex.Id("x")`:
+
+| Was listed as missing | Build it with | Emits |
+|---|---|---|
+| As Expression | `Ex.As(x, strT)` | `x as string` |
+| Collection Expressions And Spreads | `Ex.Collection(Ex.Int(1), Ex.Int(2), Ex.Spread(Ex.Id("rest")))` | `[1, 2, ..rest]` |
+| Conditional Expression | `Ex.Conditional(x, Ex.Int(1), Ex.Int(2))` | `x ? 1 : 2` |
+| Interpolated Strings | `Ex.Interpolate("a=", x)` | `$"a={x}"` |
+| Lambdas | `Ex.Lambda("v", Ex.Id("v").Dot("N"))` | `v => v.N` |
+| Object Initializer With Named Members | `Ex.NewWithInitializer(ptT, null, Ex.Assign(Ex.Id("Bar"), Ex.Int(1)))` | `new Point { Bar = 1 }` |
+| Ranges And Indices | `Ex.Id("a").Index(Ex.Range(Ex.Int(1), Ex.FromEnd(Ex.Int(1))))` | `a[1..^1]` |
+| Stack Alloc | `Ex.StackAlloc(intT, Ex.Int(4))` | `stackalloc int[4]` |
+| Switch Expressions | `Ex.SwitchInline(x, Ex.Arm(Pat.Null, Ex.Int(0)), Ex.Arm(Pat.Discard, Ex.Int(1)))` | `x switch { null => 0, _ => 1 }` |
+| Tuples And Deconstruction | `Ex.Tuple(Ex.Int(1), Ex.Str("a"))` | `(1, "a")` |
+| With Expressions | `Ex.With(x, Ex.Assign(Ex.Id("N"), Ex.Int(2)))` | `x with { N = 2 }` |
+
+`Ex.Switch` gives the same switch expression laid out over multiple lines; `Ex.SwitchInline` keeps
+it on one.
 
 ### Generic constraints
 
 | Construct | What is missing |
 |---|---|
 | `Allows Ref Struct` | 'allows ref struct' (C# 13) has no method on ConstraintDefinition, so a generic that accepts a ref struct argument cannot be declared |
-| `Base Class Constraint Ordering` | A base-class constraint cannot be distinguished from an interface constraint. Implements() takes both, and C# requires the base class first, so the ordering rule the class documents as 'the caller's to keep' is unenforceable and produces CS0406 when a caller adds them in the order a symbol reports them. |
+| ~~`Base Class Constraint Ordering`~~ | **Closed.** `Implements()` still takes both, but the writer now orders them - the type model knows which is an interface, so a base class is emitted first whatever order it was added in. Pinned by `BaseClassConstraintIsWrittenBeforeInterfaces`. |
 | `Interface Constraints` | An interface cannot be generic at all, so an interface's type parameters cannot be constrained either |
 
 ### Literals
@@ -65,36 +99,45 @@ So each entry below is an ergonomics and type-safety gap, not an expressiveness 
 
 | Construct | What is missing |
 |---|---|
-| `Conversion Operators` | Conversion operators. 'public static implicit operator int(Money m)' and the explicit form have no component. |
-| `Destructors` | Destructors/finalizers. '~Host()' has no component; a ConstructorDefinition named ~Host would still write an access modifier, which a destructor may not have. |
+| `Conversion Operators` | **Confirmed still open.** The `operator +` trick does not extend to these: a conversion operator declares no return type, and `MethodDefinition` always writes one, so `AddMethod("implicit operator int")` emits `public static void implicit operator int(Money m)`. |
+| `Destructors` | **Confirmed still open.** Same cause as conversion operators - a destructor declares no return type. `AddMethod("~Host")` with `NoAccessibility` emits `&nbsp;void ~Host()`, with the stray leading space the suppressed modifier leaves behind. |
 | `Enum Member Literal Form` | An enum member cannot be given a negative or hex value in a controlled way; EnumValueDefinition writes Value.ToString(), so the literal form is whatever the CLR chose |
 | `Extension Blocks And Members` | Extension blocks and extension members. An extension method is reachable via ParameterDefinition.This; the C# 14 'extension(T x) { }' block, and extension properties and indexers inside it, are not. |
 | `Extern Members` | 'extern' has no ComponentModifier flag, so a DllImport declaration cannot be emitted |
 | `Generic Delegate Constraints` | A delegate cannot be generic. DelegateDefinition inherits MethodDefinition's generic parameters but a caller cannot reach constraints on them in a delegate position. |
 | `Generic Interfaces` | An interface cannot be generic. InterfaceDefinition has no AddGenericParameter and no constraint list, so 'interface IRepo<T> where T : class' cannot be declared. |
 | `Interface Member Kinds` | An interface cannot declare an event, an indexer, a nested type, or a generic parameter. InterfaceDefinition holds only methods and properties. |
-| `Operator Declarations` | Operator declarations. 'public static Money operator +(Money a, Money b)' cannot be written; MethodDefinition writes a name where the operator keyword and symbol go. |
+| `Operator Declarations` | **Partly wrong.** A binary operator *can* be written, because `MethodDefinition` writes its name where the operator keyword and symbol go - so `AddMethod("operator +")` emits `public static Money operator +(Money a, Money b)`, verified. It is a trick rather than an API, and nothing validates the name, but the construct is reachable. |
 | `Ref Returns` | Ref returns and ref locals. MethodDefinition writes the return type with no modifier position, so 'ref int M()' and 'ref readonly int M()' cannot be declared. |
 | `Unsafe Members` | 'unsafe' has no ComponentModifier flag, so neither an unsafe member nor a pointer type can be declared |
-| `Volatile Fields` | 'volatile' has no ComponentModifier flag |
+| ~~`Volatile Fields`~~ | **Closed.** `ComponentModifier.Volatile`. |
 
-### Patterns
+### Patterns — ✅ 12 of 13 closed in preview1003
+
+`Pat` implements every pattern form C# has. Verified output, `x` being `Ex.Id("x")`:
+
+| Was listed as missing | Build it with | Emits |
+|---|---|---|
+| Constant Pattern | `x.Is(Pat.Constant(Ex.Int(0)))` | `x is 0` |
+| Declaration Pattern | `x.Is(Pat.Declaration(strT, "d"))` | `x is string d` |
+| Discard Pattern | `x.Is(Pat.Discard)` | `x is _` |
+| List Pattern | `x.Is(Pat.List(Pat.Constant(Ex.Int(1)), Pat.Slice()))` | `x is [1, ..]` |
+| Not Null Pattern | `x.Is(Pat.NotNull())` | `x is not null` |
+| Parenthesised Pattern | `Pat.Parenthesized(…)` | `x is 1 or (not null and _)` |
+| Pattern Combinators | `x.Is(Pat.And(Pat.NotNull(), Pat.GreaterThan(Ex.Int(2))))` | `x is not null and > 2` |
+| Positional Pattern | `x.Is(Pat.Positional(ptT, Pat.Constant(Ex.Int(0)), Pat.Var("y")))` | `x is Point(0, var y)` |
+| Property Pattern | `x.Is(Pat.Property(null, new[]{ Pat.Prop("Count", Pat.GreaterThan(Ex.Int(0))) }))` | `x is { Count: > 0 }` |
+| Relational Pattern | `x.Is(Pat.LessThanOrEqual(Ex.Int(10)))` | `x is <= 10` |
+| Slice Pattern | `x.Is(Pat.List(Pat.Var("first"), Pat.Slice(Pat.Var("rest"))))` | `x is [var first, .. var rest]` |
+| Var Pattern | `x.Is(Pat.Var("v"))` | `x is var v` |
+
+`Pat.Recursive` combines a positional and a property pattern with an optional designation.
+
+**Still open:**
 
 | Construct | What is missing |
 |---|---|
-| `Constant Pattern` | Constant pattern. 'x is 0', 'x is null', 'x is "a"' have no component; the null test has to be written as an equality expression instead. |
-| `Declaration Pattern` | Declaration pattern. 'x is Dog d' cannot be written: Is takes no designation, so the tested value cannot be captured and every use has to cast a second time. |
-| `Discard Pattern` | Discard pattern. 'x is _' has no component, and neither does the discard arm of a switch expression. |
-| `List Pattern` | List pattern. 'x is [1, 2, ..]' has no component. |
-| `Not Null Pattern` | 'is not null' cannot be written as a pattern. This is the single most common pattern in generated code and there is no route to it. |
-| `Parenthesised Pattern` | Parenthesised pattern. Without one, a combinator fix cannot control its own precedence: 'a or b and c' means 'a or (b and c)'. |
-| `Pattern Combinators` | Pattern combinators. 'and', 'or' and 'not' have no node, so no pattern can be composed with another; SyntaxHelpers.And/Or build boolean expressions, which is a different grammar position. |
-| `Pattern In A Case Label` | A pattern cannot appear in a case label. CaseBlockDefinition writes 'case <value>:' from an expression, so 'case Dog d when d.Age > 2:' cannot be produced. |
-| `Positional Pattern` | Positional/recursive pattern. 'x is Point(0, var y)' cannot be written, so a deconstructible type cannot be matched. |
-| `Property Pattern` | Property pattern. 'x is { Count: > 0 }' and nested designations like 'x is { Owner: { Name: var n } }' have no component. |
-| `Relational Pattern` | Relational patterns. 'x is > 0', 'x is <= 10' cannot be written, so a range test cannot be expressed as a pattern at all. |
-| `Slice Pattern` | Slice pattern. 'x is [first, .. var rest]' has no component. |
-| `Var Pattern` | Var pattern. 'x is var v' has no component. |
+| `Pattern In A Case Label` | A pattern cannot appear in a case label. `CaseBlockDefinition` writes `case <value>:` from an expression, so `case Dog d when d.Age > 2:` cannot be produced. `Ex.Switch` covers the *expression* form with guards; the statement form does not take a `Pat`. |
 
 ### Statements
 

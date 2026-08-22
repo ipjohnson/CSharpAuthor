@@ -24,6 +24,6 @@ public class StaticPropertyStatement : BaseOutputComponent
 
         outputContext.Write(_typeDefinition);
         outputContext.Write(".");
-        outputContext.Write(_propertyName);
+        outputContext.Write(CSharpIdentifier.EscapeQualified(_propertyName));
     }
 }

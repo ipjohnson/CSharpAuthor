@@ -135,6 +135,49 @@ public class ConstraintDefinition
     /// <summary>
     /// Writes <c>where T : ...</c>, with no leading or trailing space.
     /// </summary>
+    /// <summary>
+    /// <see cref="_types"/> with any non-interface constraint moved to the front, preserving the
+    /// relative order of everything else.
+    /// </summary>
+    private IEnumerable<ITypeDefinition> OrderedTypes()
+    {
+        var hasBaseType = false;
+
+        foreach (var type in _types)
+        {
+            if (type.TypeDefinitionEnum != TypeDefinitionEnum.InterfaceDefinition)
+            {
+                hasBaseType = true;
+                break;
+            }
+        }
+
+        if (!hasBaseType)
+        {
+            return _types;
+        }
+
+        var ordered = new List<ITypeDefinition>(_types.Count);
+
+        foreach (var type in _types)
+        {
+            if (type.TypeDefinitionEnum != TypeDefinitionEnum.InterfaceDefinition)
+            {
+                ordered.Add(type);
+            }
+        }
+
+        foreach (var type in _types)
+        {
+            if (type.TypeDefinitionEnum == TypeDefinitionEnum.InterfaceDefinition)
+            {
+                ordered.Add(type);
+            }
+        }
+
+        return ordered;
+    }
+
     public void WriteOutput(IOutputContext outputContext)
     {
         if (IsEmpty)
@@ -154,7 +197,12 @@ public class ConstraintDefinition
             written = true;
         }
 
-        foreach (var type in _types)
+        // C# requires the base-class constraint first: `where T : Stream, IDisposable` compiles
+        // and `where T : IDisposable, Stream` is CS0406. Callers add them in whatever order they
+        // read them - a loop over a symbol's ConstraintTypes has no reason to sort - and the type
+        // model already knows which is which, so order them here rather than make it the caller's
+        // problem. At most one is not an interface, so this moves at most one entry.
+        foreach (var type in OrderedTypes())
         {
             if (written)
             {

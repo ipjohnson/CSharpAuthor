@@ -39,10 +39,41 @@ public class AttributeDefinition : BaseOutputComponent
     /// </summary>
     /// <remarks>
     /// Components, so a string literal needs <see cref="SyntaxHelpers.QuoteString"/> and a type
-    /// needs <see cref="SyntaxHelpers.TypeOf"/>. Named arguments have no special support: write one
-    /// as a component whose text is <c>Name = value</c>.
+    /// needs <see cref="SyntaxHelpers.TypeOf"/>. For a named argument use
+    /// <see cref="AddNamedArgument"/>, which keeps it after the positional ones - C# requires that
+    /// order, and a named argument added to this list would sit wherever it was added.
     /// </remarks>
     public IList<IOutputComponent>? Arguments { get; set; }
+
+    /// <summary>
+    /// The named arguments, written after the positional ones as <c>Name = value</c>.
+    /// </summary>
+    /// <remarks>
+    /// Held separately from <see cref="Arguments"/> rather than pre-formatted into it, because C#
+    /// requires every positional argument to precede every named one - and because a name is an
+    /// identifier, so it is escaped rather than written through.
+    /// </remarks>
+    public IList<KeyValuePair<string, IOutputComponent>>? NamedArguments { get; set; }
+
+    /// <summary>
+    /// Adds <c><paramref name="name"/> = <paramref name="value"/></c> to the attribute.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var attribute = new AttributeDefinition(TypeDefinition.Get(typeof(ObsoleteAttribute)));
+    ///
+    /// attribute.AddNamedArgument("IsError", SyntaxHelpers.True);
+    /// // [Obsolete(IsError = true)]
+    /// </code>
+    /// </example>
+    public AttributeDefinition AddNamedArgument(string name, IOutputComponent value)
+    {
+        NamedArguments ??= new List<KeyValuePair<string, IOutputComponent>>();
+
+        NamedArguments.Add(new KeyValuePair<string, IOutputComponent>(name, value));
+
+        return this;
+    }
 
     /// <summary>
     /// The declaration the attribute applies to, written as <c>[target: Attr]</c>.
@@ -98,12 +129,42 @@ public class AttributeDefinition : BaseOutputComponent
 
     private void WriteArguments(IOutputContext outputContext)
     {
-        if (Arguments is { Count: > 0 })
+        var positional = Arguments is { Count: > 0 };
+        var named = NamedArguments is { Count: > 0 };
+
+        if (!positional && !named)
         {
-            outputContext.Write("(");
-            Arguments.OutputCommaSeparatedList(outputContext);
-            outputContext.Write(")");
+            // No parentheses at all - `[Flags]`, not `[Flags()]`.
+            return;
         }
+
+        outputContext.Write("(");
+
+        if (positional)
+        {
+            Arguments!.OutputCommaSeparatedList(outputContext);
+        }
+
+        if (named)
+        {
+            var first = !positional;
+
+            foreach (var argument in NamedArguments!)
+            {
+                if (!first)
+                {
+                    outputContext.Write(", ");
+                }
+
+                outputContext.Write(CSharpIdentifier.Escape(argument.Key));
+                outputContext.Write(" = ");
+                argument.Value.WriteOutput(outputContext);
+
+                first = false;
+            }
+        }
+
+        outputContext.Write(")");
     }
 
 }

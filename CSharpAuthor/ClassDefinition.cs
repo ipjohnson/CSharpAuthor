@@ -801,37 +801,37 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
             componentAction,
             outputContext,
             _properties,
-            method => method.Modifiers.HasFlag(ComponentModifier.Public));
+            method => RendersAsPublic(method.Modifiers));
 
         WriteMemberComponents(
             componentAction,
             outputContext,
             _events,
-            e => e.Modifiers.HasFlag(ComponentModifier.Public));
+            e => RendersAsPublic(e.Modifiers));
 
         WriteMemberComponents(
             componentAction,
             outputContext,
             _methods,
-            m => m.Modifiers.HasFlag(ComponentModifier.Public));
+            m => RendersAsPublic(m.Modifiers));
 
         WriteMemberComponents(
             componentAction,
             outputContext,
             _properties,
-            method => !method.Modifiers.HasFlag(ComponentModifier.Public));
+            method => !RendersAsPublic(method.Modifiers));
 
         WriteMemberComponents(
             componentAction,
             outputContext,
             _events,
-            e => !e.Modifiers.HasFlag(ComponentModifier.Public));
+            e => !RendersAsPublic(e.Modifiers));
 
         WriteMemberComponents(
             componentAction,
             outputContext,
             _methods,
-            m => !m.Modifiers.HasFlag(ComponentModifier.Public));
+            m => !RendersAsPublic(m.Modifiers));
 
         foreach (var classDefinition in _classes)
         {
@@ -848,15 +848,40 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         }
     }
 
+    /// <summary>
+    /// Whether a member with <paramref name="modifiers"/> is written as <c>public</c>.
+    /// </summary>
+    /// <remarks>
+    /// The members are grouped public-first, and the group used to be chosen by testing the
+    /// <see cref="ComponentModifier.Public"/> flag alone. That is not the same question as the one
+    /// the writer answers: a member with no accessibility flag at all renders as <c>public</c>,
+    /// because that is the default passed to <c>GetAccessibilityKeywords</c> - so
+    /// <see cref="ComponentModifier.None"/> was written <c>public</c> and sorted with the private
+    /// half. Two members that read identically ended up in different halves of the file with the
+    /// private ones in between. Asking the same function the writer asks keeps the two in step.
+    /// </remarks>
+    private static bool RendersAsPublic(ComponentModifier modifiers) =>
+        modifiers.GetAccessibilityKeywords(KeyWords.Public) == KeyWords.Public;
+
+    /// <summary>
+    /// Writes the members of <paramref name="components"/> that <paramref name="skipWhen"/> does
+    /// <em>not</em> match.
+    /// </summary>
+    /// <remarks>
+    /// The predicate is an exclusion, not a selection - it was called <c>filter</c>, which reads as
+    /// the opposite of what it does, and makes all six call sites read as the opposite of what they
+    /// do. The pass that passes <c>RendersAsPublic</c> writes the members that are <em>not</em>
+    /// public, which is why the non-public group is emitted first.
+    /// </remarks>
     private void WriteMemberComponents(
         Action<IOutputComponent> componentAction, 
         IOutputContext outputContext,
         IEnumerable<BaseOutputComponent> components,
-        Func<BaseOutputComponent,bool> filter) {
+        Func<BaseOutputComponent,bool> skipWhen) {
         
         foreach (var component in components)
         {
-            if (filter(component))
+            if (skipWhen(component))
             {
                 continue;
             }

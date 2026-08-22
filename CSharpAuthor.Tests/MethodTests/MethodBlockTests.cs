@@ -72,7 +72,7 @@ public class MethodBlockTests
     private const string ForEachExpected = 
         @"public void Test(IEnumerable<object> collection)
 {
-    foreach(var someValue in collection)
+    foreach (var someValue in collection)
     {
         var someField = someValue.ToString();
     }

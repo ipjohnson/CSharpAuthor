@@ -259,6 +259,11 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
             return component.Parts ?? new object[] { GetObjectStringValue(value) };
         }
 
+        if (value is IOutputComponent outputComponent)
+        {
+            return new object[] { outputComponent };
+        }
+
         return new object[] { GetObjectStringValue(value) };
     }
 
@@ -502,6 +507,56 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
     public ForEachDefinition ForEach(string variable, IOutputComponent enumerableComponent)
     {
         return Add(new ForEachDefinition(variable, enumerableComponent));
+    }
+
+    /// <summary>
+    /// A <c>lock</c> on <paramref name="lockObject"/>.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// var guarded = method.Lock(SyntaxHelpers.Field("_gate"));
+    /// guarded.Assign("value").ToVar("cached");
+    /// // lock (_gate)
+    /// // {
+    /// //     var cached = value;
+    /// // }
+    /// </code>
+    /// </example>
+    public LockDefinition Lock(IOutputComponent lockObject)
+    {
+        return Add(new LockDefinition(lockObject));
+    }
+
+    /// <summary>
+    /// A <c>lock</c> on the expression <paramref name="lockObject"/>, which is C# text.
+    /// </summary>
+    public LockDefinition Lock(string lockObject)
+    {
+        return Add(new LockDefinition(CodeOutputComponent.Get(lockObject)));
+    }
+
+    /// <summary>
+    /// A block introduced by <paramref name="header"/> - <c>unsafe</c>, <c>checked</c>,
+    /// <c>fixed (...)</c>, or any other construct with no node of its own.
+    /// </summary>
+    /// <remarks>
+    /// The escape hatch for control flow. <see cref="AddCode"/> cannot stand in for one: it writes
+    /// a line and returns without opening a scope, so a hand-written brace leaves the body at the
+    /// wrong indent and the closing brace to the caller. This opens a real scope.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// var block = method.Block("unsafe");
+    /// block.AddIndentedStatement("*p = 1");
+    /// // unsafe
+    /// // {
+    /// //     *p = 1;
+    /// // }
+    /// </code>
+    /// </example>
+    public BlockDefinition Block(string header)
+    {
+        return Add(new BlockDefinition(header));
     }
 
     /// <summary>

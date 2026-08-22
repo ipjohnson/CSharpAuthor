@@ -84,6 +84,9 @@ public class FieldDefinition : BaseOutputComponent, INamedComponent
             return;
         }
         
-        DocumentationComment.WriteSummary(outputContext.WriteLine, Comment);
+        // WriteIndentedLine, like every other member kind. WriteLine put the `///` at column
+        // zero whatever the nesting depth, so a documented field in a nested class had its comment
+        // hard against the left margin.
+        DocumentationComment.WriteSummary(outputContext.WriteIndentedLine, Comment);
     }
 }

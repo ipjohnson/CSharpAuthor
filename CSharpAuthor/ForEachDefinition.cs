@@ -35,7 +35,7 @@ public class ForEachDefinition : BaseBlockDefinition
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.WriteIndent("foreach(var ");
+        outputContext.WriteIndent("foreach (var ");
         Instance.WriteOutput(outputContext);
         outputContext.Write(" in ");
         _enumerableStatement.WriteOutput(outputContext);

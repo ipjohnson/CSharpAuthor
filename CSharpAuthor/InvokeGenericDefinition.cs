@@ -50,7 +50,7 @@ public class InvokeGenericDefinition : BaseOutputComponent
             outputContext.Write(".");
         }
 
-        outputContext.Write(_methodName);
+        outputContext.Write(CSharpIdentifier.EscapeQualified(_methodName));
         outputContext.Write("<");
         _genericArguments.OutputCommaSeparatedList(outputContext, outputContext.Options.BreakInvokeLines);
         outputContext.Write(">");

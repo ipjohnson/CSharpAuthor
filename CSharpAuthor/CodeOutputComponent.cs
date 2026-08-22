@@ -72,14 +72,22 @@ public class CodeOutputComponent : BaseOutputComponent
         }
 
         var builder = new StringBuilder();
-        var hasType = false;
+        var hasStructuredPart = false;
 
         foreach (var part in parts)
         {
             if (part is ITypeDefinition typeDefinition)
             {
-                hasType = true;
+                hasStructuredPart = true;
                 builder.Append(typeDefinition.GetShortName());
+            }
+            else if (part is IOutputComponent)
+            {
+                // A composed expression writes itself at serialization, so the parts list has to
+                // survive. Appending it to the builder would call ToString() and freeze the
+                // component's .NET type name into the text - which is what happened before this
+                // branch existed, for every Ex, Pat and NewStatement handed to {argN}.
+                hasStructuredPart = true;
             }
             else
             {
@@ -89,7 +97,9 @@ public class CodeOutputComponent : BaseOutputComponent
 
         var statement = builder.ToString();
 
-        return hasType ? new CodeOutputComponent(parts, statement) : new CodeOutputComponent(statement);
+        return hasStructuredPart
+            ? new CodeOutputComponent(parts, statement)
+            : new CodeOutputComponent(statement);
     }
 
     public static IEnumerable<IOutputComponent> GetAll(IEnumerable<object> values, bool indented = false)
@@ -366,6 +376,13 @@ public class CodeOutputComponent : BaseOutputComponent
                 if (_parts[i] is ITypeDefinition typeDefinition)
                 {
                     outputContext.Write(typeDefinition);
+                }
+                else if (_parts[i] is IOutputComponent nested)
+                {
+                    // A composed expression - an Ex, a Raw, a NewStatement - substituted through
+                    // {argN}. It writes itself, so its types stay tracked and its precedence stays
+                    // its own. Without this branch the cast below turned it into its .NET type name.
+                    nested.WriteOutput(outputContext);
                 }
                 else
                 {

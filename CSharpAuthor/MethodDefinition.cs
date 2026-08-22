@@ -343,6 +343,23 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
     private bool IsBodyless =>
         OmitBody || (Modifiers & ComponentModifier.Abstract) == ComponentModifier.Abstract;
 
+    /// <summary>
+    /// Writes the body as <c>=&gt; expression;</c> rather than a braced block.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The accessor form has had this since <c>PropertyMethodDefinition.LambdaSyntax</c>; the
+    /// method form had nothing, so an expression-bodied method could only be produced by writing
+    /// the whole declaration as text.
+    /// </para>
+    /// <para>
+    /// The body has to be a single statement. A <c>Return</c> is unwrapped to the expression it
+    /// returns, because an expression body takes the expression - writing the <c>return</c> keyword
+    /// into that position is what produced <c>=&gt; return x;;</c> on the accessor form.
+    /// </para>
+    /// </remarks>
+    public bool LambdaSyntax { get; set; }
+
     protected virtual void WriteMethodBody(IOutputContext outputContext)
     {
         if (IsBodyless)
@@ -350,7 +367,54 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
             return;
         }
 
+        if (LambdaSyntax && StatementCount == 1)
+        {
+            outputContext.Write(" => ");
+
+            var statement = UnwrapExpressionBody(StatementList[0]);
+
+            statement.WriteOutput(outputContext);
+
+            if (outputContext.LastCharacter != ';')
+            {
+                outputContext.Write(";");
+            }
+
+            outputContext.WriteLine();
+
+            return;
+        }
+
         WriteBlock(outputContext);
+    }
+
+    /// <summary>
+    /// The expression inside a statement added through <c>Return</c> or
+    /// <c>AddIndentedStatement</c>, with the wrappers that make it a statement removed.
+    /// </summary>
+    /// <remarks>
+    /// Two of them: <c>AddIndentedStatement</c> wraps in an
+    /// <see cref="IndentedStatementComponent"/>, which writes the block indent and the terminator,
+    /// and <c>Return</c> wraps in an <see cref="AppendStatement"/> carrying the keyword.
+    /// </remarks>
+    internal static IOutputComponent UnwrapExpressionBody(IOutputComponent statement)
+    {
+        if (statement is IndentedStatementComponent indented)
+        {
+            statement = indented.Inner;
+        }
+
+        if (statement is AppendStatement { AppendString: "return " } returnStatement)
+        {
+            statement = returnStatement.Inner;
+        }
+
+        if (statement is BaseOutputComponent component)
+        {
+            component.Indented = false;
+        }
+
+        return statement;
     }
 
     protected virtual void WriteMethodSignature(IOutputContext outputContext)
@@ -393,7 +457,17 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
         WriteEndOfMethodSignature(outputContext);
     }
 
-    protected virtual void WriteEndOfMethodSignature(IOutputContext outputContext)
+    /// <summary>
+    /// The <c>where</c> clauses, written between the parameter list and whatever terminates the
+    /// signature.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="WriteEndOfMethodSignature"/> because an interface method terminates
+    /// its signature differently and so overrides that method. Before this was pulled out, the
+    /// override replaced the constraint loop as well, and every constraint on an interface method
+    /// was silently dropped - <c>AddConstraint</c> accepted them and nothing wrote them.
+    /// </remarks>
+    protected void WriteConstraints(IOutputContext outputContext)
     {
         WhereStatement?.WriteOutput(outputContext);
 
@@ -408,10 +482,22 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
 
             constraint.WriteOutput(outputContext);
         }
+    }
+
+    protected virtual void WriteEndOfMethodSignature(IOutputContext outputContext)
+    {
+        WriteConstraints(outputContext);
 
         if (IsBodyless)
         {
             outputContext.Write(";");
+        }
+
+        // An expression body continues this line - `string Describe() => "x";` - so the line break
+        // is the block form's, not the signature's.
+        if (LambdaSyntax && !IsBodyless && StatementCount == 1)
+        {
+            return;
         }
 
         outputContext.WriteLine();
@@ -431,8 +517,17 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
             return;
         }
 
-        outputContext.Write(GetAccessModifier(KeyWords.Public));
-        outputContext.WriteSpace();
+        var accessModifier = GetAccessModifier(KeyWords.Public);
+
+        outputContext.Write(accessModifier);
+
+        // Only when there is one. ComponentModifier.NoAccessibility writes nothing, and the space
+        // went in anyway - so `partial void OnCreated();` came out one column right of every other
+        // member in the type.
+        if (accessModifier.Length > 0)
+        {
+            outputContext.WriteSpace();
+        }
 
         outputContext.Write(
             Modifiers.GetModifierKeywords(ComponentModifierExtensions.MethodModifiers));

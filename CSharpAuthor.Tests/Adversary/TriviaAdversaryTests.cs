@@ -227,7 +227,7 @@ public class TriviaAdversaryTests
     /// The markup-escaping defect at its other two sites: a parameter's documentation and a return
     /// documentation are written the same way the summary is.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: <param> and <returns> text is not XML-escaped either, so a parameter documented as 'the <x> & value' emits malformed XML - CS1570")]
+    [Fact]
     public void ParameterAndReturnCommentsAreEscaped()
     {
         var method = new MethodDefinition("M") { Comment = "does a thing" };

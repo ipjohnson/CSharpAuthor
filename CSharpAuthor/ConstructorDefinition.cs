@@ -77,7 +77,10 @@ public class ConstructorDefinition : MethodDefinition
         {
             outputContext.WriteIndent();
             outputContext.Write(outputContext.SingleIndent);
-            outputContext.Write(" : ");
+
+            // No leading space: the indent above is already the full one, so ` : ` put the
+            // initialiser one column right of the four-space continuation it was aiming for.
+            outputContext.Write(": ");
             Base.WriteOutput(outputContext);
             outputContext.WriteLine();
         }
