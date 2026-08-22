@@ -85,7 +85,7 @@ CSharpAuthor ships as **source**, compiled into your project, so a source genera
 without taking on a dependency it would then have to redistribute. In a generator project:
 
 ```xml
-<PackageReference Include="CSharpAuthor" Version="2.0.0-preview1003">
+<PackageReference Include="CSharpAuthor" Version="2.0.0-preview1004">
   <PrivateAssets>all</PrivateAssets>
   <IncludeAssets>build</IncludeAssets>
 </PackageReference>
