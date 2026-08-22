@@ -22,9 +22,15 @@ Constructs CSharpAuthor's hand-written facade cannot express.
 > for `AddCode` on its authority and you will write a string where an object would have worked.
 >
 > The irony is not lost: the section immediately below explains how the previous version of this
-> inventory went stale, and then the same thing happened to this one. The fix is to generate it —
-> a test that attempts each construct and records the ones that actually fail, so a stale entry
-> breaks the build instead of misleading a reader.
+> inventory went stale, and then the same thing happened to this one.
+>
+> **Every entry this file makes a verified claim about is now pinned by a test** —
+> `CSharpAuthor.Tests/Adversary/ApiGapLedgerTests.cs`. Each runs the construct and fails when
+> reality moves *either* way: a closed gap that stops working fails, and — the direction prose can
+> never catch — **an open gap that starts working fails too**. That is the failure mode that made
+> this file misleading rather than merely incomplete, and it is the one the skipped-test shape
+> described below could not catch either. A failure there is not necessarily a defect; it means the
+> documentation and the library disagree, and the fix may be to either.
 
 ## Why this file exists
 
