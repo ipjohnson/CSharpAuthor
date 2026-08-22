@@ -103,7 +103,7 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
     /// name.Get.AddCode("_name");
     /// // public string Name => _name;
     /// </code>
-    /// Without <see cref="PropertyMethodDefinition.LambdaSyntax"/> the same statements give the
+    /// Without <see cref="MethodDefinition.LambdaSyntax"/> - inherited by the accessor - the same statements give the
     /// braced form:
     /// <code>
     /// public string Name
