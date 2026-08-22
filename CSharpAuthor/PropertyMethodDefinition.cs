@@ -65,7 +65,27 @@ public class PropertyMethodDefinition : MethodDefinition
             outputContext.Write(" => ");
             var statement = StatementList.First();
 
-            if (statement is CodeOutputComponent statementOutput)
+            // `Get.LambdaSyntax = true` together with `Get.Return(x)` is the natural pairing of two
+            // documented APIs, and it emitted `=> return x;;` - the return keyword written into a
+            // position C# does not allow, at the block's indent, followed by a stray terminator.
+            // An expression body takes the expression, so unwrap the return rather than write it.
+            // Two wrappers to get through. Return() calls AddIndentedStatement, which wraps the
+            // AppendStatement in an IndentedStatementComponent - the thing that was writing the
+            // block indent and the terminator into the middle of the signature.
+            if (statement is IndentedStatementComponent indented)
+            {
+                statement = indented.Inner;
+            }
+
+            if (statement is AppendStatement { AppendString: "return " } returnStatement)
+            {
+                statement = returnStatement.Inner;
+            }
+
+            // Indented is on BaseOutputComponent, not just CodeOutputComponent: a Return() builds an
+            // AppendStatement, which matched neither the old cast nor the reset, so the accessor
+            // body was written as an indented line in the middle of the signature.
+            if (statement is BaseOutputComponent statementOutput)
             {
                 statementOutput.Indented = false;
             }

@@ -393,7 +393,17 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
         WriteEndOfMethodSignature(outputContext);
     }
 
-    protected virtual void WriteEndOfMethodSignature(IOutputContext outputContext)
+    /// <summary>
+    /// The <c>where</c> clauses, written between the parameter list and whatever terminates the
+    /// signature.
+    /// </summary>
+    /// <remarks>
+    /// Separate from <see cref="WriteEndOfMethodSignature"/> because an interface method terminates
+    /// its signature differently and so overrides that method. Before this was pulled out, the
+    /// override replaced the constraint loop as well, and every constraint on an interface method
+    /// was silently dropped - <c>AddConstraint</c> accepted them and nothing wrote them.
+    /// </remarks>
+    protected void WriteConstraints(IOutputContext outputContext)
     {
         WhereStatement?.WriteOutput(outputContext);
 
@@ -408,6 +418,11 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
 
             constraint.WriteOutput(outputContext);
         }
+    }
+
+    protected virtual void WriteEndOfMethodSignature(IOutputContext outputContext)
+    {
+        WriteConstraints(outputContext);
 
         if (IsBodyless)
         {

@@ -50,7 +50,7 @@ internal static class DocumentationComment
 
         if (!IsMultiLine(comment!))
         {
-            writeLine("/// " + openTag + comment!.Trim() + closeTag);
+            writeLine("/// " + openTag + EscapeXml(comment!.Trim()) + closeTag);
 
             return;
         }
@@ -62,11 +62,45 @@ internal static class DocumentationComment
         writeLine("/// " + closeTag);
     }
 
+    /// <summary>
+    /// <paramref name="text"/> with the three characters XML reserves replaced by their entities.
+    /// </summary>
+    /// <remarks>
+    /// A documentation comment is XML, and the text put in one is ordinary prose - a generator
+    /// mirroring a user's type will eventually document something as <c>List&lt;string&gt;</c>.
+    /// Written through, that is malformed XML and the consumer's build reports CS1570.
+    /// <para>
+    /// The consequence is that a caller cannot embed markup of their own in <c>Comment</c>: a
+    /// <c>&lt;see cref="X"/&gt;</c> written there is now escaped and shows as text. That is the
+    /// deliberate trade. Prose is what these properties are handed, and prose silently producing
+    /// broken XML is the worse failure - it is invisible in the emitted file and only appears as a
+    /// warning in somebody else's build.
+    /// </para>
+    /// </remarks>
+    public static string EscapeXml(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return text ?? "";
+        }
+
+        // Ampersand first: escaping it after the others would double-escape what they produced.
+        if (text!.IndexOf('&') < 0 && text.IndexOf('<') < 0 && text.IndexOf('>') < 0)
+        {
+            return text;
+        }
+
+        return text
+            .Replace("&", "&amp;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;");
+    }
+
     private static void WriteBody(Action<string> writeLine, string comment)
     {
         foreach (var line in comment.Split('\n'))
         {
-            var text = line.TrimEnd('\r').TrimEnd();
+            var text = EscapeXml(line.TrimEnd('\r').TrimEnd());
 
             // A blank line keeps its marker but not a trailing space, which is what an editor
             // strips on save and what would otherwise show up as a whitespace-only diff.

@@ -315,7 +315,19 @@ public class PropertyDefinition : BaseOutputComponent, INamedComponent
         {
             if (Get.StatementCount == 0)
             {
-                outputContext.WriteLine(" { get; }");
+                outputContext.Write(" { get; }");
+
+                // A get-only auto-property still takes an initializer. Returning here without one
+                // discarded whatever the caller set, silently, and the result compiled - so the
+                // value simply went missing at runtime.
+                if (DefaultValue != null)
+                {
+                    outputContext.Write(" = ");
+                    DefaultValue.WriteOutput(outputContext);
+                    outputContext.Write(";");
+                }
+
+                outputContext.WriteLine();
                 return;
             }
                 

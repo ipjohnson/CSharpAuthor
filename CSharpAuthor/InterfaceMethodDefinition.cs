@@ -74,6 +74,8 @@ public class InterfaceMethodDefinition : MethodDefinition
 
     protected override void WriteEndOfMethodSignature(IOutputContext outputContext)
     {
+        WriteConstraints(outputContext);
+
         if (StatementCount == 0)
         {
             outputContext.Write(";");

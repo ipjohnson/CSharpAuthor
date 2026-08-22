@@ -43,6 +43,11 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
     private readonly NamespaceDefinition _namespaceDefinition;
 
     /// <summary>
+    /// Assembly and module attributes, which are written above the namespace rather than in it.
+    /// </summary>
+    private readonly List<IOutputComponent> _fileLevelComponents = new();
+
+    /// <summary>
     /// A file declaring <paramref name="ns"/>.
     /// </summary>
     /// <remarks>
@@ -155,6 +160,19 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
     /// </remarks>
     public void AddComponent(IOutputComponent component)
     {
+        // An assembly or module attribute is not a member of the namespace, and C# will not accept
+        // it inside one: CS1730 says they must precede every other element in the file bar usings
+        // and extern aliases. Added here they were written wherever the namespace body reached, so
+        // the only way to emit one correctly was to not use this API.
+        if (component is AttributeDefinition { Target: { } target } &&
+            (string.Equals(target, "assembly", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(target, "module", StringComparison.OrdinalIgnoreCase)))
+        {
+            _fileLevelComponents.Add(component);
+
+            return;
+        }
+
         _namespaceDefinition.AddComponent(component);
     }
 
@@ -187,6 +205,13 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
             // Anything written before this point - a leading trait, the file's own comment - is the
             // header, and the generated using directives go after it rather than above it.
             context.MarkEndOfFileHeader();
+        }
+
+        // After the header mark, so the generated usings still land above these - which is the one
+        // ordering C# accepts for an assembly attribute.
+        foreach (var component in _fileLevelComponents)
+        {
+            component.WriteOutput(outputContext);
         }
 
         _namespaceDefinition.WriteOutput(outputContext);

@@ -13,6 +13,9 @@ public class IndentedStatementComponent : BaseOutputComponent
         _component = component;
     }
 
+    /// <summary>The statement this indents and terminates.</summary>
+    internal IOutputComponent Inner => _component;
+
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
         outputContext.WriteIndent();

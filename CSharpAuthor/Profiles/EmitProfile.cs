@@ -355,6 +355,19 @@ sealed partial class EmitProfile
     /// C# 8, block namespace, no sugar. What a source generator ships when it does not know what
     /// its consumers compile at.
     /// </summary>
+    /// <remarks>
+    /// Like every preset, this leaves <see cref="OnCapabilityViolation"/> at
+    /// <see cref="CapabilityViolationBehavior.Throw"/>. Inside
+    /// <c>RegisterSourceOutput</c> a throw is <c>CS8785</c> and no generated file, which tells the
+    /// consumer almost nothing - so a generator usually wants the other behaviour:
+    /// <code>
+    /// var profile = EmitProfile.Conservative.With(
+    ///     p => p.OnCapabilityViolation = CapabilityViolationBehavior.EmitErrorDirective);
+    /// </code>
+    /// That writes <c>#error</c> into the output instead, so the consumer's build fails with the
+    /// reason in it. The default stays <c>Throw</c> because a violation is a bug in the generator
+    /// and a thrown exception is the louder signal while you are writing one.
+    /// </remarks>
     public static readonly EmitProfile Conservative =
         new EmitProfile
         {

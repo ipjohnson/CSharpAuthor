@@ -15,6 +15,12 @@ public class AppendStatement : BaseOutputComponent
         _outputComponent = outputComponent;
     }
 
+    /// <summary>The text written before the component.</summary>
+    internal string AppendString => _appendString;
+
+    /// <summary>The component written after the text.</summary>
+    internal IOutputComponent Inner => _outputComponent;
+
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
         outputContext.Write(_appendString);
