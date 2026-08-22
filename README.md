@@ -221,6 +221,29 @@ var unsafeBlock  = method.Block("unsafe");        // unsafe  { … }
 `AddCode` is not a substitute — it writes a line and returns without opening a scope, so a
 hand-written `{` leaves the body at the wrong indent and the closing brace to you.
 
+### Expression bodies, and initializers that do not fit on a line
+
+`LambdaSyntax` writes `=> expression;` instead of a block, on a method or an accessor. A `Return`
+is unwrapped for you, because an expression body takes the expression:
+
+```csharp
+method.LambdaSyntax = true;
+method.Return(Ex.Str("x"));                       // public string Describe() => "x";
+```
+
+The array and collection factories write one line, which is right for a few short elements and
+wrong for a table. The `MultiLine` forms write one element per line:
+
+```csharp
+field.InitializeValue = Ex.NewArrayMultiLine(rowType, row1, row2, row3);
+// = new Row[]
+// {
+//     row1,
+//     row2,
+//     row3,
+// };
+```
+
 ### Comments
 
 `Comment` is a `///` documentation comment, and its text is XML — it is escaped for you, so

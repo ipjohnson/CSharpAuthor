@@ -231,6 +231,104 @@ public class AddedConstructTests
     }
 
     /// <summary>
+    /// An initializer written one element per line.
+    /// </summary>
+    /// <remarks>
+    /// Every array and collection path wrote a single line, so a generated transition table came
+    /// out as one 1,149-character line. <c>BreakInvokeLines</c> is not the answer - it breaks the
+    /// <em>inner</em> calls instead, which scrambles a table further rather than laying it out.
+    /// </remarks>
+    [Fact]
+    public void MultiLineInitializerPutsOneElementPerLine()
+    {
+        var file = File(out var host);
+
+        var elementType = TypeDefinition.Get(typeof(int));
+
+        var field = host.AddField(elementType.MakeArray(), "Table");
+        field.Modifiers = ComponentModifier.Private | ComponentModifier.Static | ComponentModifier.Readonly;
+        field.InitializeValue = Ex.NewArrayMultiLine(elementType, Ex.Int(1), Ex.Int(2), Ex.Int(3));
+
+        var output = Render(file).Replace("\r\n", "\n");
+
+        Assert.Contains("new int[]\n        {\n            1,\n            2,\n            3,\n        };", output);
+
+        // The terminator has to land on the closing brace, not on a line of its own.
+        Assert.DoesNotContain("}\n;", output);
+
+        RoslynAssert.Compiles(output);
+    }
+
+    /// <summary>
+    /// An expression-bodied method, which only the accessor form could do.
+    /// </summary>
+    [Fact]
+    public void ExpressionBodiedMethodStaysOnItsSignatureLine()
+    {
+        var file = File(out var host);
+
+        var method = host.AddMethod("Describe");
+        method.Modifiers = ComponentModifier.Public;
+        method.SetReturnType(typeof(string));
+        method.LambdaSyntax = true;
+        method.Return(Ex.Str("x"));
+
+        var output = Render(file);
+
+        Assert.Contains("public string Describe() => \"x\";", output);
+
+        RoslynAssert.Compiles(output);
+    }
+
+    /// <summary>
+    /// A member with no accessibility keyword lines up with the members that have one.
+    /// </summary>
+    /// <remarks>
+    /// The space after the access modifier was written whether or not there was an access modifier,
+    /// so <c>ComponentModifier.NoAccessibility</c> - which is how a <c>partial void</c> hook is
+    /// declared - put the member one column right of everything around it.
+    /// </remarks>
+    [Fact]
+    public void MemberWithNoAccessibilityIsNotIndentedAnExtraColumn()
+    {
+        var file = File(out var host);
+
+        host.Modifiers = ComponentModifier.Public | ComponentModifier.Partial;
+
+        var hook = host.AddMethod("OnCreated");
+        hook.Modifiers = ComponentModifier.Partial | ComponentModifier.NoAccessibility;
+        hook.SetReturnType(typeof(void));
+        hook.OmitBody = true;
+
+        var output = Render(file).Replace("\r\n", "\n");
+
+        Assert.Contains("\n        partial void OnCreated();", output);
+        Assert.DoesNotContain("\n         partial void", output);
+
+        RoslynAssert.Compiles(output);
+    }
+
+    /// <summary>
+    /// A constructor initialiser sits one indent in, not one indent and a space.
+    /// </summary>
+    [Fact]
+    public void ConstructorInitialiserIsIndentedOnce()
+    {
+        var file = File(out var host);
+
+        host.AddBaseType(TypeDefinition.Get("Probe.Added", "Parent"));
+
+        var constructor = host.AddConstructor(SyntaxHelpers.Base("id"));
+        constructor.Modifiers = ComponentModifier.Public;
+        constructor.AddParameter(typeof(int), "id");
+
+        var output = Render(file).Replace("\r\n", "\n");
+
+        Assert.Contains("\n            : base(id)", output);
+        Assert.DoesNotContain("\n             : base(id)", output);
+    }
+
+    /// <summary>
     /// A documented field indents its comment like every other member kind.
     /// </summary>
     /// <remarks>

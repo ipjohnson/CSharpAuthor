@@ -225,6 +225,20 @@ sealed partial class Ex
         });
     }
 
+    /// <summary>
+    /// <c>new T[] { … }</c> with one element per line, for an initializer too long to read on one.
+    /// </summary>
+    public static Ex NewArrayMultiLine(ITypeDefinition elementType, params Ex[] elements)
+    {
+        return new Ex(ExPrecedence.Primary, c =>
+        {
+            c.Write("new ");
+            c.Write(elementType);
+            c.Write("[]");
+            WriteInitializerBlockMultiLine(c, elements);
+        });
+    }
+
     /// <summary><c>new T[n]</c>, or <c>new T[n, m]</c> for a rectangular array.</summary>
     public static Ex NewArraySized(ITypeDefinition elementType, params Ex[] lengths)
     {
@@ -243,6 +257,18 @@ sealed partial class Ex
         {
             c.Write("new[]");
             WriteInitializerBlock(c, elements);
+        });
+    }
+
+    /// <summary>
+    /// <c>new[] { … }</c> with one element per line.
+    /// </summary>
+    public static Ex NewArrayImplicitMultiLine(params Ex[] elements)
+    {
+        return new Ex(ExPrecedence.Primary, c =>
+        {
+            c.Write("new[]");
+            WriteInitializerBlockMultiLine(c, elements);
         });
     }
 
@@ -317,6 +343,48 @@ sealed partial class Ex
         context.Write(" { ");
         WriteSeparated(context, initializers);
         context.Write(" }");
+    }
+
+    /// <summary>
+    /// The same initializer written one element per line, inside a braced block at the current
+    /// indent.
+    /// </summary>
+    /// <remarks>
+    /// The single-line form is right for two or three short elements and wrong for a table. A
+    /// generated transition table with a dozen entries came out as one 1,149-character line, which
+    /// is not something anyone would ship, and there was no way to ask for anything else -
+    /// <c>BreakInvokeLines</c> breaks the <em>inner</em> calls instead, which scrambles it further.
+    /// </remarks>
+    private static void WriteInitializerBlockMultiLine(
+        IOutputContext context, IReadOnlyList<Ex> initializers)
+    {
+        if (initializers == null || initializers.Count == 0)
+        {
+            context.Write(" { }");
+            return;
+        }
+
+        context.WriteLine();
+        context.WriteIndentedLine("{");
+        context.IncrementIndent();
+
+        for (var i = 0; i < initializers.Count; i++)
+        {
+            context.WriteIndent();
+            initializers[i].WriteOutput(context);
+
+            // A trailing comma on the last element too: it is legal C#, and it keeps the diff of
+            // adding an entry to one line rather than two.
+            context.WriteLine(",");
+        }
+
+        context.DecrementIndent();
+
+        // WriteIndent rather than WriteIndentedLine, and the braces by hand rather than
+        // OpenScope/CloseScope: the closing brace has to leave the cursor on its own line so
+        // whatever holds this initializer can append its terminator - a field's `;`, an
+        // argument's `,`. CloseScope ends the line itself, which put the `;` on the next one.
+        context.WriteIndent("}");
     }
 
     // ---------------------------------------------------------------------------------
