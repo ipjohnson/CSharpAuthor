@@ -10,8 +10,13 @@ Constructs CSharpAuthor's hand-written facade cannot express.
 > **The `Expressions` and `Patterns` sections were wrong in their entirety.** All 11 expression
 > entries and 12 of the 13 pattern entries describe constructs that are emitted correctly today;
 > each has been replaced below with the call that builds it and the output it produces, verified
-> against preview1003. The remaining sections have **not** been re-verified and should be treated
-> as unreliable until they are.
+> against preview1003.
+>
+> Five more entries have since been checked by running them. Two are **closed**
+> (`Base Class Constraint Ordering`, `Volatile Fields`), one was **partly wrong**
+> (`Operator Declarations` — reachable by an unobvious route), and two are **confirmed still open**
+> with the failing output recorded (`Conversion Operators`, `Destructors`). Everything not marked
+> that way has **not** been re-verified and should be treated as unreliable.
 >
 > If a construct here looks like something you need, **try it before believing this file**. Reach
 > for `AddCode` on its authority and you will write a string where an object would have worked.
@@ -75,7 +80,7 @@ it on one.
 | Construct | What is missing |
 |---|---|
 | `Allows Ref Struct` | 'allows ref struct' (C# 13) has no method on ConstraintDefinition, so a generic that accepts a ref struct argument cannot be declared |
-| `Base Class Constraint Ordering` | A base-class constraint cannot be distinguished from an interface constraint. Implements() takes both, and C# requires the base class first, so the ordering rule the class documents as 'the caller's to keep' is unenforceable and produces CS0406 when a caller adds them in the order a symbol reports them. |
+| ~~`Base Class Constraint Ordering`~~ | **Closed.** `Implements()` still takes both, but the writer now orders them - the type model knows which is an interface, so a base class is emitted first whatever order it was added in. Pinned by `BaseClassConstraintIsWrittenBeforeInterfaces`. |
 | `Interface Constraints` | An interface cannot be generic at all, so an interface's type parameters cannot be constrained either |
 
 ### Literals
@@ -88,18 +93,18 @@ it on one.
 
 | Construct | What is missing |
 |---|---|
-| `Conversion Operators` | Conversion operators. 'public static implicit operator int(Money m)' and the explicit form have no component. |
-| `Destructors` | Destructors/finalizers. '~Host()' has no component; a ConstructorDefinition named ~Host would still write an access modifier, which a destructor may not have. |
+| `Conversion Operators` | **Confirmed still open.** The `operator +` trick does not extend to these: a conversion operator declares no return type, and `MethodDefinition` always writes one, so `AddMethod("implicit operator int")` emits `public static void implicit operator int(Money m)`. |
+| `Destructors` | **Confirmed still open.** Same cause as conversion operators - a destructor declares no return type. `AddMethod("~Host")` with `NoAccessibility` emits `&nbsp;void ~Host()`, with the stray leading space the suppressed modifier leaves behind. |
 | `Enum Member Literal Form` | An enum member cannot be given a negative or hex value in a controlled way; EnumValueDefinition writes Value.ToString(), so the literal form is whatever the CLR chose |
 | `Extension Blocks And Members` | Extension blocks and extension members. An extension method is reachable via ParameterDefinition.This; the C# 14 'extension(T x) { }' block, and extension properties and indexers inside it, are not. |
 | `Extern Members` | 'extern' has no ComponentModifier flag, so a DllImport declaration cannot be emitted |
 | `Generic Delegate Constraints` | A delegate cannot be generic. DelegateDefinition inherits MethodDefinition's generic parameters but a caller cannot reach constraints on them in a delegate position. |
 | `Generic Interfaces` | An interface cannot be generic. InterfaceDefinition has no AddGenericParameter and no constraint list, so 'interface IRepo<T> where T : class' cannot be declared. |
 | `Interface Member Kinds` | An interface cannot declare an event, an indexer, a nested type, or a generic parameter. InterfaceDefinition holds only methods and properties. |
-| `Operator Declarations` | Operator declarations. 'public static Money operator +(Money a, Money b)' cannot be written; MethodDefinition writes a name where the operator keyword and symbol go. |
+| `Operator Declarations` | **Partly wrong.** A binary operator *can* be written, because `MethodDefinition` writes its name where the operator keyword and symbol go - so `AddMethod("operator +")` emits `public static Money operator +(Money a, Money b)`, verified. It is a trick rather than an API, and nothing validates the name, but the construct is reachable. |
 | `Ref Returns` | Ref returns and ref locals. MethodDefinition writes the return type with no modifier position, so 'ref int M()' and 'ref readonly int M()' cannot be declared. |
 | `Unsafe Members` | 'unsafe' has no ComponentModifier flag, so neither an unsafe member nor a pointer type can be declared |
-| `Volatile Fields` | 'volatile' has no ComponentModifier flag |
+| ~~`Volatile Fields`~~ | **Closed.** `ComponentModifier.Volatile`. |
 
 ### Patterns — ✅ 12 of 13 closed in preview1003
 
