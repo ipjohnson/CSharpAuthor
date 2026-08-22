@@ -259,6 +259,11 @@ public abstract class BaseBlockDefinition : BaseOutputComponent
             return component.Parts ?? new object[] { GetObjectStringValue(value) };
         }
 
+        if (value is IOutputComponent outputComponent)
+        {
+            return new object[] { outputComponent };
+        }
+
         return new object[] { GetObjectStringValue(value) };
     }
 

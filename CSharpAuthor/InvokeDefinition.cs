@@ -52,7 +52,7 @@ public class InvokeDefinition : BaseOutputComponent
             }
         }
 
-        outputContext.Write(_methodName);
+        outputContext.Write(CSharpIdentifier.EscapeQualified(_methodName));
         outputContext.Write("(");
 
         _arguments.OutputCommaSeparatedList(outputContext, outputContext.Options.BreakInvokeLines);
