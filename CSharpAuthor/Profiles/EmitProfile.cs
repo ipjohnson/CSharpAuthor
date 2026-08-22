@@ -53,10 +53,8 @@ sealed partial class EmitProfile
     private LanguageVersion _target = LanguageVersion.CSharp12;
 
     // idiom preference
-    private bool _preferVar = true;
     private bool _preferTargetTypedNew = true;
     private bool _preferCollectionExprs = true;
-    private bool _preferExpressionBodied;
     private bool _preferRawStrings;
 
     // downlevel policy
@@ -166,13 +164,6 @@ sealed partial class EmitProfile
 
     // ---- idiom preference ------------------------------------------------------------------
 
-    /// <summary>Prefer <c>var</c> to the type written out.</summary>
-    public bool PreferVar
-    {
-        get => _preferVar;
-        set => Set(ref _preferVar, value);
-    }
-
     /// <summary>Prefer <c>new()</c> to <c>new T()</c>.</summary>
     public bool PreferTargetTypedNew
     {
@@ -185,13 +176,6 @@ sealed partial class EmitProfile
     {
         get => _preferCollectionExprs;
         set => Set(ref _preferCollectionExprs, value);
-    }
-
-    /// <summary>Prefer <c>=&gt;</c> bodies to block bodies.</summary>
-    public bool PreferExpressionBodied
-    {
-        get => _preferExpressionBodied;
-        set => Set(ref _preferExpressionBodied, value);
     }
 
     /// <summary>Prefer <c>"""raw"""</c> literals where they avoid escaping.</summary>
@@ -247,13 +231,11 @@ sealed partial class EmitProfile
                 return PreferRawStrings;
             case LanguageFeature.FileScopedNamespaces:
                 return FileScopedNamespace;
-            case LanguageFeature.ImplicitlyTypedLocals:
-                return PreferVar;
-            case LanguageFeature.ExpressionBodiedMethods:
-            case LanguageFeature.ExpressionBodiedProperties:
-                return PreferExpressionBodied;
             default:
                 // Everything else is not a style choice: a node that asks for `init` means `init`.
+                // `var` and expression-bodied members land here too: the caller picks those at the
+                // call site - ToVar against ToLocal, LambdaSyntax against a block body - so there
+                // is no profile-level veto to exercise and never was one.
                 return true;
         }
     }
@@ -296,10 +278,8 @@ sealed partial class EmitProfile
             _aliasCollisions = _aliasCollisions,
             _containingNamespace = _containingNamespace,
             _target = _target,
-            _preferVar = _preferVar,
             _preferTargetTypedNew = _preferTargetTypedNew,
             _preferCollectionExprs = _preferCollectionExprs,
-            _preferExpressionBodied = _preferExpressionBodied,
             _preferRawStrings = _preferRawStrings,
             _polyfills = _polyfills,
             _downlevelComments = _downlevelComments,
@@ -380,10 +360,8 @@ sealed partial class EmitProfile
         {
             _target = LanguageVersion.CSharp8,
             _fileScopedNamespace = false,
-            _preferVar = false,
             _preferTargetTypedNew = false,
             _preferCollectionExprs = false,
-            _preferExpressionBodied = false,
             _preferRawStrings = false
         }.Freeze();
 

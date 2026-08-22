@@ -31,10 +31,8 @@ public class EditorConfigProfileTests
         Assert.True(profile.FileScopedNamespace);
 
         // All three csharp_style_var_* keys are false here.
-        Assert.False(profile.PreferVar);
 
         // csharp_style_expression_bodied_methods = false, whatever the property one says.
-        Assert.False(profile.PreferExpressionBodied);
     }
 
     [Fact]
@@ -93,32 +91,6 @@ public class EditorConfigProfileTests
     }
 
     [Fact]
-    public void VarIsReadFromTheKeyThatMattersMostToGeneratedCode()
-    {
-        // Three keys, one flag. Generated code declares locals where the type is apparent far more
-        // often than anywhere else, so that key decides when it is present.
-        Assert.True(
-            EmitProfile.FromEditorConfigText(
-                    "[*.cs]\ncsharp_style_var_when_type_is_apparent = true:suggestion\ncsharp_style_var_elsewhere = false")
-                .PreferVar);
-
-        Assert.False(
-            EmitProfile.FromEditorConfigText("[*.cs]\ncsharp_style_var_elsewhere = false").PreferVar);
-    }
-
-    [Theory]
-    [InlineData("true", true)]
-    [InlineData("when_on_single_line", true)]
-    [InlineData("false:silent", false)]
-    public void ExpressionBodiesAreRead(string value, bool expected)
-    {
-        Assert.Equal(
-            expected,
-            EmitProfile.FromEditorConfigText("[*.cs]\ncsharp_style_expression_bodied_methods = " + value)
-                .PreferExpressionBodied);
-    }
-
-    [Fact]
     public void OnlyTheSectionsThatApplyToTheFileAreRead()
     {
         const string text =
@@ -160,7 +132,6 @@ public class EditorConfigProfileTests
         Assert.Equal(EmitProfile.Default.IndentWidth, profile.IndentWidth);
         Assert.Equal(EmitProfile.Default.NewLine, profile.NewLine);
         Assert.Equal(EmitProfile.Default.Braces, profile.Braces);
-        Assert.Equal(EmitProfile.Default.PreferVar, profile.PreferVar);
     }
 
     [Fact]

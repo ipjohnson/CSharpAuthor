@@ -87,13 +87,30 @@ public class DeferredCodeTests
         Assert.Contains("var value = 42;", Write(file, TypeOutputMode.ShortName));
     }
 
+    /// <summary>
+    /// A non-type substitution is code, not a literal, which is what makes <c>{argN}</c> and
+    /// <c>[argN]</c> agree for a plain string. They still differ for a type and for an
+    /// <c>enum</c>, which is the difference the two spellings exist for.
+    /// </summary>
     [Fact]
-    public void ANonTypeSubstitutionIsQuotedTheWayItAlwaysWas()
+    public void ANonTypeSubstitutionIsCodeNotALiteral()
     {
         var file = new CSharpFileDefinition("TestNamespace");
         var method = file.AddClass("Service").AddMethod("Handle");
 
         method.AddCode("var value = {arg1};", "text");
+
+        Assert.Contains("var value = text;", Write(file, TypeOutputMode.ShortName));
+    }
+
+    /// <summary>A caller that means a literal asks for one.</summary>
+    [Fact]
+    public void AQuotedSubstitutionIsALiteral()
+    {
+        var file = new CSharpFileDefinition("TestNamespace");
+        var method = file.AddClass("Service").AddMethod("Handle");
+
+        method.AddCode("var value = {arg1};", SyntaxHelpers.QuoteString("text"));
 
         Assert.Contains("var value = \"text\";", Write(file, TypeOutputMode.ShortName));
     }

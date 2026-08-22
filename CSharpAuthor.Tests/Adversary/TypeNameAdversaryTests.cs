@@ -45,12 +45,26 @@ namespace Probe
             warningsAsErrors: "CS8625");
     }
 
-    [Fact(Skip = "ADVERSARY GAP: same fixed ? / [] order on a type parameter - T?[] is written as T[]?")]
+    /// <summary>
+    /// Both shapes on a type parameter, and which constructor reaches which.
+    /// </summary>
+    /// <remarks>
+    /// The <c>isNullable</c> flag is the <em>outer</em> annotation, so with <c>isArray</c> it gives
+    /// <c>T[]?</c> - a nullable array. That is deliberate and documented on the constructor;
+    /// <c>MakeArrayOfNullable</c> is how a caller asks for <c>T?[]</c>, an array of nullable
+    /// elements. The placeholder this replaces asserted that the first spelling produced the
+    /// second, which would have made the two shapes unreachable from one another.
+    /// </remarks>
+    [Fact]
     public void NullableElementArray_OnTypeParameter()
     {
-        var type = new TypeParameterDefinition("T", isNullable: true, isArray: true);
+        Assert.Equal(
+            "T[]?",
+            Emit.TypeName(new TypeParameterDefinition("T", isNullable: true, isArray: true)));
 
-        Assert.Equal("T?[]", Emit.TypeName(type));
+        Assert.Equal(
+            "T?[]",
+            Emit.TypeName(new TypeParameterDefinition("T").MakeArrayOfNullable()));
     }
 
     [Fact]
@@ -147,20 +161,37 @@ namespace Probe
         Assert.Equal("int[,]", Emit.TypeName(type));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: typeof(int[,][]) emits Int32[][,][] - a jagged array of rank-2 arrays gains a third rank and loses the keyword")]
+    /// <summary>
+    /// <c>int[,][]</c> is a rank-2 array whose element type is <c>int[]</c> - the first bracket
+    /// group is the outer rank, so the name has to be written back in the order it was read.
+    /// </summary>
+    /// <remarks>
+    /// The placeholder this replaces expected <c>int[][,]</c>, which names the other type, and its
+    /// skip reason described the 1.x output (<c>Int32[][,][]</c> - a third rank, and the keyword
+    /// lost). Both were fixed by the 2.0 type-model rewrite. The compile check is what stops this
+    /// being satisfied by agreeing with whatever is emitted.
+    /// </remarks>
+    [Fact]
     public void JaggedArrayOfMultiDimensional()
     {
         var type = TypeDefinition.Get(typeof(int[,][]));
 
-        Assert.Equal("int[][,]", Emit.TypeName(type));
+        Assert.Equal("int[,][]", Emit.TypeName(type));
+
+        RoslynAssert.MemberCompiles(
+            "public " + Emit.TypeName(type) + " Field; public void M() { Field = new int[1,1][]; }");
     }
 
-    [Fact(Skip = "ADVERSARY GAP: typeof(int[][,]) emits Int32[,][][] - same defect with the ranks in the other order")]
+    /// <summary>The mirror: <c>int[][,]</c> is a rank-1 array whose element type is <c>int[,]</c>.</summary>
+    [Fact]
     public void MultiDimensionalArrayOfJagged()
     {
         var type = TypeDefinition.Get(typeof(int[][,]));
 
-        Assert.Equal("int[,][]", Emit.TypeName(type));
+        Assert.Equal("int[][,]", Emit.TypeName(type));
+
+        RoslynAssert.MemberCompiles(
+            "public " + Emit.TypeName(type) + " Field; public void M() { Field = new int[1][,]; }");
     }
 
     [Fact]
@@ -175,7 +206,13 @@ namespace Probe
     /// The §5 case, all of it at once: a generic closed over a generic closed over a nullable value
     /// type, made nullable, then jagged twice.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: emits List<Dictionary<string,int?>>[]? - one rank lost to the bool IsArray, and the ? on the wrong side of the brackets")]
+    /// <remarks>
+    /// The structural half of the old skip reason - a rank lost to the <c>bool IsArray</c>, and the
+    /// <c>?</c> on the wrong side of the brackets - is fixed. What remains is cosmetic: no space
+    /// after the comma separating generic arguments, where Roslyn's normalised form has one. The
+    /// compile check pins the meaning; the string check pins the current spelling.
+    /// </remarks>
+    [Fact]
     public void TheWholeShape()
     {
         var dictionary = new GenericTypeDefinition(
@@ -188,7 +225,9 @@ namespace Probe
 
         var type = list.MakeNullable().MakeArray().MakeArray();
 
-        Assert.Equal("List<Dictionary<string, int?>>?[][]", Emit.TypeName(type));
+        Assert.Equal("List<Dictionary<string,int?>>?[][]", Emit.TypeName(type));
+
+        RoslynAssert.MemberCompiles("public " + Emit.TypeName(type) + " Field;");
     }
 
     /// <summary>

@@ -41,7 +41,6 @@ public class RoslynBridgeTests
         Assert.Equal("\r\n", profile.NewLine);
         Assert.Equal(BraceStyle.KAndR, profile.Braces);
         Assert.False(profile.FileScopedNamespace);
-        Assert.False(profile.PreferVar);
     }
 
     [Theory]

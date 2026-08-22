@@ -96,7 +96,7 @@ public class StructureAdversaryTests
     /// an empty line. Harmless, and present in the snapshot of every generated type in both
     /// consumer repositories.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: WriteMemberComponents writes a separating blank line before each member including the first, so every class body opens with an empty line")]
+    [Fact(Skip = "ADVERSARY GAP: WriteMemberComponents writes a separating blank line before each member including the first, so every class body opens with an empty line DEFERRED, not unknown: the fix is agreed and held only by the nine DependencyModules snapshots it would diff - see 'A note on release sequencing'.")]
     public void NoBlankLineBeforeTheFirstMember()
     {
         var classDefinition = new ClassDefinition("Host");

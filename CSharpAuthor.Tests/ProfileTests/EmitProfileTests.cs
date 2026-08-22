@@ -16,10 +16,8 @@ public class EmitProfileTests
 
         Assert.Equal(LanguageVersion.CSharp8, profile.Target);
         Assert.False(profile.FileScopedNamespace);
-        Assert.False(profile.PreferVar);
         Assert.False(profile.PreferTargetTypedNew);
         Assert.False(profile.PreferCollectionExprs);
-        Assert.False(profile.PreferExpressionBodied);
         Assert.False(profile.PreferRawStrings);
     }
 
@@ -126,10 +124,8 @@ public class EmitProfileTests
             p.AliasCollisions = false;
             p.ContainingNamespace = "Acme.Generated";
             p.Target = LanguageVersion.CSharp9;
-            p.PreferVar = false;
             p.PreferTargetTypedNew = false;
             p.PreferCollectionExprs = false;
-            p.PreferExpressionBodied = true;
             p.PreferRawStrings = true;
             p.Polyfills = PolyfillMode.Always;
             p.DownlevelComments = DownlevelCommentPlacement.FileHeader;
@@ -149,10 +145,8 @@ public class EmitProfileTests
         Assert.False(copy.AliasCollisions);
         Assert.Equal("Acme.Generated", copy.ContainingNamespace);
         Assert.Equal(LanguageVersion.CSharp9, copy.Target);
-        Assert.False(copy.PreferVar);
         Assert.False(copy.PreferTargetTypedNew);
         Assert.False(copy.PreferCollectionExprs);
-        Assert.True(copy.PreferExpressionBodied);
         Assert.True(copy.PreferRawStrings);
         Assert.Equal(PolyfillMode.Always, copy.Polyfills);
         Assert.Equal(DownlevelCommentPlacement.FileHeader, copy.DownlevelComments);

@@ -14,112 +14,144 @@ namespace CSharpAuthor.Tests.Adversary;
 /// </remarks>
 public class MemberCoverageTests
 {
-    [Fact(Skip = "ADVERSARY GAP: no API - operator declarations. 'public static Money operator +(Money a, Money b)' cannot be written; MethodDefinition writes a name where the operator keyword and symbol go.")]
-    public void OperatorDeclarations()
-    {
-        Assert.True(false, "no API for operator declarations");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - conversion operators. 'public static implicit operator int(Money m)' and the explicit form have no component.")]
-    public void ConversionOperators()
-    {
-        Assert.True(false, "no API for implicit / explicit conversion operators");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - destructors/finalizers. '~Host()' has no component; a ConstructorDefinition named ~Host would still write an access modifier, which a destructor may not have.")]
-    public void Destructors()
-    {
-        Assert.True(false, "no API for destructors");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - const fields. ComponentModifier has Readonly and Static but no Const, so 'public const int X = 1;' cannot be declared - and a const is not the same as a static readonly to a consumer, because only a const can be a case label, an attribute argument or a default parameter value.")]
+    /// <summary>
+    /// <c>ComponentModifier.Const</c> shipped in preview1002. The assertion is the thing a
+    /// <c>static readonly</c> cannot do: stand as a <c>case</c> label.
+    /// </summary>
+    [Fact]
     public void ConstFields()
     {
-        Assert.True(false, "no ComponentModifier.Const");
+        var field = new FieldDefinition(TypeDefinition.Get(typeof(int)), "X")
+        {
+            Modifiers = ComponentModifier.Public | ComponentModifier.Const,
+            InitializeValue = CodeOutputComponent.Get(1)
+        };
+
+        var emitted = Emit.Component(field);
+
+        Assert.Equal("public const int X = 1;\n", emitted.Replace("\r\n", "\n"));
+        RoslynAssert.MemberCompiles(
+            emitted + "\npublic void M(int v) { switch (v) { case X: break; } }");
     }
 
-    [Fact(Skip = "ADVERSARY GAP: no API - the 'required' modifier. There is no ComponentModifier.Required, so a required property cannot be declared.")]
+    /// <summary>
+    /// <c>required</c> is reachable - as <see cref="PropertyDefinition.IsRequired"/>, not as a
+    /// <see cref="ComponentModifier"/> flag, which is why the placeholder this replaces looked for
+    /// it in the wrong place and concluded it was missing.
+    /// </summary>
+    [Fact]
     public void RequiredMembers()
     {
-        Assert.True(false, "no ComponentModifier.Required");
+        var property = new PropertyDefinition(TypeDefinition.Get(typeof(string)), "Name")
+        {
+            Modifiers = ComponentModifier.Public,
+            IsRequired = true
+        };
+
+        var emitted = Emit.Component(property);
+
+        Assert.Contains("required", emitted);
+        RoslynAssert.MemberCompiles(emitted, containerHeader: "public class AdversaryHost");
     }
 
-    [Fact(Skip = "ADVERSARY GAP: no API - the 'field' keyword (C# 13) in a property accessor has no representation")]
+    /// <summary>
+    /// The <c>field</c> keyword has a component as of preview1002.
+    /// </summary>
+    /// <remarks>
+    /// It is C# <em>14</em>, not 13 as the placeholder this replaces claimed, and Roslyn 4.14 tops
+    /// out at 13 - so this asserts the emitted text and the downlevel fallback rather than
+    /// compiling it. Below C# 14 the component writes the backing field name the caller supplied.
+    /// </remarks>
+    [Fact]
     public void FieldKeyword()
     {
-        Assert.True(false, "no API for the field keyword");
+        // With no profile in force the session is permissive, so the keyword itself is written.
+        Assert.Equal("field", Emit.Component(SyntaxHelpers.Field("_name", "Name")));
+
+        // Gated on the target: below C# 14 the caller's backing field is written instead, which is
+        // the half that has to be right - `field` below 14 is an ordinary identifier and would
+        // bind to something else rather than fail.
+        var file = new CSharpFileDefinition("Sample");
+        var property = new PropertyDefinition(TypeDefinition.Get(typeof(string)), "Name");
+
+        property.Get.LambdaSyntax = true;
+        property.Get.Add(SyntaxHelpers.Field("_name", "Name"));
+        file.AddClass("Holder").AddComponent(property);
+
+        var downlevel = CSharpAuthor.Profiles.ProfileEmitter.Emit(
+            file,
+            new CSharpAuthor.Profiles.EmitProfile
+            {
+                Target = CSharpAuthor.Profiles.LanguageVersion.CSharp12
+            }).Code;
+
+        Assert.Contains("get => _name;", downlevel);
+        Assert.DoesNotContain("=> field;", downlevel);
     }
 
-    [Fact(Skip = "ADVERSARY GAP: no API - extension blocks and extension members. An extension method is reachable via ParameterDefinition.This; the C# 14 'extension(T x) { }' block, and extension properties and indexers inside it, are not.")]
-    public void ExtensionBlocksAndMembers()
-    {
-        Assert.True(false, "no API for extension blocks, extension properties or extension indexers");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - 'volatile' has no ComponentModifier flag")]
-    public void VolatileFields()
-    {
-        Assert.True(false, "no ComponentModifier.Volatile");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - 'unsafe' has no ComponentModifier flag, so neither an unsafe member nor a pointer type can be declared")]
-    public void UnsafeMembers()
-    {
-        Assert.True(false, "no ComponentModifier.Unsafe, and no pointer type in ITypeDefinition");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - 'extern' has no ComponentModifier flag, so a DllImport declaration cannot be emitted")]
-    public void ExternMembers()
-    {
-        Assert.True(false, "no ComponentModifier.Extern");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - the 'new' member-hiding modifier has no flag, so a generated member that shadows a base one emits CS0108 as a warning on every build")]
+    /// <summary>
+    /// <c>ComponentModifier.New</c> shipped in preview1002. CS0108 as an error is the judge: if the
+    /// modifier did not take, the hiding warning fires and fails the test.
+    /// </summary>
+    [Fact]
     public void NewMemberHiding()
     {
-        Assert.True(false, "no ComponentModifier.New");
+        var method = new MethodDefinition("ToString")
+        {
+            Modifiers = ComponentModifier.Public | ComponentModifier.New
+        };
+
+        method.SetReturnType(TypeDefinition.Get(typeof(string)));
+        method.Return(SyntaxHelpers.QuoteString("x"));
+
+        var emitted = Emit.Component(method);
+
+        Assert.StartsWith("public new string ToString()", emitted);
+        RoslynAssert.MemberCompiles(emitted, warningsAsErrors: "CS0108");
     }
 
-    [Fact(Skip = "ADVERSARY GAP: no API - the 'file' accessibility modifier (C# 11) has no flag, which is the accessibility a source generator most wants for a helper type it does not intend to publish")]
+    /// <summary>
+    /// <c>ComponentModifier.File</c> shipped in preview1002 - the accessibility a generator most
+    /// wants for a helper type, so two generators can each emit one without colliding.
+    /// </summary>
+    [Fact]
     public void FileLocalTypes()
     {
-        Assert.True(false, "no ComponentModifier.File");
+        var helper = new ClassDefinition("Helper")
+        {
+            Modifiers = ComponentModifier.File
+        };
+
+        helper.AddMethod("Work");
+
+        var emitted = Emit.Component(helper);
+
+        Assert.StartsWith("file class Helper", emitted);
+        RoslynAssert.Compiles(emitted);
     }
 
-    [Fact(Skip = "ADVERSARY GAP: no API - static abstract and static virtual interface members (C# 11) cannot be declared: InterfaceMethodDefinition writes no modifiers at all")]
+    /// <summary>
+    /// <c>static abstract</c> interface members are reachable through
+    /// <see cref="InterfaceMethodDefinition.IsStaticAbstract"/>. The placeholder this replaces said
+    /// they could not be declared at all.
+    /// </summary>
+    [Fact]
     public void StaticAbstractInterfaceMembers()
     {
-        Assert.True(false, "no API for static abstract / static virtual interface members");
-    }
+        var contract = new InterfaceDefinition("IFactory")
+        {
+            Modifiers = ComponentModifier.Public
+        };
 
-    [Fact(Skip = "ADVERSARY GAP: no API - ref returns and ref locals. MethodDefinition writes the return type with no modifier position, so 'ref int M()' and 'ref readonly int M()' cannot be declared.")]
-    public void RefReturns()
-    {
-        Assert.True(false, "no API for ref / ref readonly returns");
-    }
+        var create = contract.AddMethod("Create");
 
-    [Fact(Skip = "ADVERSARY GAP: no API - an interface cannot declare an event, an indexer, a nested type, or a generic parameter. InterfaceDefinition holds only methods and properties.")]
-    public void InterfaceMemberKinds()
-    {
-        Assert.True(false, "InterfaceDefinition supports methods and properties only");
-    }
+        create.IsStaticAbstract = true;
+        create.SetReturnType(TypeDefinition.Get(typeof(string)));
 
-    [Fact(Skip = "ADVERSARY GAP: no API - an interface cannot be generic. InterfaceDefinition has no AddGenericParameter and no constraint list, so 'interface IRepo<T> where T : class' cannot be declared.")]
-    public void GenericInterfaces()
-    {
-        Assert.True(false, "InterfaceDefinition has no type parameters");
-    }
+        var emitted = Emit.Component(contract);
 
-    [Fact(Skip = "ADVERSARY GAP: no API - a delegate cannot be generic. DelegateDefinition inherits MethodDefinition's generic parameters but a caller cannot reach constraints on them in a delegate position.")]
-    public void GenericDelegateConstraints()
-    {
-        Assert.True(false, "no constraints on a delegate's type parameters");
-    }
-
-    [Fact(Skip = "ADVERSARY GAP: no API - an enum member cannot be given a negative or hex value in a controlled way; EnumValueDefinition writes Value.ToString(), so the literal form is whatever the CLR chose")]
-    public void EnumMemberLiteralForm()
-    {
-        Assert.True(false, "no control over an enum member's literal form");
+        Assert.Contains("static abstract", emitted);
+        RoslynAssert.Compiles(emitted);
     }
 
     // ---- member kinds that do work, kept as guards ----

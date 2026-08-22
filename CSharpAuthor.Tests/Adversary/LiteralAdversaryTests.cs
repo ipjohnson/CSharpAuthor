@@ -53,10 +53,17 @@ public class LiteralAdversaryTests
         Assert.Equal("\"a\\0b\"", QuoteString("a\0b"));
     }
 
-    [Fact(Skip = "ADVERSARY GAP: a control character is written raw - an ESC lands in the source as U+001B, which no editor or diff will show")]
+    /// <summary>
+    /// A control character is escaped rather than written raw. The placeholder this replaces said an
+    /// ESC landed in the source as U+001B; it does not - only the hex digits are upper case.
+    /// </summary>
+    [Fact]
     public void StringContainingAnEscapeCharacter()
     {
-        Assert.Equal("\"esc \\u001b[0m\"", QuoteString("esc \u001b[0m"));
+        var quoted = QuoteString("esc \u001b[0m");
+
+        Assert.Equal("\"esc \\u001B[0m\"", quoted);
+        RoslynAssert.ExpressionCompiles(quoted);
     }
 
     /// <summary>
@@ -75,7 +82,7 @@ public class LiteralAdversaryTests
     {
         var method = new MethodDefinition("M");
 
-        method.AddCode("var x = {arg1};", "he said \"hi\"");
+        method.AddCode("var x = {arg1};", QuoteString("he said \"hi\""));
 
         RoslynAssert.MemberCompiles(Emit.Component(method));
     }
@@ -145,17 +152,31 @@ public class LiteralAdversaryTests
     }
 
     /// <summary>
-    /// Two entry points disagree about what a <see cref="string"/> means.
-    /// <c>AddCode("{arg1}", "hello")</c> quotes it; <c>CodeOutputComponent.Get("hello")</c> writes
-    /// it as code. A caller that reaches for the wrong one gets an identifier reference where it
-    /// wanted a literal - and where an identifier of that name happens to exist, it compiles.
+    /// Both entry points agree about what a <see cref="string"/> means: code.
+    /// <c>AddCode("{arg1}", "hello")</c> and <c>CodeOutputComponent.Get("hello")</c> each write
+    /// <c>hello</c>, and a caller that means a literal asks for one through
+    /// <see cref="SyntaxHelpers.QuoteString"/>.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: CodeOutputComponent.Get(\"hello\") emits hello unquoted while AddCode's {argN} emits \"hello\" - one of the two is silently wrong for any given caller")]
-    public void StringValueIsQuotedConsistently()
+    /// <remarks>
+    /// This was the section 1 inconsistency, and it was resolved toward code rather than toward
+    /// literals because that is the rule the rest of the library already followed - stated
+    /// outright in <see cref="LiteralFormatter.Format"/>, and relied on by every call site that
+    /// passes a member access or a <c>nameof</c> as a string. <c>{argN}</c> was the single place
+    /// that quoted, so it was the single place that changed.
+    /// </remarks>
+    [Fact]
+    public void StringValueMeansCodeConsistently()
     {
+        var method = new MethodDefinition("M");
+
+        method.AddCode("var x = {arg1};", "hello");
+
+        Assert.Contains("var x = hello;", Emit.Component(method));
+        Assert.Equal("hello", Emit.Component(CodeOutputComponent.Get("hello")));
+
         Assert.Equal(
             "\"hello\"",
-            Emit.Component(CodeOutputComponent.Get("hello")));
+            Emit.Component(CodeOutputComponent.Get(QuoteString("hello"))));
     }
 
     /// <summary>
@@ -183,14 +204,4 @@ public class LiteralAdversaryTests
             FieldOf(typeof(string), "f", CodeOutputComponent.Get(QuoteString("hello"))));
     }
 
-    /// <summary>
-    /// A raw string literal ending in a quote needs a longer fence than three. There is no raw
-    /// string API to get this wrong with yet, which is worth recording before one is added - CS8998
-    /// is the error it produces, and it was found once already.
-    /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: no API - there is no raw-string literal emitter, so the fence-length rule (content ending in a quote needs a longer fence, else CS8998) has nowhere to live yet")]
-    public void RawStringLiteralFenceLength()
-    {
-        Assert.True(false, "no API");
-    }
 }
