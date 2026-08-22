@@ -88,7 +88,7 @@ public class ForDefinition : BaseBlockDefinition
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.WriteIndent("for(");
+        outputContext.WriteIndent("for (");
 
         WriteClause(outputContext, Initializer);
         outputContext.Write("; ");

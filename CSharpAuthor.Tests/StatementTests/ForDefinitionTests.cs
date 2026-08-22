@@ -25,7 +25,7 @@ public class ForDefinitionTests
         method.WriteOutput(outputContext);
 
         AssertEqual.ContainsWithoutNewLine(
-            "    for(var i = 0; i < 10; i++)\n    {\n        Console.WriteLine(i);\n    }\n",
+            "    for (var i = 0; i < 10; i++)\n    {\n        Console.WriteLine(i);\n    }\n",
             outputContext.Output());
     }
 
@@ -44,7 +44,7 @@ public class ForDefinitionTests
 
         var output = outputContext.Output();
 
-        AssertEqual.ContainsWithoutNewLine("for(var index = 0; index < 5; index++)", output);
+        AssertEqual.ContainsWithoutNewLine("for (var index = 0; index < 5; index++)", output);
         AssertEqual.ContainsWithoutNewLine("Use(index)", output);
     }
 
@@ -60,7 +60,7 @@ public class ForDefinitionTests
         method.WriteOutput(outputContext);
 
         AssertEqual.ContainsWithoutNewLine(
-            "for(var i = 0; i < items.Count; i++)", outputContext.Output());
+            "for (var i = 0; i < items.Count; i++)", outputContext.Output());
     }
 
     [Fact]
@@ -77,13 +77,13 @@ public class ForDefinitionTests
 
         method.WriteOutput(outputContext);
 
-        AssertEqual.ContainsWithoutNewLine("for(var i = 10; i > 0; i--)", outputContext.Output());
+        AssertEqual.ContainsWithoutNewLine("for (var i = 10; i > 0; i--)", outputContext.Output());
     }
 
     [Fact]
     public void EveryClauseMayBeOmitted()
     {
-        // for(;;) is a legal infinite loop, and each clause is independently optional.
+        // for (;;) is a legal infinite loop, and each clause is independently optional.
         var method = new MethodDefinition("Method") { Modifiers = ComponentModifier.Public };
 
         var forLoop = method.For(null, null, null);
@@ -94,7 +94,7 @@ public class ForDefinitionTests
 
         method.WriteOutput(outputContext);
 
-        AssertEqual.ContainsWithoutNewLine("for(; ; )\n", outputContext.Output());
+        AssertEqual.ContainsWithoutNewLine("for (; ; )\n", outputContext.Output());
     }
 
     [Fact]
@@ -109,7 +109,7 @@ public class ForDefinitionTests
         method.WriteOutput(outputContext);
 
         AssertEqual.ContainsWithoutNewLine(
-            "for(var @event = 0; @event < 3; @event++)", outputContext.Output());
+            "for (var @event = 0; @event < 3; @event++)", outputContext.Output());
     }
 
     [Fact]
@@ -127,9 +127,9 @@ public class ForDefinitionTests
         method.WriteOutput(outputContext);
 
         AssertEqual.ContainsWithoutNewLine(
-            "    for(var i = 0; i < 2; i++)\n" +
+            "    for (var i = 0; i < 2; i++)\n" +
             "    {\n" +
-            "        for(var j = 0; j < 2; j++)\n" +
+            "        for (var j = 0; j < 2; j++)\n" +
             "        {\n" +
             "            Use(i, j);\n" +
             "        }\n" +

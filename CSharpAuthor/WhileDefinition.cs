@@ -22,7 +22,7 @@ public class WhileDefinition : BaseBlockDefinition
 
     protected override void WriteComponentOutput(IOutputContext outputContext)
     {
-        outputContext.WriteIndent("while(");
+        outputContext.WriteIndent("while (");
         _testStatement.WriteOutput(outputContext);
         outputContext.WriteLine(")");
 
