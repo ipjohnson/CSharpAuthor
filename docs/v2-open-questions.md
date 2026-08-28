@@ -684,11 +684,16 @@ compatible unless the handoff said otherwise.
 ### Decisions taken
 
 1. **A type in the global namespace has no namespace.** Roslyn writes `global::GlobalThing`;
-   the type model spells "no namespace" as the empty string, and an empty namespace cannot
-   carry a `global::` prefix. `Global` mode therefore writes `GlobalThing`, which is valid C#
-   but not maximally qualified — a generated file that declares its own `GlobalThing` would
-   shadow it. Fixing this properly means letting `TypeDefinition` distinguish "global
-   namespace" from "no namespace", which is the type model's call, not the bridge's.
+   the type model spells "no namespace" as the empty string. `Global` mode originally wrote
+   `GlobalThing` bare — valid C# but capturable, and the capture happened: a consumer's
+   generated file in `namespace X` silently bound a bare global-namespace service name to
+   `X.Pet`. **Resolved post-preview1004, in the type model as predicted:** `Global` mode now
+   writes `global::GlobalThing` for every empty-namespace type whose name is not a predefined
+   keyword spelling (`global::int` does not compile; the keyword list lives in
+   `CSharpIdentifier.IsPredefinedTypeKeyword`, drift-pinned by
+   `TypeKeywordTests.TheKeywordIsTheSameInEveryOutputMode`). Generic-parameter declaration
+   lists write bare names in every mode — a declaration introduces the name — and the unbound
+   placeholder stays bare. Migration notes: `migration-v1-v2.md` §4.2 B13.
 
 2. **Structs, records and delegates convert to `TypeDefinitionEnum.ClassDefinition`.** The
    enum has three members and neither consumer has ever had more; both already do this.

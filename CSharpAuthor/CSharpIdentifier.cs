@@ -62,11 +62,41 @@ internal static class CSharpIdentifier
         };
 
     /// <summary>
+    /// The names the predefined types are written as. These are the only type names that
+    /// legitimately carry no namespace: <c>global::int</c> does not compile, so the qualifier a
+    /// global-namespace user type needs is exactly the qualifier a keyword must never get.
+    /// </summary>
+    /// <remarks>
+    /// Mirrors the keyword spellings in <c>TypeDefinition._knownTypes</c>, plus <c>void</c> and
+    /// <c>dynamic</c>, which are modeled elsewhere but would be just as unqualifiable if a caller
+    /// ever hands one in as a bare name. Drift between the two lists is pinned by
+    /// <c>TypeKeywordTests.TheKeywordIsTheSameInEveryOutputMode</c>, which renders every
+    /// predefined type in every mode and fails on any <c>global::</c>.
+    /// </remarks>
+    private static readonly HashSet<string> PredefinedTypeKeywords =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "object", "string", "bool", "char",
+            "byte", "sbyte", "short", "ushort", "int", "uint", "long", "ulong",
+            "nint", "nuint", "float", "double", "decimal",
+            "void", "dynamic"
+        };
+
+    /// <summary>
     /// Whether <paramref name="value"/> is one of C#'s reserved words.
     /// </summary>
     public static bool IsReservedKeyword(string? value)
     {
         return value != null && Reserved.Contains(value);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="name"/> is the keyword spelling of a predefined type, which is
+    /// written bare in every <see cref="TypeOutputMode"/> because no qualifier for it compiles.
+    /// </summary>
+    public static bool IsPredefinedTypeKeyword(string? name)
+    {
+        return name != null && PredefinedTypeKeywords.Contains(name);
     }
 
     /// <summary>

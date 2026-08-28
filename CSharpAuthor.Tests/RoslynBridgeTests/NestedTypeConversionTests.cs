@@ -156,14 +156,26 @@ public class NestedTypeConversionTests
         Assert.Contains("BridgeTestNamespace", typeDefinition.KnownNamespaces);
     }
 
-    /// <summary>A type in the global namespace has no namespace and needs no import.</summary>
+    /// <summary>
+    /// A type in the global namespace has no namespace and needs no import - but in Global mode
+    /// it still takes the bare <c>global::</c> qualifier.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately changed, not bent: this test used to pin <c>GlobalThing.Inner</c> in Global
+    /// mode, the behaviour v2-open-questions.md ("A type in the global namespace has no
+    /// namespace") recorded as valid-but-capturable and deferred to the type model. The capture is
+    /// real - a consumer proved a generated file in <c>namespace X</c> silently binding a bare
+    /// global-namespace name to <c>X.Pet</c> - so Global mode now writes the qualifier Roslyn
+    /// itself writes: <c>global::GlobalThing</c>. FullName mode is unchanged: the full name of a
+    /// global-namespace type is its bare name.
+    /// </remarks>
     [Fact]
     public void GlobalNamespaceTypeHasNoNamespace()
     {
         var typeDefinition = TestCompilation.FieldType(Nested, "globalNested").GetTypeDefinition();
 
         Assert.Equal("", typeDefinition.Namespace);
-        Assert.Equal("GlobalThing.Inner", TestCompilation.Write(typeDefinition, TypeOutputMode.Global));
+        Assert.Equal("global::GlobalThing.Inner", TestCompilation.Write(typeDefinition, TypeOutputMode.Global));
         Assert.Equal("GlobalThing.Inner", TestCompilation.Write(typeDefinition, TypeOutputMode.FullName));
     }
 }

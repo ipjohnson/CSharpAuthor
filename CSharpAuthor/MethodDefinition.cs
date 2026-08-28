@@ -436,7 +436,13 @@ public class MethodDefinition : BaseBlockDefinition, INamedComponent
         if (_genericParameters.Count > 0)
         {
             outputContext.Write("<");
-            _genericParameters.OutputCommaSeparatedList(outputContext);
+            // A declaration, not a reference: `void Go<T>()` introduces T, and no qualifier is
+            // legal there - `void Go<global::T>()` is a syntax error. Written as the bare name so
+            // a parameter handed in as TypeDefinition.Get("", "T") is not swept up by the
+            // qualification an empty-namespace *reference* now gets in Global mode.
+            _genericParameters.OutputCommaSeparatedList(
+                outputContext,
+                (context, definition) => context.Write(definition.GetShortName()));
             outputContext.Write(">");
         }
             

@@ -948,7 +948,13 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
         {
             outputContext.Write("<");
 
-            _genericParameters.OutputCommaSeparatedList(outputContext);
+            // A declaration, not a reference: `class Foo<T>` introduces T, and no qualifier is
+            // legal there - `class Foo<global::T>` is a syntax error. Written as the bare name so
+            // a parameter handed in as TypeDefinition.Get("", "T") is not swept up by the
+            // qualification an empty-namespace *reference* now gets in Global mode.
+            _genericParameters.OutputCommaSeparatedList(
+                outputContext,
+                (context, definition) => context.Write(definition.GetShortName()));
 
             outputContext.Write(">");
         }
