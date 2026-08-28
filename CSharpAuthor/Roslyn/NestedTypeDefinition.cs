@@ -147,6 +147,15 @@ sealed class NestedTypeDefinition : ITypeDefinition
                 builder.Append('.');
             }
         }
+        else if (typeOutputMode == TypeOutputMode.Global)
+        {
+            // A nested chain declared in the global namespace. The outermost segment is always a
+            // user type - a predefined type contains nothing this model nests - so unlike
+            // BaseTypeDefinition.WriteNamespacePrefix there is no keyword to exempt: bare
+            // Outer.Inner inside `namespace X` binds to X.Outer the moment a consumer declares
+            // one, and global::Outer.Inner cannot be captured.
+            builder.Append("global::");
+        }
 
         for (var i = 0; i < _segments.Count; i++)
         {

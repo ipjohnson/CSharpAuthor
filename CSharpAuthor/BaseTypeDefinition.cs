@@ -297,6 +297,23 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     {
         if (string.IsNullOrEmpty(Namespace))
         {
+            // An empty namespace is two different things wearing one shape: a predefined type
+            // written as its keyword, and a user type declared in the global namespace. The
+            // keyword must stay bare - global::int does not compile. The user type must not:
+            // bare Pet inside `namespace X` binds to X.Pet the moment a consumer declares one,
+            // which is exactly the capture Global mode promises cannot happen. global::Pet is
+            // valid C# and unambiguous, so the bare qualifier goes on everything that is not a
+            // keyword. An empty Name is the unbound-generic placeholder (`List<>`), which takes
+            // no qualifier either. FullName mode is left alone: the full name of a
+            // global-namespace type is its bare name, and re-reading that mode's meaning is not
+            // this method's call.
+            if (typeOutputMode == TypeOutputMode.Global &&
+                !string.IsNullOrEmpty(Name) &&
+                !CSharpIdentifier.IsPredefinedTypeKeyword(Name))
+            {
+                builder.Append("global::");
+            }
+
             return;
         }
 
