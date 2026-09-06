@@ -75,17 +75,14 @@ working as intended, and it is what the rest of this page is about.
 ## Install
 
 ```
-dotnet add package CSharpAuthor --prerelease
+dotnet add package CSharpAuthor
 ```
-
-`--prerelease` is required while 2.0 is in preview. Without it you get **1.2.0**, the previous
-major — and silently, because the sample above compiles there too. Drop the flag once 2.0.0 ships.
 
 CSharpAuthor ships as **source**, compiled into your project, so a source generator can use it
 without taking on a dependency it would then have to redistribute. In a generator project:
 
 ```xml
-<PackageReference Include="CSharpAuthor" Version="2.0.0-preview1004">
+<PackageReference Include="CSharpAuthor" Version="2.0.0">
   <PrivateAssets>all</PrivateAssets>
   <IncludeAssets>build</IncludeAssets>
 </PackageReference>
