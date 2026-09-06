@@ -82,7 +82,7 @@ public class EmitProfileTests
         // A node that asks for `init` means `init`. There is no style option that turns it off.
         Assert.True(EmitProfile.Conservative.Prefers(LanguageFeature.InitOnlyProperties));
         Assert.True(EmitProfile.Conservative.Prefers(LanguageFeature.RequiredMembers));
-        Assert.True(EmitProfile.Conservative.Prefers(LanguageFeature.LabeledJumps));
+        Assert.True(EmitProfile.Conservative.Prefers(LanguageFeature.RefStructs));
     }
 
     [Fact]

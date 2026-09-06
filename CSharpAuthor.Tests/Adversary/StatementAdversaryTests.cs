@@ -38,7 +38,7 @@ public class StatementAdversaryTests
     /// §7 records that <c>Catch(Type, name, when)</c> drops its filter. Here it is as a compile
     /// question: with the filter gone, a second catch for the same type is unreachable - CS0160.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP (§7 'Catch(Type, name, when)'): the when argument is accepted and never forwarded, so the filter disappears and two filtered catches for one type collide - CS0160")]
+    [Fact]
     public void CatchWhenFilterIsForwarded()
     {
         var block = new TryCatchBlock();
@@ -53,9 +53,11 @@ public class StatementAdversaryTests
 
         method.Add(block);
 
+        // Work, A and B declared alongside the method rather than in the preamble, which lands
+        // outside the container. Undeclared, the test failed on CS0103 for the three of them
+        // before the compiler ever reached the filter question it exists to ask.
         RoslynAssert.MemberCompiles(
-            Emit.Component(method),
-            preamble: "",
+            Emit.Component(method) + "\nvoid Work() { }\nvoid A() { }\nvoid B() { }\n",
             languageVersion: RoslynAssert.MaxLanguageVersion);
     }
 

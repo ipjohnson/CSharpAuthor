@@ -88,12 +88,20 @@ public class ModifierAdversaryTests
     /// <c>partial</c> is dropped, so the two halves of a partial method become two declarations of
     /// the same member - CS0111.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP (§7 'partial on methods'): the modifier is never written, so a declaration and its implementation collide - CS0111")]
+    [Fact]
     public void PartialMethodKeepsItsModifier()
     {
         var declaration = new MethodDefinition("M")
         {
-            Modifiers = ComponentModifier.NoAccessibility | ComponentModifier.Partial
+            Modifiers = ComponentModifier.NoAccessibility | ComponentModifier.Partial,
+
+            // The defining half is a signature and a semicolon, and OmitBody is how a caller says
+            // which half this is - MethodDefinition documents that deliberately, because a partial
+            // method with no statements is not bodyless on its own. Without it the test emitted a
+            // body here and then supplied a second one below, so it failed as "partial is dropped"
+            // when what it had actually built was two implementations. The modifier was being
+            // written the whole time.
+            OmitBody = true
         };
 
         RoslynAssert.Compiles(

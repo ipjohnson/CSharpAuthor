@@ -130,16 +130,50 @@ public class DownlevelTests
             Emit(statement, EmitProfile.Conservative.With(p => p.Target = LanguageVersion.CSharp7_3)));
     }
 
+    /// <summary>
+    /// A labeled break is a <c>goto</c> at every language version, including the newest.
+    /// </summary>
+    /// <remarks>
+    /// The first assertion used to expect <c>outer: ... break outer;</c> under
+    /// <see cref="EmitProfile.Latest"/>, on the strength of a capability row that put labeled jumps
+    /// in C# 15. C# has no such feature, so that output was invalid everywhere it was produced -
+    /// under Latest, and under any plain OutputContext with no profile driving it, which is the
+    /// path every facade example in the README takes. There is no target for which the labeled form
+    /// is right, so there is no longer a branch that writes it.
+    /// </remarks>
     [Fact]
-    public void ALabeledBreakBecomesAGoto()
+    public void ALabeledBreakIsAGotoAtEveryVersion()
     {
-        AssertEqual.WithoutNewLine(
-            "outer:\nforeach (var row in grid)\n{\n    break outer;\n}\n",
-            Emit(LabeledLoop(), EmitProfile.Latest));
+        var expected = "foreach (var row in grid)\n{\n    goto outer_break;\n}\nouter_break: ;\n";
+
+        AssertEqual.WithoutNewLine(expected, Emit(LabeledLoop(), EmitProfile.Latest));
+        AssertEqual.WithoutNewLine(expected, Emit(LabeledLoop(), EmitProfile.Default));
+        AssertEqual.WithoutNewLine(expected, Emit(LabeledLoop(), EmitProfile.Conservative));
 
         AssertEqual.WithoutNewLine(
             "foreach (var row in grid)\n{\n}\nouter_break: ;\n",
             Emit(LabeledLoopWithNothingButAJump(), EmitProfile.Default));
+    }
+
+    /// <summary>
+    /// The same loop written with no profile at all - a plain <see cref="OutputContext"/>.
+    /// </summary>
+    /// <remarks>
+    /// This is the case the capability row missed entirely. A facade caller who never touches
+    /// EmitProfile still gets a correct jump.
+    /// </remarks>
+    [Fact]
+    public void ALabeledBreakIsAGotoWithNoProfileDrivingIt()
+    {
+        var outputContext = new OutputContext();
+
+        LabeledLoop().WriteOutput(outputContext);
+
+        var code = outputContext.Output();
+
+        Assert.Contains("goto outer_break;", code);
+        Assert.Contains("outer_break: ;", code);
+        Assert.DoesNotContain("break outer;", code);
     }
 
     [Fact]

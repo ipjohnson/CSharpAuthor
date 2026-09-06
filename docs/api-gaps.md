@@ -99,9 +99,9 @@ it on one.
 
 | Construct | What is missing |
 |---|---|
-| `Conversion Operators` | **Confirmed still open.** The `operator +` trick does not extend to these: a conversion operator declares no return type, and `MethodDefinition` always writes one, so `AddMethod("implicit operator int")` emits `public static void implicit operator int(Money m)`. |
+| ~~`Conversion Operators`~~ | **Closed.** `ClassDefinition.AddConversionOperator(kind, targetType, sourceType, parameterName)` returns a `ConversionOperatorDefinition`, which writes its own signature and so has no return-type slot to fight. The target travels as an `ITypeDefinition`, so it is tracked - `global::` qualification and derived usings work, which the `AddMethod("implicit operator " + name)` workaround could not do because a name in a string is not a type. Covered by `MethodTests.ConversionOperatorTests`, Roslyn-compiled. |
 | `Destructors` | **Confirmed still open.** Same cause as conversion operators - a destructor declares no return type. `AddMethod("~Host")` with `NoAccessibility` emits `&nbsp;void ~Host()`, with the stray leading space the suppressed modifier leaves behind. |
-| `Enum Member Literal Form` | An enum member cannot be given a negative or hex value in a controlled way; EnumValueDefinition writes Value.ToString(), so the literal form is whatever the CLR chose |
+| ~~`Enum Member Literal Form`~~ | **Closed.** `EnumValueDefinition.Value` funnels through `CodeOutputComponent.Get`, so a literal keeps its C# form and an `IOutputComponent` passes through untouched: `value.Value = Ex.ShiftLeft(1, i)` writes `= 1 << i`, which is what a flag enum needs. Covered by `EnumDefinitionTests.EnumValueComponentTests`. |
 | `Extension Blocks And Members` | Extension blocks and extension members. An extension method is reachable via ParameterDefinition.This; the C# 14 'extension(T x) { }' block, and extension properties and indexers inside it, are not. |
 | `Extern Members` | 'extern' has no ComponentModifier flag, so a DllImport declaration cannot be emitted |
 | `Generic Delegate Constraints` | A delegate cannot be generic. DelegateDefinition inherits MethodDefinition's generic parameters but a caller cannot reach constraints on them in a delegate position. |
@@ -146,7 +146,7 @@ it on one.
 | `Checked And Unchecked` | There is no checked or unchecked emitter, in statement or expression position |
 | `Do While Statement` | There is no do/while emitter; WhileDefinition writes the pre-test form only |
 | `For Each With An Explicit Element Type` | ForEachDefinition writes 'foreach(var x in ...)' with the type fixed as var, so a non-generic sequence cannot be iterated as its element type; and there is no await foreach |
-| `Goto And Labels` | There is no goto emitter, no label emitter, and so no labelled break or continue either |
+| `Goto And Labels` | Partly wrong as written. There is no general goto or label emitter in the facade, but `Profiles.LabeledLoopStatement` and `LabeledJumpStatement` do emit a labelled loop and the `goto` that leaves or continues it. Note that C# has no labelled `break`/`continue` at any version, so `goto` is the only form there was ever going to be - a capability row claiming C# 15 would add one has been withdrawn. |
 | `Local Functions` | There is no local function emitter |
 | `Lock Statement` | There is no lock emitter |
 | `Throw Expression And Rethrow` | There is no 'throw' expression (only ThrowNewExceptionStatement, which is a statement), and no rethrow: a bare 'throw;' inside a catch cannot be written except as a raw string |

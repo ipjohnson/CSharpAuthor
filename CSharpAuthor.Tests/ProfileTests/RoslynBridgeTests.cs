@@ -142,7 +142,10 @@ public class RoslynBridgeTests
             _values = values;
         }
 
-        public override bool TryGetValue(string key, out string? value) => _values.TryGetValue(key, out value);
+        public override bool TryGetValue(
+            string key,
+            [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? value) =>
+            _values.TryGetValue(key, out value);
     }
 
     private sealed class FakeProvider : AnalyzerConfigOptionsProvider

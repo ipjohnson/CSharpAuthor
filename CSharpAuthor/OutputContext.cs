@@ -2020,7 +2020,7 @@ public class OutputContext : IOutputContext
     {
         public static readonly ReferenceComparer Instance = new ReferenceComparer();
 
-        public bool Equals(ITypeDefinition x, ITypeDefinition y)
+        public bool Equals(ITypeDefinition? x, ITypeDefinition? y)
         {
             return ReferenceEquals(x, y);
         }

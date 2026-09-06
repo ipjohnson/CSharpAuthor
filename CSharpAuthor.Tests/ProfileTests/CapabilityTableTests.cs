@@ -46,7 +46,6 @@ public class CapabilityTableTests
     [InlineData(LanguageFeature.RawStringLiterals, LanguageVersion.CSharp11)]
     [InlineData(LanguageFeature.NameOf, LanguageVersion.CSharp6)]
     [InlineData(LanguageFeature.UsingDeclarations, LanguageVersion.CSharp8)]
-    [InlineData(LanguageFeature.LabeledJumps, LanguageVersion.CSharp15)]
     [InlineData(LanguageFeature.PrimaryConstructors, LanguageVersion.CSharp12)]
     [InlineData(LanguageFeature.FieldKeyword, LanguageVersion.CSharp14)]
     [InlineData(LanguageFeature.ParamsCollections, LanguageVersion.CSharp13)]
@@ -73,7 +72,6 @@ public class CapabilityTableTests
     [InlineData(LanguageFeature.RawStringLiterals)]
     [InlineData(LanguageFeature.NameOf)]
     [InlineData(LanguageFeature.UsingDeclarations)]
-    [InlineData(LanguageFeature.LabeledJumps)]
     [InlineData(LanguageFeature.PrimaryConstructors)]
     [InlineData(LanguageFeature.FieldKeyword)]
     [InlineData(LanguageFeature.ParamsCollections)]
@@ -158,15 +156,16 @@ public class CapabilityTableTests
     {
         // Stated as a test so it cannot quietly stop being true: Microsoft.CodeAnalysis.CSharp
         // 4.14.0 knows language versions only up to C# 13. Anything above renders, but no parser
-        // in this repository can prove the rendering parses - and `break outer;` is exactly such
-        // a case, which is why LabeledJumps is a C# 15 row.
+        // in this repository can prove the rendering parses.
+        //
+        // `break outer;` used to be cited here as the example, on the strength of a C# 15 row for
+        // LabeledJumps. That row was a bet on a feature C# has never announced, and the unprovable
+        // rendering it justified was simply invalid - so the row is gone and the jump writes a goto
+        // at every version. The point about Roslyn 4.14 stands on its own; it just no longer has a
+        // fictional feature as its illustration.
         Assert.True(LanguageVersion.CSharp13.IsValidatableByRoslyn414());
         Assert.False(LanguageVersion.CSharp14.IsValidatableByRoslyn414());
         Assert.False(LanguageVersion.CSharp15.IsValidatableByRoslyn414());
         Assert.False(LanguageVersion.Preview.IsValidatableByRoslyn414());
-
-        Assert.Equal(
-            LanguageVersion.CSharp15,
-            LanguageFeatures.MinimumVersion(LanguageFeature.LabeledJumps));
     }
 }

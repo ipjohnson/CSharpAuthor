@@ -96,7 +96,10 @@ internal static class LiteralFormatter
                 return formattable.ToString(null, CultureInfo.InvariantCulture);
 
             default:
-                return value.ToString();
+                // ToString() is annotated as nullable. Every BCL type worth formatting returns a
+                // string here, but the annotation is the contract, and an empty literal is a
+                // compile error the caller can see rather than a null loose in the writer.
+                return value.ToString() ?? "";
         }
     }
 
@@ -222,6 +225,23 @@ internal static class LiteralFormatter
         return value.ToString("R", CultureInfo.InvariantCulture) + "d";
     }
 
+    /// <summary>
+    /// Whether <paramref name="character"/> has to be written as an escape rather than itself
+    /// inside a regular string or character literal.
+    /// </summary>
+    /// <remarks>
+    /// U+2028 and U+2029 are <c>new_line</c> characters in the C# grammar, and a regular literal
+    /// may not contain one - but they are Unicode Zl/Zp rather than Cc, so
+    /// <see cref="char.IsControl(char)"/> does not report them. That gap ended a literal early and
+    /// produced CS1010 for any generator embedding scraped or user-supplied text.
+    /// <c>StringLiteralStatement.Quote</c> has always handled them; this is the same rule, in the
+    /// one place both escapers can read it.
+    /// </remarks>
+    internal static bool MustEscapeInLiteral(char character)
+    {
+        return char.IsControl(character) || character == '\u2028' || character == '\u2029';
+    }
+
     private static void AppendEscaped(StringBuilder builder, string value, char quote)
     {
         for (var i = 0; i < value.Length; i++)
@@ -288,7 +308,7 @@ internal static class LiteralFormatter
         // An unpaired surrogate is not a character and has no textual form; a control character has
         // one but it is invisible, and an invisible character in a literal is how a generator ends
         // up emitting a file nobody can diff. Both become their escape.
-        if (char.IsControl(character) || char.IsSurrogate(character))
+        if (MustEscapeInLiteral(character) || char.IsSurrogate(character))
         {
             builder.Append("\\u");
             builder.Append(((int)character).ToString("X4", CultureInfo.InvariantCulture));

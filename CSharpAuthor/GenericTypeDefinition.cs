@@ -83,7 +83,7 @@ public class GenericTypeDefinition : BaseTypeDefinition
     /// second <see cref="GenericTypeDefinition"/>, so a closed generic arriving from anywhere else
     /// was reported different from an identical one built by hand.
     /// </summary>
-    public override int CompareTo(ITypeDefinition other)
+    public override int CompareTo(ITypeDefinition? other)
     {
         return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }

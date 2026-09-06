@@ -155,13 +155,13 @@ public sealed class AttributeTypeReference : ITypeDefinition
     /// </remarks>
     internal string TypeKey => _key ??= TypeDefinitionIdentity.BuildAttributeReference(_attributeType);
 
-    public int CompareTo(ITypeDefinition other)
+    public int CompareTo(ITypeDefinition? other)
     {
         return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }
 
     /// <inheritdoc cref="TypeKey" />
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         return TypeDefinitionIdentity.KeyEquals(TypeKey, obj);
     }
@@ -172,5 +172,5 @@ public sealed class AttributeTypeReference : ITypeDefinition
         return _hashCode ??= TypeKey.GetHashCode();
     }
 
-    public override string ToString() => _attributeType.ToString();
+    public override string ToString() => _attributeType.ToString() ?? "";
 }

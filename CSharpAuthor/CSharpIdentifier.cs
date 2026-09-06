@@ -91,12 +91,27 @@ internal static class CSharpIdentifier
     }
 
     /// <summary>
-    /// Whether <paramref name="name"/> is the keyword spelling of a predefined type, which is
+/// Whether <paramref name="name"/> is the keyword spelling of a predefined type, which is
     /// written bare in every <see cref="TypeOutputMode"/> because no qualifier for it compiles.
     /// </summary>
     public static bool IsPredefinedTypeKeyword(string? name)
     {
         return name != null && PredefinedTypeKeywords.Contains(name);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="value"/> is one of the six reserved words that are also complete
+    /// expressions - <c>this</c>, <c>base</c>, <c>null</c>, <c>true</c>, <c>false</c>,
+    /// <c>default</c>.
+    /// </summary>
+    /// <remarks>
+    /// These are the words where "escape it" and "leave it alone" are both wrong answers to give
+    /// silently, because the two readings name different things: <c>this</c> is the receiver, and
+    /// <c>@this</c> is whatever local was declared under that name.
+    /// </remarks>
+    public static bool IsExpressionKeyword(string? value)
+    {
+        return value != null && ExpressionKeywords.Contains(value);
     }
 
     /// <summary>

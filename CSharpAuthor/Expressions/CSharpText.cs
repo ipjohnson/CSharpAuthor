@@ -15,18 +15,11 @@ public
 #endif
 static class CSharpText
 {
-    private static readonly HashSet<string> ReservedKeywords = new HashSet<string>(StringComparer.Ordinal)
-    {
-        "abstract", "as", "base", "bool", "break", "byte", "case", "catch", "char", "checked",
-        "class", "const", "continue", "decimal", "default", "delegate", "do", "double", "else",
-        "enum", "event", "explicit", "extern", "false", "finally", "fixed", "float", "for",
-        "foreach", "goto", "if", "implicit", "in", "int", "interface", "internal", "is", "lock",
-        "long", "namespace", "new", "null", "object", "operator", "out", "override", "params",
-        "private", "protected", "public", "readonly", "ref", "return", "sbyte", "sealed",
-        "short", "sizeof", "stackalloc", "static", "string", "struct", "switch", "this",
-        "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort",
-        "using", "virtual", "void", "volatile", "while",
-    };
+    // The reserved-word list lives in CSharpIdentifier and only there. This file used to carry a
+    // second, verbatim copy of the same 77 words, which is how Ex.Id came to escape `this` to
+    // `@this`: CSharpIdentifier had learned that six of those words are complete expressions and
+    // must be left alone at a reference site, and this copy never heard about it. Two tables of the
+    // same thing drift, and the drift is silent.
 
     /// <summary>True when <paramref name="name"/> is a reserved C# keyword.</summary>
     /// <remarks>
@@ -36,7 +29,7 @@ static class CSharpText
     /// </remarks>
     public static bool IsReservedKeyword(string name)
     {
-        return name != null && ReservedKeywords.Contains(name);
+        return CSharpIdentifier.IsReservedKeyword(name);
     }
 
     /// <summary>
@@ -51,7 +44,7 @@ static class CSharpText
             return name;
         }
 
-        return ReservedKeywords.Contains(name) ? "@" + name : name;
+        return CSharpIdentifier.IsReservedKeyword(name) ? "@" + name : name;
     }
 
     /// <summary>A double-quoted, fully escaped string literal.</summary>
@@ -169,7 +162,7 @@ static class CSharpText
                 continue;
             }
 
-            if (char.IsControl(ch))
+            if (LiteralFormatter.MustEscapeInLiteral(ch))
             {
                 AppendUnicodeEscape(builder, ch);
                 continue;

@@ -24,7 +24,14 @@ public class EnumValueDefinition : BaseOutputComponent
     /// The explicit value, or null to let the compiler number it.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Null means "no <c>= n</c>", not the value zero - a member that should be zero has to say so.
+    /// </para>
+    /// <para>
+    /// A literal or an <see cref="IOutputComponent"/>, so a computed value is reachable:
+    /// <c>value.Value = Ex.Shift(1, i)</c> writes <c>= 1 &lt;&lt; i</c>, which is how a flag enum
+    /// is built.
+    /// </para>
     /// </remarks>
     public object? Value { get; set; }
 
@@ -45,7 +52,14 @@ public class EnumValueDefinition : BaseOutputComponent
         if (Value != null)
         {
             outputContext.Write(" = ");
-            outputContext.Write(LiteralFormatter.Format(Value));
+
+            // Through CodeOutputComponent.Get, the way every other value API in the library goes.
+            // Formatting the object directly meant anything that was not a literal fell through to
+            // its own ToString(), so a component arrived as its class name - `A =
+            // CSharpAuthor.Expressions.Ex` - and a flag enum built from `1 << n` was unreachable,
+            // silently. Get() passes an IOutputComponent through untouched and still routes a plain
+            // literal to LiteralFormatter.
+            CodeOutputComponent.Get(Value).WriteOutput(outputContext);
         }
 
         outputContext.WriteLine(",");
