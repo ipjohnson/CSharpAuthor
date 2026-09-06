@@ -98,11 +98,53 @@ sealed partial class Ex : IExpressionNode
     // ---------------------------------------------------------------------------------
 
     /// <summary>An identifier, keyword-escaped: <c>class</c> becomes <c>@class</c>.</summary>
+    /// <remarks>
+    /// <para>
+    /// The six reserved words that are also complete expressions - <c>this</c>, <c>base</c>,
+    /// <c>null</c>, <c>true</c>, <c>false</c>, <c>default</c> - are refused rather than escaped.
+    /// They are genuinely ambiguous here and the two readings name different things: <c>this</c> is
+    /// the receiver, while <c>@this</c> is whatever local was declared under that name, and
+    /// <c>AddParameter(t, "this")</c> really does declare one. Guessing either way is wrong often
+    /// enough to be worth a stop.
+    /// </para>
+    /// <para>
+    /// It used to guess, and it guessed "escape": <c>Ex.Id("this")</c> wrote <c>@this</c>, CS0103,
+    /// in the <em>consumer's</em> generated file rather than in the generator that built it.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="name"/> is one of the six expression keywords. The message names the
+    /// replacement for both readings.
+    /// </exception>
     public static Ex Id(string name)
     {
+        if (CSharpIdentifier.IsExpressionKeyword(name))
+        {
+            throw new ArgumentException(
+                "'" + name + "' is a C# expression, not an identifier, and Ex.Id cannot tell which " +
+                "of the two you mean. Write " + ExpressionKeywordReplacement(name) + " for the " +
+                "expression, or Ex.Id(\"@" + name + "\") for a member declared under that name.",
+                nameof(name));
+        }
+
         var text = CSharpText.Identifier(name);
 
         return new Ex(ExPrecedence.Primary, c => c.Write(text));
+    }
+
+    /// <summary>How to spell <paramref name="keyword"/> when the expression is what was meant.</summary>
+    private static string ExpressionKeywordReplacement(string keyword)
+    {
+        switch (keyword)
+        {
+            case "this": return "Ex.This";
+            case "base": return "Ex.Base";
+            case "null": return "Ex.Null";
+            case "true": return "Ex.True";
+            case "false": return "Ex.False";
+            case "default": return "Ex.Default()";
+            default: return "the matching Ex member";
+        }
     }
 
     /// <summary>A type used in expression position — <c>Foo.Bar</c> in <c>Foo.Bar.Baz()</c>.</summary>

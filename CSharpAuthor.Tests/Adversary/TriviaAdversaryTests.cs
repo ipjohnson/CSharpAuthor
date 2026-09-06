@@ -52,7 +52,7 @@ public class TriviaAdversaryTests
     /// which becomes a build failure in any project that turns documentation warnings into errors,
     /// and which is exactly what a <c>&lt;code&gt;</c> sample containing a generic type produces.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: comment text is not XML-escaped, so a summary containing & or < emits malformed XML - CS1570, and the documentation file silently loses the element")]
+    [Fact]
     public void CommentContainingMarkupCharacters()
     {
         var classDefinition = new ClassDefinition("Host")

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace CSharpAuthor.Profiles;
 
@@ -345,11 +346,11 @@ sealed class EmitSession
     /// </remarks>
     public void MarkLabelUsed(string label)
     {
-        if (_discard)
-        {
-            return;
-        }
-
+        // Deliberately not gated on _discard. Which labels a body actually jumped to is a
+        // rendering fact the loop needs in order to know which declarations to write - it is not a
+        // diagnostic, and a write with no profile needs it exactly as much as one with a profile.
+        // Gated, it left `goto outer_break;` with no `outer_break:` to reach - CS0159 - on every
+        // plain OutputContext, which is the path every facade example in the README takes.
         _labels.Add(label);
     }
 
@@ -359,11 +360,6 @@ sealed class EmitSession
     /// <summary>Forgets a label once its declaration has been written.</summary>
     public void ClearLabel(string label)
     {
-        if (_discard)
-        {
-            return;
-        }
-
         _labels.Remove(label);
     }
 
@@ -398,8 +394,30 @@ sealed class EmitSession
     /// This is how a node reaches its profile without the profile ever being on the tree, and
     /// without <see cref="IOutputContext"/> having to change shape.
     /// </remarks>
-    public static EmitSession For(IOutputContext? outputContext) =>
-        outputContext is IProfiledOutputContext profiled ? profiled.Session : Discarding;
+    public static EmitSession For(IOutputContext? outputContext)
+    {
+        if (outputContext is IProfiledOutputContext profiled)
+        {
+            return profiled.Session;
+        }
+
+        if (outputContext == null)
+        {
+            return Discarding;
+        }
+
+        // One session per unprofiled context, rather than the Discarding singleton. The session
+        // carries the label bookkeeping above, and a singleton shared by every write in the process
+        // would let one tree's labels answer another tree's question. Weakly keyed, so the session
+        // dies with the context.
+        return UnprofiledSessions.GetValue(outputContext, CreateUnprofiled);
+    }
+
+    private static readonly ConditionalWeakTable<IOutputContext, EmitSession> UnprofiledSessions =
+        new ConditionalWeakTable<IOutputContext, EmitSession>();
+
+    private static readonly ConditionalWeakTable<IOutputContext, EmitSession>.CreateValueCallback
+        CreateUnprofiled = _ => new EmitSession(EmitProfile.V1Compatible, discard: true);
 
     private void RequestPolyfills(LanguageFeature feature)
     {

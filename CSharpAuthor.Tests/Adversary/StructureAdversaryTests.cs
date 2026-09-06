@@ -59,19 +59,33 @@ public class StructureAdversaryTests
     }
 
     /// <summary>
-    /// <c>EnumValueDefinition</c> writes <c>Value.ToString()</c>, which is the ambient-culture,
-    /// CLR-formatted rendering rather than a C# literal - so a <see cref="bool"/> becomes
-    /// <c>False</c> with a capital F. It is the same root cause as the culture defect: a value is
-    /// turned into text by whatever <c>ToString</c> happens to do.
+    /// An enum member's value is written in C# literal form rather than by <c>ToString()</c>.
     /// </summary>
-    [Fact(Skip = "ADVERSARY GAP: EnumValueDefinition writes Value.ToString() rather than going through CodeOutputComponent, so a bool value emits 'A = False' - CS0103 - where the component would have written 'false'")]
+    /// <remarks>
+    /// <para>
+    /// This asked whether <c>enum E { A = false }</c> compiles, and skipped itself because it did
+    /// not. It never could: a <see cref="bool"/> is not a legal enum member value in C# however it
+    /// is spelled - CS0029 - so the assertion was unreachable and the skip outlived the defect it
+    /// described by some margin.
+    /// </para>
+    /// <para>
+    /// The defect underneath it was real: a value turned into text by whatever <c>ToString</c>
+    /// happened to do, giving <c>False</c> with a capital F. That is what is asserted now, and it
+    /// holds because <c>EnumValueDefinition</c> funnels through
+    /// <see cref="CodeOutputComponent.Get(object,bool)"/> like every other value API.
+    /// </para>
+    /// </remarks>
+    [Fact]
     public void EnumMemberValueUsesCSharpLiteralForm()
     {
         var enumDefinition = new EnumDefinition("E");
 
         enumDefinition.AddValue("A", false);
 
-        RoslynAssert.Compiles(Emit.Component(enumDefinition));
+        var output = Emit.Component(enumDefinition);
+
+        Assert.Contains("A = false,", output);
+        Assert.DoesNotContain("False", output);
     }
 
     /// <summary>

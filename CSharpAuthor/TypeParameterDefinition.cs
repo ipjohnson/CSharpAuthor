@@ -173,7 +173,7 @@ public class TypeParameterDefinition : ITypeDefinition
     /// Orders by the same identity <see cref="Equals(object)"/> uses, so a sorted collection of
     /// type references is stable across runs.
     /// </summary>
-    public int CompareTo(ITypeDefinition other)
+    public int CompareTo(ITypeDefinition? other)
     {
         return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }
@@ -188,7 +188,7 @@ public class TypeParameterDefinition : ITypeDefinition
     /// built with <see cref="TypeDefinition.Get(string,string,bool,bool)"/> name the same thing in
     /// the declaration they appear in.
     /// </remarks>
-    public override bool Equals(object obj)
+    public override bool Equals(object? obj)
     {
         return TypeDefinitionIdentity.KeyEquals(TypeKey, obj);
     }

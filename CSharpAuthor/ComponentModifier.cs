@@ -158,7 +158,7 @@ public enum ComponentModifier
     /// <c>internal</c> rather than joining them. Below C# 11 there is no downlevel: writing
     /// <c>internal</c> instead would publish the type to the whole assembly, which is the same
     /// silent widening that <see cref="PrivateProtected"/> documents. It is reported instead - see
-    /// <see cref="LanguageFeature.FileLocalTypes"/>.
+    /// <see cref="Profiles.LanguageFeature.FileLocalTypes"/>.
     /// </para>
     /// </remarks>
     File = 32768,

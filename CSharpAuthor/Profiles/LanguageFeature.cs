@@ -32,8 +32,11 @@ enum LanguageFeature
     /// <summary><c>using var x = ...;</c>. Downlevels to <c>using (var x = ...) { }</c>.</summary>
     UsingDeclarations,
 
-    /// <summary><c>break outer;</c> / <c>continue outer;</c>. Downlevels to <c>goto</c>.</summary>
-    LabeledJumps,
+    // LabeledJumps was here, as a C# 15 row. It was a bet on a feature C# has never announced,
+    // and the table is a record of versions features actually shipped in, so the bet is withdrawn
+    // rather than left to age. `break outer;` is not valid C# at any version, which means there was
+    // no target for which "may emit" was the right answer - see LabeledJumpStatement, which now
+    // writes the goto unconditionally because the goto is the only form, not the downlevel form.
 
     /// <summary><c>class C(int x)</c>. Downlevels to a constructor with backing fields.</summary>
     PrimaryConstructors,
@@ -238,8 +241,6 @@ static class LanguageFeatures
             DownlevelSupport.Writer, "nameof"),
         Row(LanguageFeature.UsingDeclarations, LanguageVersion.CSharp8, FeatureCategory.Free,
             DownlevelSupport.Writer, "using declaration"),
-        Row(LanguageFeature.LabeledJumps, LanguageVersion.CSharp15, FeatureCategory.Free,
-            DownlevelSupport.Writer, "labeled jump"),
         Row(LanguageFeature.SwitchExpressions, LanguageVersion.CSharp8, FeatureCategory.Free,
             DownlevelSupport.Writer, "switch expression"),
         Row(LanguageFeature.PrimaryConstructors, LanguageVersion.CSharp12, FeatureCategory.Free,

@@ -565,6 +565,50 @@ public class ClassDefinition : BaseOutputComponent, IConstructContainer, INamedC
     }
 
     /// <summary>
+    /// A user-defined conversion: <c>public static implicit operator Shape(Circle value)</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <paramref name="targetType"/> is the type converted to and <paramref name="sourceType"/> the
+    /// type converted from; one of the two has to be the type this is declared on, which is the
+    /// caller's to get right the same way everything else here is.
+    /// </para>
+    /// <para>
+    /// Both types travel as definitions, so both are tracked - the conversion target picks up
+    /// <c>global::</c> qualification and a derived <c>using</c> like any other type the file names.
+    /// That is the difference between this and the <c>AddMethod("operator " + name)</c> route it
+    /// replaces, which put the target in a string where nothing could see it and emitted CS0246 as
+    /// soon as the target lived in another namespace.
+    /// </para>
+    /// <para>
+    /// <c>public static</c> is set for you, because C# allows nothing else.
+    /// </para>
+    /// </remarks>
+    /// <param name="kind">Implicit or explicit.</param>
+    /// <param name="targetType">The type converted to.</param>
+    /// <param name="sourceType">The type converted from - the operator's one parameter.</param>
+    /// <param name="parameterName">What to call that parameter.</param>
+    public ConversionOperatorDefinition AddConversionOperator(
+        ConversionOperatorKind kind,
+        ITypeDefinition targetType,
+        ITypeDefinition sourceType,
+        string parameterName = "value")
+    {
+        if (sourceType == null)
+        {
+            throw new ArgumentNullException(nameof(sourceType));
+        }
+
+        var definition = new ConversionOperatorDefinition(kind, targetType);
+
+        definition.AddParameter(sourceType, parameterName);
+
+        _methods.Add(definition);
+
+        return definition;
+    }
+
+    /// <summary>
     /// A base type or an implemented interface: <c>public class Greeter : IDisposable</c>.
     /// </summary>
     /// <remarks>

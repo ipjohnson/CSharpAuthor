@@ -3,8 +3,7 @@ using System;
 namespace CSharpAuthor.Profiles;
 
 /// <summary>
-/// A loop a jump can name: <c>outer: foreach (...)</c> where the target has labeled jumps, and
-/// the loop plus the <c>goto</c> labels that stand in for them where it does not.
+/// A loop an outer-loop jump can name, plus the <c>goto</c> labels those jumps target.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -57,13 +56,8 @@ class LabeledLoopStatement : BaseBlockDefinition
     {
         var session = outputContext.EmitSession();
 
-        var labelled = session.MayEmit(LanguageFeature.LabeledJumps, outputContext, Context);
-
-        if (labelled)
-        {
-            outputContext.WriteIndentedLine(_label + ":");
-        }
-
+        // No `outer:` declaration. Nothing jumps to it: LabeledJumpStatement always targets the
+        // synthetic labels below, because C# has no labeled break or continue to target this one.
         outputContext.WriteIndent();
         _header.WriteOutput(outputContext);
         outputContext.WriteLine();
@@ -75,17 +69,11 @@ class LabeledLoopStatement : BaseBlockDefinition
             statement.WriteOutput(outputContext);
         }
 
-        if (!labelled)
-        {
-            WriteSyntheticLabel(outputContext, session, LabeledJumpKind.Continue);
-        }
+        WriteSyntheticLabel(outputContext, session, LabeledJumpKind.Continue);
 
         outputContext.CloseScope();
 
-        if (!labelled)
-        {
-            WriteSyntheticLabel(outputContext, session, LabeledJumpKind.Break);
-        }
+        WriteSyntheticLabel(outputContext, session, LabeledJumpKind.Break);
     }
 
     private void WriteSyntheticLabel(IOutputContext outputContext, EmitSession session, LabeledJumpKind kind)

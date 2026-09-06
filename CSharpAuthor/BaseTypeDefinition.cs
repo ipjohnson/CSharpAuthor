@@ -132,7 +132,7 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     /// <inheritdoc />
     public ITypeDefinition? ContainingType { get; }
 
-    public abstract int CompareTo(ITypeDefinition other);
+    public abstract int CompareTo(ITypeDefinition? other);
 
     /// <summary>
     /// The type's identity: what makes it the same type as another definition of it, whichever class
@@ -180,7 +180,7 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     /// and hashed them differently. A subclass calling this still gets a comparison that stops at
     /// what it renders, and is free to break a remaining tie on anything it does not.
     /// </remarks>
-    protected int BaseCompareTo(ITypeDefinition other)
+    protected int BaseCompareTo(ITypeDefinition? other)
     {
         return TypeDefinitionIdentity.KeyCompare(TypeKey, other);
     }

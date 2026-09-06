@@ -23,9 +23,9 @@ namespace CSharpAuthor.Tests.ProfileTests;
 /// </para>
 /// <para>
 /// <strong>What this cannot check.</strong> <c>Microsoft.CodeAnalysis.CSharp</c> 4.14.0 knows
-/// language versions only up to C# 13, so the C# 15 rendering of a labeled jump is asserted to be
-/// <em>unparseable here</em> rather than correct. See
-/// <see cref="TheParserCannotCheckWhatItDoesNotKnow"/>.
+/// language versions only up to C# 13, so any rendering above that is unvalidated here whatever it
+/// says. See <see cref="TheParserCannotCheckWhatItDoesNotKnow"/>, which states the limit rather
+/// than working around it.
 /// </para>
 /// </remarks>
 public class DownlevelDemoTests
@@ -102,23 +102,26 @@ public class DownlevelDemoTests
     [Fact]
     public void TheParserCannotCheckWhatItDoesNotKnow()
     {
-        // Microsoft.CodeAnalysis.CSharp 4.14.0 knows language versions only up to C# 13. Its
-        // Preview cannot parse `break outer;` even though the .NET 11 SDK compiler can. The
-        // library will happily render for C# 15; nothing in this repository can validate it, and
-        // saying so is the honest version of a conformance claim.
+        // Microsoft.CodeAnalysis.CSharp 4.14.0 knows language versions only up to C# 13. The
+        // library will happily render for C# 14 and 15; nothing in this repository can validate
+        // that rendering, and saying so is the honest version of a conformance claim.
         Assert.Equal(
             EmitLanguageVersion.CSharp13,
             CSharpAuthor.Roslyn.EmitProfileRoslynExtensions.LatestSupported());
 
-        var labelled = ProfileEmitter.Emit(Widget(), EmitProfile.Latest).Code;
+        // This test used to illustrate the limit with `break outer;` - rendered at Latest,
+        // asserted to be unparseable, and read as "too new for this parser". It was not too new.
+        // No C# compiler parses it, at any version, and the capability row that claimed C# 15
+        // would has been withdrawn. The limit above is real; that was never an example of it.
+        var latest = ProfileEmitter.Emit(Widget(), EmitProfile.Latest).Code;
 
-        Assert.Contains("break outer;", labelled);
+        Assert.DoesNotContain("break outer;", latest);
+        Assert.Contains("goto outer_break;", latest);
 
-        var errors = Compile(labelled, RoslynLanguageVersion.Preview);
+        // And with the invalid rendering gone, the Latest rendering of this tree does parse - so
+        // the unvalidatable range is now a statement about versions, not a place defects hide.
+        AssertCompiles(latest, RoslynLanguageVersion.Preview);
 
-        Assert.NotEmpty(errors);
-
-        // ... and the same tree rendered for a version this parser does know is fine.
         AssertCompiles(ProfileEmitter.Emit(Widget(), EmitProfile.Default).Code, RoslynLanguageVersion.CSharp12);
     }
 

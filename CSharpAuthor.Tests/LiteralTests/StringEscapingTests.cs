@@ -159,4 +159,35 @@ public class StringEscapingTests
 
         AssertEqual.ContainsWithoutNewLine("Log(Greeting.Value);", outputContext.Output());
     }
+
+    /// <summary>
+    /// U+2028 and U+2029 are escaped, in both of the library's literal writers.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// They are <c>new_line</c> characters in the C# grammar, so a regular literal holding one ends
+    /// early: CS1010, unterminated string literal. They are also Unicode Zl/Zp rather than Cc, so
+    /// <c>char.IsControl</c> does not report them - which is how both writers came to pass them
+    /// through while handling every other invisible character.
+    /// </para>
+    /// <para>
+    /// Reachable from any generator that embeds scraped or user-supplied text; U+2028 is what a
+    /// JSON or JavaScript source hands over for a line break.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData('\u2028', "\\u2028")]
+    [InlineData('\u2029', "\\u2029")]
+    public void UnicodeLineSeparatorsAreEscaped(char separator, string expected)
+    {
+        var value = "a" + separator + "b";
+
+        // LiteralFormatter, via SyntaxHelpers.
+        Assert.Equal("\"a" + expected + "b\"", SyntaxHelpers.QuoteString(value));
+
+        // CSharpText, which is the one Ex.Str and Ex.Char go through. StringLiteralStatement.Quote
+        // handled these correctly all along; these two did not, and the rule now lives in one place.
+        Assert.Equal("\"a" + expected + "b\"", Expressions.CSharpText.StringLiteral(value));
+        Assert.Equal("'" + expected + "'", Expressions.CSharpText.CharLiteral(separator));
+    }
 }

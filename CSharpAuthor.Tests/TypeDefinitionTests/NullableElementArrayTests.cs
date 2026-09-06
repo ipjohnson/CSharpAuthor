@@ -145,6 +145,6 @@ public class NullableElementArrayTests
 
         public ITypeDefinition MakeArray(int rank) => this;
 
-        public int CompareTo(ITypeDefinition other) => 0;
+        public int CompareTo(ITypeDefinition? other) => 0;
     }
 }

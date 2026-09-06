@@ -1,3 +1,4 @@
+using System;
 using CSharpAuthor.Expressions;
 using Xunit;
 
@@ -335,11 +336,61 @@ global::Probe.Point point = new global::Probe.Point();
     [MemberData(nameof(Keywords))]
     public void KeywordMemberNamesAreEscaped(string keyword)
     {
-        Assert.Equal("@" + keyword, Render(Ex.Id(keyword)));
+        // Ex.Id refuses the six expression keywords rather than escaping them - see
+        // ExpressionKeywordsAreRefusedRatherThanEscaped. A member access is not ambiguous the same
+        // way: `Point.@this` is a member that happens to be spelled with a keyword, and there is no
+        // competing reading, so escaping stays right on that side.
+        if (!CSharpIdentifier.IsExpressionKeyword(keyword))
+        {
+            Assert.Equal("@" + keyword, Render(Ex.Id(keyword)));
+        }
 
         Assert.Equal(
             "global::Probe.Point.@" + keyword,
             Render(Ex.On(PointType, keyword)));
+    }
+
+    /// <summary>
+    /// <c>Ex.Id</c> refuses <c>this</c>, <c>base</c>, <c>null</c>, <c>true</c>, <c>false</c> and
+    /// <c>default</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// It used to escape them, so <c>Ex.Id("this")</c> emitted <c>@this</c> - CS0103, and in the
+    /// <em>consumer's</em> generated file rather than in the generator that wrote it, which is the
+    /// worst place for a defect of this library to surface.
+    /// </para>
+    /// <para>
+    /// Refusing rather than quietly emitting <c>this</c> is the point: the two readings name
+    /// different things. <c>AddParameter(t, "this")</c> really does declare a parameter, escaped to
+    /// <c>@this</c>, and a reference to it is <c>@this</c> - so a silent correction to <c>this</c>
+    /// would swap a local for the receiver and compile.
+    /// </para>
+    /// </remarks>
+    [Theory]
+    [InlineData("this", "Ex.This")]
+    [InlineData("base", "Ex.Base")]
+    [InlineData("null", "Ex.Null")]
+    [InlineData("true", "Ex.True")]
+    [InlineData("false", "Ex.False")]
+    [InlineData("default", "Ex.Default()")]
+    public void ExpressionKeywordsAreRefusedRatherThanEscaped(string keyword, string replacement)
+    {
+        var exception = Assert.Throws<ArgumentException>(() => Ex.Id(keyword));
+
+        // The message has to carry the way out, for both readings.
+        Assert.Contains(replacement, exception.Message);
+        Assert.Contains("Ex.Id(\"@" + keyword + "\")", exception.Message);
+    }
+
+    /// <summary>
+    /// The escaped spelling still reaches a member genuinely declared under a keyword name.
+    /// </summary>
+    [Fact]
+    public void AnEscapedExpressionKeywordIsStillAnIdentifier()
+    {
+        Assert.Equal("@this", Render(Ex.Id("@this")));
+        Assert.Equal("@default", Render(Ex.Id("@default")));
     }
 
     public static TheoryData<string> Keywords() => new()

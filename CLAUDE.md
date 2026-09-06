@@ -31,14 +31,14 @@ The four things worth carrying even if you read nothing else:
    placeholders, whose bodies were `Assert.True(false, ...)`: un-skipping one failed whether or not
    the gap was still real, so nothing forced a revisit when a feature shipped, and 24 of them
    turned out to describe features that existed. They are gone - the surviving gaps are in
-   [docs/api-gaps.md](docs/api-gaps.md), and the 18 tests still skipped all assert something real.
+   [docs/api-gaps.md](docs/api-gaps.md), and the 13 tests still skipped all assert something real.
    Changing a test because a human decided the behaviour it pins is wrong is a different act from
    bending one to hide a regression; say which you are doing.
 
 Verification, all of it:
 
 ```bash
-dotnet test CSharpAuthor.Tests                            # 1634 passed / 0 failed / 18 skipped
+dotnet test CSharpAuthor.Tests                            # 1748 passed / 0 failed / 13 skipped
 ./scripts/run-consumer-tests.sh <checkout> --scope core   # the real oracle
 ./scripts/run-roundtrip.sh   <checkout> --corpus all      # 1,315 / 1,373 = 95.8%
 ./scripts/run-benchmark.sh   <v1> <v2>                    # both checkouts, ONE invocation
