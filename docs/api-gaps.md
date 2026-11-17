@@ -57,7 +57,7 @@ construct cannot be emitted:
 So each entry below is an ergonomics and type-safety gap, not an expressiveness one.
 
 
-## Inventory (50)
+## Inventory (51)
 
 
 ### Expressions — ✅ all 11 closed in preview1003
@@ -80,6 +80,12 @@ Every entry that was here is emitted correctly today. Verified output, `x` being
 
 `Ex.Switch` gives the same switch expression laid out over multiple lines; `Ex.SwitchInline` keeps
 it on one.
+
+### File structure
+
+| Construct | What is missing |
+|---|---|
+| ~~`Using Directives Inside A Namespace`~~ | **Closed.** `NamespaceDefinition.AddUsingInsideNamespace(ns)`, also on `CSharpFileDefinition`, writes `using Ns;` inside the braces or after `namespace X;`, before the first member. In `ShortName` mode a type the using could capture is written `global::`-qualified. Two cases are left as they were. A global-namespace type is not qualified, because it has the same shape as a keyword or a type parameter. In `FullName` mode, `A.Result` is still captured if the using imports a type named `A`. Covered by `NamespaceTests.NamespaceUsingTests`, Roslyn-compiled in all three modes. |
 
 ### Generic constraints
 

@@ -1448,6 +1448,38 @@ Verified against the runtime: `typeof(int[,][])` has `GetArrayRank() == 2` and e
 library emits the correct C# for both and did before wave 2. Satisfying these tests would emit the
 name of a different type, silently — and would break `ArrayRankTests`.
 
+## Using directives inside a namespace (#40)
+
+### New API
+
+- `NamespaceDefinition.AddUsingInsideNamespace(string ns)`, forwarded by
+  `CSharpFileDefinition.AddUsingInsideNamespace`. It writes `using Ns;` inside the namespace braces,
+  or after the `namespace X;` line, before the first member. Keyword segments are escaped as
+  file-level usings are. It throws on a namespace with no name, which has no declaration to hold
+  the directive.
+
+### Behaviour
+
+Output changes only for a file that calls the new method. A using inside a namespace is consulted
+before every file-level using, and the library does not know what the named namespace holds. So in
+`ShortName` mode a type written under such a using is written `global::`-qualified, unless its
+namespace is the declaration carrying the using or one nested inside it. A type that is qualified
+this way no longer derives a file-level using. `FullName` and `Global` output is unchanged.
+
+### Snapshot diff: `PublicApiTests.SourceGeneratorApi` (DependencyModules), 1 test per TFM
+
+**+2 lines, −0.** Purely additive. Not re-baselined; the human approves it.
+
+```diff
+@@ CSharpAuthor.CSharpFileDefinition
++        public void AddUsingInsideNamespace(string ns) { }
+@@ CSharpAuthor.NamespaceDefinition
++        public void AddUsingInsideNamespace(string ns) { }
+```
+
+Every other DependencyModules test passes (1,080 per TFM), and `Hardened.SourceGenerator.Tests`
+passes 1,041 / 0.
+
 ---
 
 # 9. Migrating a real repository — three worked examples

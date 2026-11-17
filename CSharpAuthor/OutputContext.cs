@@ -398,6 +398,18 @@ public class OutputContext : IOutputContext
     /// <summary>The namespaces the file itself declares. A using for one of them says nothing.</summary>
     private readonly HashSet<string> _declaredNamespaces = new HashSet<string>();
 
+    /// <summary>
+    /// The full names of the namespace declarations being written, outermost first, and whether each
+    /// carries using directives of its own. Null until the first declaration is entered.
+    /// </summary>
+    private List<KeyValuePair<string, bool>>? _namespaceScopes;
+
+    /// <summary>
+    /// The index in <see cref="_namespaceScopes"/> of the innermost declaration that carries using
+    /// directives, or -1 when no write is inside one.
+    /// </summary>
+    private int _innerUsingScope = -1;
+
     // -----------------------------------------------------------------------------------------
     // What the name plan needs, gathered as the types are written rather than found again
     // afterwards.
@@ -646,6 +658,13 @@ public class OutputContext : IOutputContext
             return;
         }
 
+        object value = typeDefinition;
+
+        if (_innerUsingScope >= 0 && CapturableInScope(typeDefinition))
+        {
+            value = new ScopeQualifiedType(typeDefinition);
+        }
+
         if (Streaming)
         {
             var mode = Options.TypeOutputMode;
@@ -655,10 +674,12 @@ public class OutputContext : IOutputContext
                 var stream = _stream!;
                 var start = stream.Length;
 
+                // The stream only runs in a qualifying mode, where a scope-qualified type is written
+                // exactly as it would be anyway.
                 typeDefinition.WriteTypeName(stream, mode);
 
                 _journal.Add(JournalEntry(start, SegmentKind.TypeReference, stream.Length - start));
-                _values.Add(typeDefinition);
+                _values.Add(value);
 
                 return;
             }
@@ -675,8 +696,9 @@ public class OutputContext : IOutputContext
 
         // Everything the name plan will want from this type, taken while it is here. Nothing is
         // derived in a mode that qualifies, so nothing is gathered while one is in force - but the
-        // mode can still change before serialization, and then the record is read instead.
-        if (_typesGathered)
+        // mode can still change before serialization, and then the record is read instead. A
+        // scope-qualified type is never written by short name, so the plan has no use for it.
+        if (_typesGathered && ReferenceEquals(value, typeDefinition))
         {
             if (Options.TypeOutputMode == TypeOutputMode.ShortName)
             {
@@ -688,7 +710,155 @@ public class OutputContext : IOutputContext
             }
         }
 
-        RecordValue(SegmentKind.TypeReference, typeDefinition);
+        RecordValue(SegmentKind.TypeReference, value);
+    }
+
+    /// <summary>
+    /// A type written where a namespace-level using is in force and could capture its short name.
+    /// </summary>
+    /// <remarks>
+    /// Recorded in place of the type so the decision is still made at serialization:
+    /// <see cref="TypeOutputMode.ShortName"/> writes it <c>global::</c>-qualified, and the two
+    /// qualifying modes write it as they write every other type.
+    /// </remarks>
+    private sealed class ScopeQualifiedType
+    {
+        public readonly ITypeDefinition Type;
+
+        public ScopeQualifiedType(ITypeDefinition type)
+        {
+            Type = type;
+        }
+    }
+
+    /// <summary>
+    /// Writes a recorded type reference, which is either a type or a <see cref="ScopeQualifiedType"/>.
+    /// </summary>
+    private static void WriteTypeReference(StringBuilder builder, object value, TypeOutputMode mode)
+    {
+        if (value is ScopeQualifiedType scoped)
+        {
+            scoped.Type.WriteTypeName(
+                builder, mode == TypeOutputMode.ShortName ? TypeOutputMode.Global : mode);
+
+            return;
+        }
+
+        ((ITypeDefinition)value).WriteTypeName(builder, mode);
+    }
+
+    /// <summary>
+    /// Whether a namespace-level using in force at this point could bind any part of the type's
+    /// short name to a different type.
+    /// </summary>
+    /// <remarks>
+    /// Name lookup walks the namespace declarations from the inside out, and at each one tries the
+    /// namespace's own members before the declaration's usings. So a type is safe only if its
+    /// namespace is one of the declarations at or inside the innermost one carrying usings: lookup
+    /// finds it there before any of those usings is asked. Every other type is reached past at
+    /// least one using, which can hold a type of the same name. What the using's namespace holds is
+    /// not known here, so the answer has to assume it does.
+    /// <para>
+    /// A type with no namespace is left alone. It is a keyword or a type parameter, which no using
+    /// can capture, or a global-namespace type, which this cannot tell apart from one.
+    /// </para>
+    /// </remarks>
+    private bool CapturableInScope(ITypeDefinition type)
+    {
+        var ns = type.Namespace;
+
+        if (!string.IsNullOrEmpty(ns))
+        {
+            var scopes = _namespaceScopes!;
+            var declared = false;
+
+            for (var i = _innerUsingScope; i < scopes.Count; i++)
+            {
+                if (string.Equals(scopes[i].Key, ns, StringComparison.Ordinal))
+                {
+                    declared = true;
+
+                    break;
+                }
+            }
+
+            if (!declared)
+            {
+                return true;
+            }
+        }
+
+        if (type.ContainingType != null && CapturableInScope(type.ContainingType))
+        {
+            return true;
+        }
+
+        var typeArguments = type.TypeArguments;
+
+        if (typeArguments != null)
+        {
+            for (var i = 0; i < typeArguments.Count; i++)
+            {
+                if (CapturableInScope(typeArguments[i]))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Says that what is written next is inside a declaration of namespace <paramref name="ns"/>,
+    /// relative to the declaration it is nested in.
+    /// </summary>
+    /// <remarks>
+    /// Called by <see cref="NamespaceDefinition"/> after its opening line and before its usings, and
+    /// paired with <see cref="ExitNamespaceScope"/>.
+    /// </remarks>
+    internal void EnterNamespaceScope(string ns, bool declaresUsings)
+    {
+        var scopes = _namespaceScopes ??= new List<KeyValuePair<string, bool>>();
+
+        var fullName = scopes.Count == 0 ? ns : scopes[scopes.Count - 1].Key + "." + ns;
+
+        scopes.Add(new KeyValuePair<string, bool>(fullName, declaresUsings));
+
+        if (declaresUsings)
+        {
+            _innerUsingScope = scopes.Count - 1;
+        }
+    }
+
+    /// <summary>Closes the namespace declaration <see cref="EnterNamespaceScope"/> opened.</summary>
+    internal void ExitNamespaceScope()
+    {
+        var scopes = _namespaceScopes;
+
+        if (scopes == null || scopes.Count == 0)
+        {
+            return;
+        }
+
+        scopes.RemoveAt(scopes.Count - 1);
+
+        if (_innerUsingScope < scopes.Count)
+        {
+            return;
+        }
+
+        _innerUsingScope = -1;
+
+        for (var i = scopes.Count - 1; i >= 0; i--)
+        {
+            if (scopes[i].Value)
+            {
+                _innerUsingScope = i;
+
+                break;
+            }
+        }
     }
 
     /// <summary>
@@ -1425,7 +1595,7 @@ public class OutputContext : IOutputContext
 
                             var builder = new StringBuilder();
 
-                            ((ITypeDefinition)valueChunk[--valueIndex]).WriteTypeName(builder, Options.TypeOutputMode);
+                            WriteTypeReference(builder, valueChunk[--valueIndex], Options.TypeOutputMode);
 
                             if (builder.Length > 0)
                             {
@@ -1770,12 +1940,21 @@ public class OutputContext : IOutputContext
                             valueIndex = 0;
                         }
 
-                        var type = (ITypeDefinition)valueChunk[valueIndex++];
+                        var value = valueChunk[valueIndex++];
 
                         if (!emit)
                         {
                             break;
                         }
+
+                        if (value is ScopeQualifiedType scoped)
+                        {
+                            WriteTypeReference(builder, scoped, typeOutputMode);
+
+                            break;
+                        }
+
+                        var type = (ITypeDefinition)value;
 
                         if (hasRenames)
                         {
@@ -2003,9 +2182,11 @@ public class OutputContext : IOutputContext
 
                 var value = valueChunk[valueIndex++];
 
-                if (kind == SegmentKind.TypeReference)
+                // A scope-qualified type is never written by short name, so it derives no using and
+                // contests no name.
+                if (kind == SegmentKind.TypeReference && value is ITypeDefinition type)
                 {
-                    CollectType((ITypeDefinition)value, written, seen);
+                    CollectType(type, written, seen);
                 }
             }
         }
