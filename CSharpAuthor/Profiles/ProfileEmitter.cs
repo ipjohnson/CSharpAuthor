@@ -112,7 +112,7 @@ static class ProfileEmitter
         }
 
         var session = new EmitSession(profile);
-        var context = new ProfiledOutputContext(session);
+        var context = new ProfiledOutputContext(session) { WritesDownlevelHeader = true };
 
         component.WriteOutput(context);
 
@@ -130,7 +130,7 @@ static class ProfileEmitter
 
         file.FileScopedNamespace = fileScoped;
 
-        var context = new ProfiledOutputContext(session);
+        var context = new ProfiledOutputContext(session) { WritesDownlevelHeader = true };
 
         try
         {
@@ -146,10 +146,9 @@ static class ProfileEmitter
 
     private static EmitResult Compose(EmitSession session, string body)
     {
-        var header = Write(session, session.WriteDownlevelHeader);
         var footer = Write(session, session.WritePolyfills);
 
-        return new EmitResult(header + body + footer, session);
+        return new EmitResult(body + footer, session);
     }
 
     private static string Write(EmitSession session, Action<IOutputContext> write)
