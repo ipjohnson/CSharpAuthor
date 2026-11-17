@@ -399,10 +399,24 @@ public class OutputContext : IOutputContext
     private readonly HashSet<string> _declaredNamespaces = new HashSet<string>();
 
     /// <summary>
-    /// The full names of the namespace declarations being written, outermost first, and whether each
-    /// carries using directives of its own. Null until the first declaration is entered.
+    /// The namespace declarations being written, outermost first. Null until the first declaration
+    /// is entered.
     /// </summary>
-    private List<KeyValuePair<string, bool>>? _namespaceScopes;
+    private List<NamespaceScope>? _namespaceScopes;
+
+    /// <summary>The caller-named file-level aliases, written with the generated usings.</summary>
+    private IReadOnlyList<KeyValuePair<string, ITypeDefinition>>? _fileAliases;
+
+    /// <summary>
+    /// The names of the caller-named aliases in force where the next write lands: the file's, then
+    /// each enclosing declaration's. Null until one is declared.
+    /// </summary>
+    private List<string>? _aliasNamesInForce;
+
+    /// <summary>
+    /// Every caller-named alias anywhere in the file, which no generated collision alias may take.
+    /// </summary>
+    private HashSet<string>? _callerAliasNames;
 
     /// <summary>
     /// The index in <see cref="_namespaceScopes"/> of the innermost declaration that carries using
@@ -660,11 +674,47 @@ public class OutputContext : IOutputContext
 
         object value = typeDefinition;
 
-        if (_innerUsingScope >= 0 && CapturableInScope(typeDefinition))
+        var aliasHit = _aliasNamesInForce is { Count: > 0 } ? NamesCallerAlias(typeDefinition) : AliasHit.None;
+
+        if (aliasHit != AliasHit.None)
         {
-            value = new ScopeQualifiedType(typeDefinition);
+            value = new ScopeQualifiedType(typeDefinition, inFullName: aliasHit == AliasHit.FullName);
+        }
+        else if (_innerUsingScope >= 0 && CapturableInScope(typeDefinition))
+        {
+            value = new ScopeQualifiedType(typeDefinition, inFullName: false);
         }
 
+        RecordTypeReference(typeDefinition, value);
+    }
+
+    /// <summary>
+    /// Writes <paramref name="type"/> <c>global::</c>-qualified in every
+    /// <see cref="TypeOutputMode"/>, for the target of a using alias.
+    /// </summary>
+    /// <remarks>
+    /// Into an <see cref="OutputContext"/> the type is still recorded unrendered, and stays out of
+    /// the name plan. Any other context is handed the qualified name as text, which is the same
+    /// text in every mode.
+    /// </remarks>
+    internal static void WriteGlobalType(IOutputContext outputContext, ITypeDefinition type)
+    {
+        if (outputContext is OutputContext context)
+        {
+            context.RecordTypeReference(type, new ScopeQualifiedType(type, inFullName: true));
+
+            return;
+        }
+
+        var builder = new StringBuilder();
+
+        type.WriteTypeName(builder, TypeOutputMode.Global);
+
+        outputContext.Write(builder.ToString());
+    }
+
+    private void RecordTypeReference(ITypeDefinition typeDefinition, object value)
+    {
         if (Streaming)
         {
             var mode = Options.TypeOutputMode;
@@ -674,9 +724,7 @@ public class OutputContext : IOutputContext
                 var stream = _stream!;
                 var start = stream.Length;
 
-                // The stream only runs in a qualifying mode, where a scope-qualified type is written
-                // exactly as it would be anyway.
-                typeDefinition.WriteTypeName(stream, mode);
+                WriteTypeReference(stream, value, mode);
 
                 _journal.Add(JournalEntry(start, SegmentKind.TypeReference, stream.Length - start));
                 _values.Add(value);
@@ -714,20 +762,25 @@ public class OutputContext : IOutputContext
     }
 
     /// <summary>
-    /// A type written where a namespace-level using is in force and could capture its short name.
+    /// A type written where a namespace-level using is in force and could capture its short name,
+    /// or where a caller-named alias could capture the first name it is written with, or the
+    /// target of a caller-named alias.
     /// </summary>
     /// <remarks>
     /// Recorded in place of the type so the decision is still made at serialization:
-    /// <see cref="TypeOutputMode.ShortName"/> writes it <c>global::</c>-qualified, and the two
-    /// qualifying modes write it as they write every other type.
+    /// <see cref="TypeOutputMode.ShortName"/> writes it <c>global::</c>-qualified, and so does
+    /// <see cref="TypeOutputMode.FullName"/> when <see cref="InFullName"/> is set.
     /// </remarks>
     private sealed class ScopeQualifiedType
     {
         public readonly ITypeDefinition Type;
 
-        public ScopeQualifiedType(ITypeDefinition type)
+        public readonly bool InFullName;
+
+        public ScopeQualifiedType(ITypeDefinition type, bool inFullName)
         {
             Type = type;
+            InFullName = inFullName;
         }
     }
 
@@ -738,8 +791,10 @@ public class OutputContext : IOutputContext
     {
         if (value is ScopeQualifiedType scoped)
         {
-            scoped.Type.WriteTypeName(
-                builder, mode == TypeOutputMode.ShortName ? TypeOutputMode.Global : mode);
+            var qualify = mode == TypeOutputMode.ShortName ||
+                          (scoped.InFullName && mode == TypeOutputMode.FullName);
+
+            scoped.Type.WriteTypeName(builder, qualify ? TypeOutputMode.Global : mode);
 
             return;
         }
@@ -774,7 +829,7 @@ public class OutputContext : IOutputContext
 
             for (var i = _innerUsingScope; i < scopes.Count; i++)
             {
-                if (string.Equals(scopes[i].Key, ns, StringComparison.Ordinal))
+                if (string.Equals(scopes[i].FullName, ns, StringComparison.Ordinal))
                 {
                     declared = true;
 
@@ -817,17 +872,167 @@ public class OutputContext : IOutputContext
     /// Called by <see cref="NamespaceDefinition"/> after its opening line and before its usings, and
     /// paired with <see cref="ExitNamespaceScope"/>.
     /// </remarks>
-    internal void EnterNamespaceScope(string ns, bool declaresUsings)
+    internal void EnterNamespaceScope(
+        string ns, bool declaresUsings, IReadOnlyList<KeyValuePair<string, ITypeDefinition>>? aliases = null)
     {
-        var scopes = _namespaceScopes ??= new List<KeyValuePair<string, bool>>();
+        var scopes = _namespaceScopes ??= new List<NamespaceScope>();
 
-        var fullName = scopes.Count == 0 ? ns : scopes[scopes.Count - 1].Key + "." + ns;
+        var fullName = scopes.Count == 0 ? ns : scopes[scopes.Count - 1].FullName + "." + ns;
 
-        scopes.Add(new KeyValuePair<string, bool>(fullName, declaresUsings));
+        var aliasCount = aliases?.Count ?? 0;
+
+        scopes.Add(new NamespaceScope(fullName, declaresUsings, aliasCount));
 
         if (declaresUsings)
         {
             _innerUsingScope = scopes.Count - 1;
+        }
+
+        if (aliasCount > 0)
+        {
+            DeclareAliasNames(aliases!);
+        }
+    }
+
+    /// <summary>
+    /// Takes the caller-named aliases written at the top of the file. They are in force for every
+    /// write that follows.
+    /// </summary>
+    internal void DeclareFileAliases(IReadOnlyList<KeyValuePair<string, ITypeDefinition>> aliases)
+    {
+        if (aliases.Count == 0)
+        {
+            return;
+        }
+
+        _fileAliases = aliases;
+
+        DeclareAliasNames(aliases);
+    }
+
+    private void DeclareAliasNames(IReadOnlyList<KeyValuePair<string, ITypeDefinition>> aliases)
+    {
+        var inForce = _aliasNamesInForce ??= new List<string>();
+        var all = _callerAliasNames ??= new HashSet<string>(StringComparer.Ordinal);
+
+        for (var i = 0; i < aliases.Count; i++)
+        {
+            inForce.Add(aliases[i].Key);
+            all.Add(aliases[i].Key);
+        }
+    }
+
+    /// <summary>
+    /// Whether any name a type can be written with starts with a caller-named alias in force.
+    /// </summary>
+    /// <remarks>
+    /// The first name a reference is written with is looked up before anything after it, and an
+    /// alias in an enclosing declaration is found before a namespace imported there. A short name
+    /// starts with the type's own name, or its outermost container's. A full name starts with the
+    /// first namespace segment. Each type argument is checked the same way.
+    /// <para>
+    /// A namespace segment hit is <see cref="AliasHit.FullName"/>, which qualifies in both modes,
+    /// because a short-name file still writes a type by its full name to settle a collision. A
+    /// short-name type whose first namespace segment is an alias is therefore written
+    /// <c>global::</c>-qualified although its short name was safe.
+    /// </para>
+    /// </remarks>
+    private AliasHit NamesCallerAlias(ITypeDefinition type)
+    {
+        var hit = AliasHit.None;
+        var outermost = type;
+
+        while (outermost.ContainingType != null)
+        {
+            hit = Max(hit, CallerAliasArgument(outermost));
+            outermost = outermost.ContainingType;
+        }
+
+        // A type with no namespace is a keyword, a type parameter, a global-namespace type, or the
+        // alias itself named by a caller copying code that uses it, and this cannot tell which.
+        var ns = outermost.Namespace;
+
+        if (!string.IsNullOrEmpty(ns))
+        {
+            var dot = ns.IndexOf('.');
+
+            if (AliasInForce(ns, dot < 0 ? ns.Length : dot))
+            {
+                return AliasHit.FullName;
+            }
+
+            var name = outermost.Name;
+
+            if (!string.IsNullOrEmpty(name) && AliasInForce(name, name.Length))
+            {
+                hit = Max(hit, AliasHit.ShortName);
+            }
+        }
+
+        return Max(hit, CallerAliasArgument(outermost));
+    }
+
+    private AliasHit CallerAliasArgument(ITypeDefinition type)
+    {
+        var hit = AliasHit.None;
+        var typeArguments = type.TypeArguments;
+
+        if (typeArguments != null)
+        {
+            for (var i = 0; i < typeArguments.Count && hit != AliasHit.FullName; i++)
+            {
+                hit = Max(hit, NamesCallerAlias(typeArguments[i]));
+            }
+        }
+
+        return hit;
+    }
+
+    private static AliasHit Max(AliasHit left, AliasHit right) => left > right ? left : right;
+
+    /// <summary>Which output modes a caller-named alias could capture a type's name in.</summary>
+    private enum AliasHit
+    {
+        None,
+        ShortName,
+        FullName,
+    }
+
+    /// <summary>Whether the first <paramref name="length"/> characters of a name are an alias in force.</summary>
+    private bool AliasInForce(string name, int length)
+    {
+        var inForce = _aliasNamesInForce!;
+
+        for (var i = 0; i < inForce.Count; i++)
+        {
+            var alias = inForce[i];
+
+            if (alias.Length == length && string.CompareOrdinal(alias, 0, name, 0, length) == 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>A namespace declaration being written.</summary>
+    private readonly struct NamespaceScope
+    {
+        /// <summary>The namespace's full name.</summary>
+        public readonly string FullName;
+
+        /// <summary>Whether the declaration carries using directives of its own.</summary>
+        public readonly bool DeclaresUsings;
+
+        /// <summary>How many caller-named aliases the declaration added to the names in force.</summary>
+        public readonly int AliasCount;
+
+        public NamespaceScope(string fullName, bool declaresUsings, int aliasCount)
+        {
+            FullName = fullName;
+            DeclaresUsings = declaresUsings;
+            AliasCount = aliasCount;
         }
     }
 
@@ -841,6 +1046,13 @@ public class OutputContext : IOutputContext
             return;
         }
 
+        var aliasCount = scopes[scopes.Count - 1].AliasCount;
+
+        if (aliasCount > 0)
+        {
+            _aliasNamesInForce!.RemoveRange(_aliasNamesInForce.Count - aliasCount, aliasCount);
+        }
+
         scopes.RemoveAt(scopes.Count - 1);
 
         if (_innerUsingScope < scopes.Count)
@@ -852,7 +1064,7 @@ public class OutputContext : IOutputContext
 
         for (var i = scopes.Count - 1; i >= 0; i--)
         {
-            if (scopes[i].Value)
+            if (scopes[i].DeclaresUsings)
             {
                 _innerUsingScope = i;
 
@@ -1727,7 +1939,7 @@ public class OutputContext : IOutputContext
         {
             namePlan = BuildNamePlan();
 
-            if (namePlan.Namespaces.Count == 0 && namePlan.Aliases.Count == 0)
+            if (namePlan.Namespaces.Count == 0 && namePlan.Aliases.Count == 0 && _fileAliases == null)
             {
                 namePlan = null;
             }
@@ -1822,6 +2034,20 @@ public class OutputContext : IOutputContext
                 .Append(';').Append(Options.NewLine);
 
             wroteAny = true;
+        }
+
+        // In every mode, and whatever EmitExplicitUsings says: the copied code that names one of
+        // these does not compile without it.
+        if (_fileAliases != null)
+        {
+            foreach (var alias in _fileAliases)
+            {
+                builder.Append("using ").Append(CSharpIdentifier.Escape(alias.Key)).Append(" = ");
+                alias.Value.WriteTypeName(builder, TypeOutputMode.Global);
+                builder.Append(';').Append(Options.NewLine);
+
+                wroteAny = true;
+            }
         }
 
         if (wroteAny)
@@ -2020,8 +2246,15 @@ public class OutputContext : IOutputContext
         // Ordinal, so the file a generator writes does not depend on the culture it ran under.
         public readonly SortedSet<string> Namespaces = new SortedSet<string>(StringComparer.Ordinal);
 
+        /// <summary>The caller-named alias names anywhere in the file, or null when there are none.</summary>
+        public HashSet<string>? CallerAliasNames;
+
         /// <summary>Whether any type is written as something other than what it writes itself as.</summary>
         public bool HasRenames => AliasFor.Count > 0 || Qualified.Count > 0;
+
+        /// <summary>Whether a generated alias may not take <paramref name="name"/>.</summary>
+        public bool AliasTaken(string name) =>
+            Aliases.ContainsKey(name) || (CallerAliasNames != null && CallerAliasNames.Contains(name));
 
         /// <summary>How many characters the directives at the top of the file will take.</summary>
         public int UsingsLength(int newLineLength)
@@ -2060,7 +2293,7 @@ public class OutputContext : IOutputContext
 
     private NamePlan BuildNamePlan()
     {
-        var namePlan = new NamePlan();
+        var namePlan = new NamePlan { CallerAliasNames = _callerAliasNames };
 
         if (Options.TypeOutputMode == TypeOutputMode.ShortName)
         {
@@ -2547,7 +2780,7 @@ public class OutputContext : IOutputContext
 
             var candidate = builder.ToString();
 
-            if (!namePlan.Aliases.ContainsKey(candidate))
+            if (!namePlan.AliasTaken(candidate))
             {
                 return candidate;
             }
@@ -2556,7 +2789,7 @@ public class OutputContext : IOutputContext
         var fallback = shortName + "Alias";
         var suffix = 2;
 
-        while (namePlan.Aliases.ContainsKey(fallback))
+        while (namePlan.AliasTaken(fallback))
         {
             fallback = shortName + "Alias" + suffix++;
         }

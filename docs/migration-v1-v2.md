@@ -1480,6 +1480,47 @@ this way no longer derives a file-level using. `FullName` and `Global` output is
 Every other DependencyModules test passes (1,080 per TFM), and `Hardened.SourceGenerator.Tests`
 passes 1,041 / 0.
 
+## Using alias directives named by the caller (#37)
+
+### New API
+
+- `CSharpFileDefinition.AddUsingAlias(string name, ITypeDefinition target)` writes
+  `using Name = <target>;` with the file-level usings. It is written in every `TypeOutputMode`, and
+  also when `EmitExplicitUsings` is off.
+- `NamespaceDefinition.AddUsingAlias(string name, ITypeDefinition target)` writes the same directive
+  inside the namespace declaration, after its `AddUsingInsideNamespace` directives. It throws on a
+  namespace with no name.
+
+The target is written `global::`-qualified in every mode, type arguments included. A keyword name
+is written with `@`. The same name added twice with the same target is written once. With a
+different target it throws `InvalidOperationException`.
+
+### Behaviour
+
+Output changes only for a file that calls the new method. An alias in force is found before a
+namespace imported at the same level, so a type written under one could bind to the alias instead.
+In `ShortName` mode a type whose short name is an alias in force is written `global::`-qualified.
+A type whose first namespace segment is an alias is written `global::`-qualified in `ShortName` and
+`FullName`. The check covers type arguments. A type qualified this way no longer derives a
+file-level using. A collision alias the library generates skips every caller alias name in the
+file.
+
+### Snapshot diff: `PublicApiTests.SourceGeneratorApi` (DependencyModules), 1 test per TFM
+
+**+2 lines, −0** on top of the #40 diff above, which is still unapproved. Purely additive. Not
+re-baselined; the human approves it.
+
+```diff
+@@ CSharpAuthor.CSharpFileDefinition
++        public void AddUsingAlias(string name, CSharpAuthor.ITypeDefinition target) { }
+@@ CSharpAuthor.NamespaceDefinition
++        public void AddUsingAlias(string name, CSharpAuthor.ITypeDefinition target) { }
+```
+
+Every other DependencyModules test passes (1,080 per TFM), and `Hardened.SourceGenerator.Tests`
+passes 1,041 / 0. The round-trip measures 2,542 / 2,749. The one extra file attempted is
+`UsingAliasList.cs` in the library's own corpus, and the passing count rose by one with it.
+
 ---
 
 # 9. Migrating a real repository — three worked examples
