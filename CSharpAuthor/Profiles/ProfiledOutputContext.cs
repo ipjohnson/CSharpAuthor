@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace CSharpAuthor.Profiles;
 
 /// <summary>
@@ -55,6 +57,38 @@ class ProfiledOutputContext : OutputContext, IProfiledOutputContext
 
     /// <summary>The profile this context renders for.</summary>
     public EmitProfile Profile => Session.Profile;
+
+    /// <summary>
+    /// Whether this context writes the session's file-header <c>// DOWNLEVEL:</c> notes.
+    /// </summary>
+    /// <remarks>
+    /// Set only on the context a whole render goes into. A session can be shared by several
+    /// contexts, and each of them writing the notes would repeat them.
+    /// </remarks>
+    internal bool WritesDownlevelHeader { get; set; }
+
+    /// <summary>
+    /// The notes go after the file header so that <c>// &lt;auto-generated/&gt;</c> stays on line
+    /// one, and before the usings, which a comment may precede.
+    /// </summary>
+    private protected override string? TextAfterFileHeader()
+    {
+        if (!WritesDownlevelHeader ||
+            Session.Profile.DownlevelComments != DownlevelCommentPlacement.FileHeader ||
+            Session.DownlevelNotes.Count == 0)
+        {
+            return null;
+        }
+
+        var builder = new StringBuilder();
+
+        foreach (var note in Session.DownlevelNotes)
+        {
+            builder.Append(note).Append(Options.NewLine);
+        }
+
+        return builder.Append(Options.NewLine).ToString();
+    }
 }
 
 /// <summary>

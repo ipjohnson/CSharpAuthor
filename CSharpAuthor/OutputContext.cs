@@ -1502,6 +1502,8 @@ public class OutputContext : IOutputContext
         // stay above, and everything else after them.
         Serialize(builder, namePlan, 0, headerEnd);
 
+        builder.Append(TextAfterFileHeader());
+
         if (_generateUsings)
         {
             WriteUsings(builder, namePlan);
@@ -1511,6 +1513,15 @@ public class OutputContext : IOutputContext
 
         return builder.ToString();
     }
+
+    /// <summary>
+    /// Text that belongs between the file header and the generated <c>using</c> directives, or null.
+    /// </summary>
+    /// <remarks>
+    /// Asked for by <see cref="Output"/> on both paths, so it is decided at serialization. It must
+    /// not change the context, because <see cref="Output"/> can be called more than once.
+    /// </remarks>
+    private protected virtual string? TextAfterFileHeader() => null;
 
     /// <summary>
     /// Whether everything the fast path committed to when it took over still says what it said.
@@ -1538,21 +1549,34 @@ public class OutputContext : IOutputContext
     {
         var stream = _stream!;
 
-        if (!_generateUsings)
+        var afterHeader = TextAfterFileHeader();
+
+        NamePlan? namePlan = null;
+
+        if (_generateUsings)
+        {
+            namePlan = BuildNamePlan();
+
+            if (namePlan.Namespaces.Count == 0 && namePlan.Aliases.Count == 0)
+            {
+                namePlan = null;
+            }
+        }
+
+        if (namePlan == null && string.IsNullOrEmpty(afterHeader))
         {
             return stream.ToString();
         }
 
-        var namePlan = BuildNamePlan();
+        var directives = new StringBuilder(
+            (afterHeader?.Length ?? 0) + (namePlan?.UsingsLength(Options.NewLine.Length) ?? 0));
 
-        if (namePlan.Namespaces.Count == 0 && namePlan.Aliases.Count == 0)
+        directives.Append(afterHeader);
+
+        if (namePlan != null)
         {
-            return stream.ToString();
+            WriteUsings(directives, namePlan);
         }
-
-        var directives = new StringBuilder(namePlan.UsingsLength(Options.NewLine.Length));
-
-        WriteUsings(directives, namePlan);
 
         var text = directives.ToString();
         var at = _headerOffset > stream.Length ? stream.Length : _headerOffset;
