@@ -176,6 +176,12 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
         _namespaceDefinition.AddComponent(component);
     }
 
+    /// <inheritdoc cref="NamespaceDefinition.AddUsingInsideNamespace" />
+    public void AddUsingInsideNamespace(string ns)
+    {
+        _namespaceDefinition.AddUsingInsideNamespace(ns);
+    }
+
     /// <summary>
     /// The namespace this file declares.
     /// </summary>

@@ -70,6 +70,25 @@ internal static class RoslynAssert
     }
 
     /// <summary>
+    /// Compiles <paramref name="source"/> with <paramref name="support"/> as a second file, for
+    /// emitted code that names types the test declares. A second file rather than appended text,
+    /// because a file-scoped namespace cannot share a file with any other namespace declaration.
+    /// </summary>
+    public static void CompilesWith(string source, string support)
+    {
+        var errors = Diagnose(source, MaxLanguageVersion, allowUnsafe: true, null, support)
+            .Where(d => d.Severity == DiagnosticSeverity.Error)
+            .ToList();
+
+        if (errors.Count == 0)
+        {
+            return;
+        }
+
+        Assert.True(false, BuildFailureMessage(source + "\n// --- support ---\n" + support, errors));
+    }
+
+    /// <summary>
     /// Compiles a member declaration by placing it in a class, for output that is not a whole file.
     /// </summary>
     public static void MemberCompiles(
@@ -152,14 +171,18 @@ internal static class RoslynAssert
     /// </remarks>
     private static IReadOnlyList<Diagnostic> Diagnose(
         string source, RoslynLangVersion languageVersion, bool allowUnsafe,
-        string[]? warningsAsErrors = null)
+        string[]? warningsAsErrors = null, string? support = null)
     {
         // DocumentationMode.Diagnose is what makes CS1570 - "XML comment has badly formed XML" -
         // appear at all. Without it a malformed documentation comment is parsed as ordinary trivia
         // and no test could ever see the defect.
-        var tree = CSharpSyntaxTree.ParseText(
-            source,
-            new CSharpParseOptions(languageVersion, DocumentationMode.Diagnose));
+        var parseOptions = new CSharpParseOptions(languageVersion, DocumentationMode.Diagnose);
+
+        var tree = CSharpSyntaxTree.ParseText(source, parseOptions);
+
+        var trees = support == null
+            ? new[] { tree }
+            : new[] { tree, CSharpSyntaxTree.ParseText(support, parseOptions) };
 
         var options = new CSharpCompilationOptions(
             OutputKind.DynamicallyLinkedLibrary,
@@ -174,13 +197,17 @@ internal static class RoslynAssert
 
         var compilation = CSharpCompilation.Create(
             "AdversaryAssembly",
-            new[] { tree },
+            trees,
             References.Value,
             options);
 
         var result = new List<Diagnostic>();
 
-        result.AddRange(tree.GetDiagnostics());
+        foreach (var parsed in trees)
+        {
+            result.AddRange(parsed.GetDiagnostics());
+        }
+
         result.AddRange(compilation.GetDiagnostics());
 
         return result;

@@ -47,9 +47,9 @@ silently didn't?"**
 ## Verifying your work
 
 ```bash
-dotnet test CSharpAuthor.Tests                          # 1748 passed / 0 failed / 13 skipped
+dotnet test CSharpAuthor.Tests                          # 1767 passed / 0 failed / 13 skipped
 ./scripts/run-consumer-tests.sh <checkout> --scope core  # the real oracle
-./scripts/run-roundtrip.sh   <checkout> --corpus all     # 1,315 / 1,373 = 95.8%
+./scripts/run-roundtrip.sh   <checkout> --corpus all     # 2,541 / 2,748 = 92.5% (2026-11-17)
 ./scripts/run-benchmark.sh   <v1-checkout> <v2-checkout> # both, in ONE invocation
 python3 tools/grammar/gen_all.py --report                # node coverage
 ./scripts/verify-roslyn-packaging.sh                     # the packaging gate
@@ -141,7 +141,7 @@ usings and collision aliasing.
 | `CSharpAuthor/Roslyn/` | the `ITypeSymbol` bridge — excluded from the library build, opt-in |
 | `CSharpAuthor/Profiles/` | `EmitProfile`, language versions, downlevelling, diagnostics |
 | `tools/grammar/` | `gen_all.py` + `Syntax.xml` — the node generator |
-| `tools/roundtrip/` | the importer and the 1,373-file fidelity harness |
+| `tools/roundtrip/` | the importer and the round-trip fidelity harness |
 | `docs/` | migration guide, open questions, adversary findings, [api-gaps.md](docs/api-gaps.md) |
 | `CSharpAuthor.Tests/Adversary/` | 280 tests / 305 cases asserting emitted code **compiles**, not that it matches a string |
 
