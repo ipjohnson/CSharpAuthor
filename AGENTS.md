@@ -47,7 +47,7 @@ silently didn't?"**
 ## Verifying your work
 
 ```bash
-dotnet test CSharpAuthor.Tests                          # 1834 passed / 0 failed / 13 skipped
+dotnet test CSharpAuthor.Tests                          # 1867 passed / 0 failed / 13 skipped
 ./scripts/run-consumer-tests.sh <checkout> --scope core  # the real oracle
 ./scripts/run-roundtrip.sh   <checkout> --corpus all     # 2,543 / 2,750 = 92.5% (2026-11-17)
 ./scripts/run-benchmark.sh   <v1-checkout> <v2-checkout> # both, in ONE invocation

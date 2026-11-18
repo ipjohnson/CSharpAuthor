@@ -1563,6 +1563,44 @@ Every other DependencyModules test passes (1,080 per TFM), and `Hardened.SourceG
 passes 1,041 / 0. The round-trip measures 2,543 / 2,750. The one extra file attempted is
 `UsingStaticList.cs` in the library's own corpus, and the passing count rose by one with it.
 
+## Types reached through an extern alias (#44)
+
+### New API
+
+- `ITypeDefinitionExtensions.WithExternAlias(this ITypeDefinition type, string alias)` returns a copy
+  of the type that is written `Alias::Ns.Type` in every `TypeOutputMode`, never with `global::`.
+  It takes a type built by `TypeDefinition.Get`, `TypeDefinition.GetNested` or a
+  `GenericTypeDefinition` constructor. On a nested type it marks the outermost container, which is
+  where the alias is written. `MakeArray`, `MakeNullable` and `MakeOpenType` keep the alias. Type
+  arguments are not marked and are written as they are anywhere else. A keyword alias gets `@`.
+  It throws `ArgumentException` for an alias that is not one identifier, for `global`, and for a
+  keyword type such as `int`. It throws `NotSupportedException` for a type parameter and for any
+  other implementation it cannot copy.
+
+`ITypeDefinition` gains no member.
+
+### Behaviour
+
+Output changes only for a file that writes a marked type. A marked type derives no `using` for its
+namespace in any mode, and its `KnownNamespaces` leaves that namespace out. It takes no part in the
+short-name collision plan. It is a different type from the unmarked one: the two are not equal, do
+not hash alike, and compare unequal. `ToString()` puts `Alias::` in front of the 1.x shape, so a
+cache key built from it does not merge the two. The `extern alias Alias;` directive itself is not
+written yet.
+
+### Snapshot diff: `PublicApiTests.SourceGeneratorApi` (DependencyModules), 1 test per TFM
+
+**+1 line, −0** on top of the #40, #37 and #38 diffs above, which are still unapproved. Purely
+additive. Not re-baselined; the human approves it.
+
+```diff
+@@ CSharpAuthor.ITypeDefinitionExtensions
++        public static CSharpAuthor.ITypeDefinition WithExternAlias(this CSharpAuthor.ITypeDefinition typeDefinition, string alias) { }
+```
+
+Every other DependencyModules test passes (1,080 per TFM), and `Hardened.SourceGenerator.Tests`
+passes 1,041 / 0. The round-trip measures 2,543 / 2,750, unchanged.
+
 ---
 
 # 9. Migrating a real repository — three worked examples

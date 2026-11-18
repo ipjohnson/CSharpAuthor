@@ -65,7 +65,7 @@ internal sealed class UsingAliasList
         return builder.ToString();
     }
 
-    private static bool IsIdentifier(string? name)
+    internal static bool IsIdentifier(string? name)
     {
         if (string.IsNullOrEmpty(name) || !(char.IsLetter(name![0]) || name[0] == '_'))
         {

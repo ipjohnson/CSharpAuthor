@@ -315,4 +315,70 @@ public static class ITypeDefinitionExtensions
         return result;
     }
 
+    /// <summary>
+    /// This type, reached through the extern alias <paramref name="alias"/>: written
+    /// <c>Alias::Ns.Type</c> in every <see cref="TypeOutputMode"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For a type in an assembly the consuming project references with
+    /// <c>&lt;Aliases&gt;Alias&lt;/Aliases&gt;</c>. Such a type is not in the global namespace, so
+    /// neither its short name under a <c>using</c> nor a <c>global::</c> name reaches it. No
+    /// <c>using</c> is derived for its namespace. The file still needs <c>extern alias Alias;</c>
+    /// at the top.
+    /// </para>
+    /// <example>
+    /// <code>
+    /// var widget = TypeDefinition.Get("Vendor.Widgets", "Widget").WithExternAlias("V1");
+    /// // every mode: V1::Vendor.Widgets.Widget
+    /// widget.MakeArray().MakeNullable();                 // V1::Vendor.Widgets.Widget[]?
+    /// TypeDefinition.GetNested(widget, "Part");          // V1::Vendor.Widgets.Widget.Part
+    /// </code>
+    /// </example>
+    /// <para>
+    /// A new instance; the original is unchanged. The marked type is a different type from the
+    /// unmarked one: they are not equal and do not hash alike. Type arguments are not marked, and
+    /// each is written as it would be anywhere else. Marking a nested type marks its outermost
+    /// container, which is where the alias is written. Marking a marked type again replaces the
+    /// alias.
+    /// </para>
+    /// </remarks>
+    /// <param name="typeDefinition">A type built by <see cref="TypeDefinition.Get(string, string, bool, bool)"/>,
+    /// <see cref="TypeDefinition.Get(System.Type)"/>, <see cref="TypeDefinition.GetNested"/> or a
+    /// <see cref="GenericTypeDefinition"/> constructor.</param>
+    /// <param name="alias">The alias as the project declares it, with or without a leading
+    /// <c>@</c>.</param>
+    /// <exception cref="ArgumentException"><paramref name="alias"/> is not a single identifier, or
+    /// is <c>global</c>; or the type is a keyword type such as <c>int</c>.</exception>
+    /// <exception cref="NotSupportedException">The type, or its outermost container, is an
+    /// implementation this assembly cannot copy, such as a type parameter or a consumer's own
+    /// <see cref="ITypeDefinition"/>.</exception>
+    public static ITypeDefinition WithExternAlias(this ITypeDefinition typeDefinition, string alias)
+    {
+        if (typeDefinition == null)
+        {
+            throw new ArgumentNullException(nameof(typeDefinition));
+        }
+
+        var bare = alias != null && alias.Length > 1 && alias[0] == '@' ? alias.Substring(1) : alias;
+
+        if (!UsingAliasList.IsIdentifier(bare))
+        {
+            throw new ArgumentException(
+                "An extern alias needs a single identifier for its name, such as V1.", nameof(alias));
+        }
+
+        if (string.Equals(bare, "global", StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                "'global' names the global namespace and cannot be an extern alias.", nameof(alias));
+        }
+
+        if (typeDefinition is not BaseTypeDefinition baseTypeDefinition)
+        {
+            throw BaseTypeDefinition.CannotMark(typeDefinition);
+        }
+
+        return baseTypeDefinition.MarkExternAlias(bare!);
+    }
 }

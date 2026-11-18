@@ -831,7 +831,9 @@ public class OutputContext : IOutputContext
     {
         var ns = type.Namespace;
 
-        if (!string.IsNullOrEmpty(ns))
+        // A name that starts with an extern alias is looked up through the alias, not through a
+        // using. Only its type arguments can be captured.
+        if (!string.IsNullOrEmpty(ns) && BaseTypeDefinition.ExternAliasOf(type) == null)
         {
             var scopes = _namespaceScopes;
             var declared = false;
@@ -974,7 +976,8 @@ public class OutputContext : IOutputContext
         // alias itself named by a caller copying code that uses it, and this cannot tell which.
         var ns = outermost.Namespace;
 
-        if (!string.IsNullOrEmpty(ns))
+        // A name written Alias::Ns.Type starts with the extern alias, whatever the mode.
+        if (!string.IsNullOrEmpty(ns) && (outermost as BaseTypeDefinition)?.ExternAlias == null)
         {
             var dot = ns.IndexOf('.');
 
@@ -1162,7 +1165,10 @@ public class OutputContext : IOutputContext
         if (type.ContainingType == null &&
             (runtimeType == typeof(TypeDefinition) || runtimeType == typeof(GenericTypeDefinition)))
         {
-            AddDerivedNamespace(type.Namespace);
+            if (((BaseTypeDefinition)type).ExternAlias == null)
+            {
+                AddDerivedNamespace(type.Namespace);
+            }
 
             return;
         }
@@ -2866,7 +2872,8 @@ public class OutputContext : IOutputContext
         {
             var ns = type.Namespace;
 
-            if (string.IsNullOrEmpty(ns))
+            // A type written through an extern alias does not use its namespace's using.
+            if (string.IsNullOrEmpty(ns) || BaseTypeDefinition.ExternAliasOf(type) != null)
             {
                 continue;
             }

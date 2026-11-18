@@ -95,7 +95,10 @@ public class TypeDefinition : BaseTypeDefinition
                 }
             }
 
-            yield return Namespace;
+            if (ExternAliasOf(this) == null)
+            {
+                yield return Namespace;
+            }
         }
     }
 
@@ -119,7 +122,7 @@ public class TypeDefinition : BaseTypeDefinition
     /// <inheritdoc />
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanks, AnnotationsWithOuterAnnotation(nullable), ContainingType);
+        return CarryExternAlias(new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanks, AnnotationsWithOuterAnnotation(nullable), ContainingType));
     }
 
     /// <remarks>
@@ -139,7 +142,12 @@ public class TypeDefinition : BaseTypeDefinition
     /// </remarks>
     public override ITypeDefinition MakeArray(int rank)
     {
-        return new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanksWithOuterRank(rank), AnnotationsWithOuterLevel(), ContainingType);
+        return CarryExternAlias(new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanksWithOuterRank(rank), AnnotationsWithOuterLevel(), ContainingType));
+    }
+
+    private protected override BaseTypeDefinition CopyWithContainer(ITypeDefinition? containingType)
+    {
+        return CarryExternAlias(new TypeDefinition(TypeDefinitionEnum, Namespace, Name, ArrayRanks, NullableAnnotations, containingType));
     }
 
     /// <summary>
@@ -190,7 +198,11 @@ public class TypeDefinition : BaseTypeDefinition
         // V1CallShapeTests.ToStringKeepsItsV1Shape pins it inside a generic argument because
         // Hardened builds a cache key out of it. That leaves adversary #70 open; the hash it
         // complains about no longer uses this string. See docs/migration-v1-v2.md.
-        return $"{Namespace}.{Name}";
+        // A type marked with an extern alias has no 1.x shape to keep. The alias goes in front so a
+        // key built from this string does not merge it with the unmarked type of the same name.
+        var alias = ExternAliasOf(this);
+
+        return alias == null ? $"{Namespace}.{Name}" : $"{alias}::{Namespace}.{Name}";
     }
 
     /// <summary>
