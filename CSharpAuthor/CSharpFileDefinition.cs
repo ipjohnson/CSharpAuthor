@@ -47,6 +47,8 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
     /// </summary>
     private readonly List<IOutputComponent> _fileLevelComponents = new();
 
+    private UsingAliasList? _aliases;
+
     /// <summary>
     /// A file declaring <paramref name="ns"/>.
     /// </summary>
@@ -183,6 +185,42 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
     }
 
     /// <summary>
+    /// Writes <c>using <paramref name="name"/> = <paramref name="target"/>;</c> at the top of the
+    /// file, with the other using directives.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For a generator that copies user code, whose statements name types through the aliases the
+    /// source file declared. The target is written <c>global::</c>-qualified in every
+    /// <see cref="TypeOutputMode"/>, type arguments included, and the directive is written even
+    /// where <see cref="OutputContextOptions.EmitExplicitUsings"/> is off, because the code that
+    /// names the alias cannot compile without it. A name that is a keyword is written with
+    /// <c>@</c>. For an alias inside the namespace declaration, call
+    /// <see cref="NamespaceDefinition.AddUsingAlias"/> on a <see cref="NamespaceDefinition"/>.
+    /// </para>
+    /// <para>
+    /// A type written anywhere in the file whose short name, or whose first namespace segment, is
+    /// <paramref name="name"/> is written <c>global::</c>-qualified in
+    /// <see cref="TypeOutputMode.ShortName"/> and <see cref="TypeOutputMode.FullName"/>, so it binds
+    /// to the type the tree named rather than to the alias. No alias the library generates to
+    /// settle a name collision takes <paramref name="name"/>.
+    /// </para>
+    /// <para>
+    /// A target that is a keyword, an array or a tuple needs C# 12, and a target that is a nullable
+    /// reference type does not compile in any version.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="target"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="name"/> is not a single identifier.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The file already has an alias named <paramref name="name"/> for a different type.
+    /// </exception>
+    public void AddUsingAlias(string name, ITypeDefinition target)
+    {
+        (_aliases ??= new UsingAliasList()).Add(name, target);
+    }
+
+    /// <summary>
     /// The namespace this file declares.
     /// </summary>
     public string Namespace => _namespaceDefinition.Namespace;
@@ -211,6 +249,20 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
             // Anything written before this point - a leading trait, the file's own comment - is the
             // header, and the generated using directives go after it rather than above it.
             context.MarkEndOfFileHeader();
+
+            if (_aliases != null)
+            {
+                context.DeclareFileAliases(_aliases.Aliases);
+            }
+        }
+        else if (_aliases != null)
+        {
+            foreach (var alias in _aliases.Aliases)
+            {
+                outputContext.WriteIndent("using " + CSharpIdentifier.Escape(alias.Key) + " = ");
+                OutputContext.WriteGlobalType(outputContext, alias.Value);
+                outputContext.WriteLine(";");
+            }
         }
 
         // After the header mark, so the generated usings still land above these - which is the one

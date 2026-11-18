@@ -17,6 +17,7 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
     private readonly string _namespace;
     private readonly List<IOutputComponent> _outputComponents = new ();
     private List<string>? _innerUsings;
+    private UsingAliasList? _aliases;
 
     /// <summary>
     /// Writes <c>namespace Sample;</c> rather than wrapping the contents in braces, which saves
@@ -128,6 +129,48 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
     }
 
     /// <summary>
+    /// Writes <c>using <paramref name="name"/> = <paramref name="target"/>;</c> inside this
+    /// namespace declaration, after the <see cref="AddUsingInsideNamespace"/> directives and before
+    /// its first member.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For a generator that copies user code, whose statements name types through the aliases the
+    /// source file declared. The target is written <c>global::</c>-qualified in every
+    /// <see cref="TypeOutputMode"/>, type arguments included, so nothing in the file can change what
+    /// it names. A name that is a keyword is written with <c>@</c>.
+    /// </para>
+    /// <para>
+    /// A type written inside this declaration whose short name, or whose first namespace segment,
+    /// is <paramref name="name"/> is written <c>global::</c>-qualified in
+    /// <see cref="TypeOutputMode.ShortName"/> and <see cref="TypeOutputMode.FullName"/>, so it binds
+    /// to the type the tree named rather than to the alias. No alias the library generates to
+    /// settle a name collision takes <paramref name="name"/>.
+    /// </para>
+    /// <para>
+    /// A target that is a keyword, an array or a tuple needs C# 12, and a target that is a nullable
+    /// reference type does not compile in any version.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="target"/> is null.</exception>
+    /// <exception cref="ArgumentException"><paramref name="name"/> is not a single identifier.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// This namespace has no name, so it writes no declaration to put the directive in; or this
+    /// declaration already has an alias named <paramref name="name"/> for a different type.
+    /// </exception>
+    public void AddUsingAlias(string name, ITypeDefinition target)
+    {
+        if (string.IsNullOrEmpty(_namespace))
+        {
+            throw new InvalidOperationException(
+                "A namespace with no name writes no declaration to put a using alias in. " +
+                "Call CSharpFileDefinition.AddUsingAlias for a file-level alias.");
+        }
+
+        (_aliases ??= new UsingAliasList()).Add(name, target);
+    }
+
+    /// <summary>
     /// The declarations in this namespace that have a name, for inspecting a tree built elsewhere.
     /// </summary>
     public IEnumerable<IOutputComponent> GetAllNamedComponents()
@@ -212,7 +255,8 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
                 WriteNamespaceOpen(outputContext);
             }
 
-            (outputContext as OutputContext)?.EnterNamespaceScope(_namespace, _innerUsings is { Count: > 0 });
+            (outputContext as OutputContext)?.EnterNamespaceScope(
+                _namespace, _innerUsings is { Count: > 0 }, _aliases?.Aliases);
 
             WriteInnerUsings(outputContext);
         }
@@ -246,14 +290,29 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
 
     private void WriteInnerUsings(IOutputContext outputContext)
     {
-        if (_innerUsings is not { Count: > 0 })
+        var aliases = _aliases?.Aliases;
+
+        if (_innerUsings is not { Count: > 0 } && aliases is not { Count: > 0 })
         {
             return;
         }
 
-        foreach (var ns in _innerUsings)
+        if (_innerUsings != null)
         {
-            outputContext.WriteIndentedLine("using " + CSharpIdentifier.EscapeQualified(ns) + ";");
+            foreach (var ns in _innerUsings)
+            {
+                outputContext.WriteIndentedLine("using " + CSharpIdentifier.EscapeQualified(ns) + ";");
+            }
+        }
+
+        if (aliases != null)
+        {
+            foreach (var alias in aliases)
+            {
+                outputContext.WriteIndent("using " + CSharpIdentifier.Escape(alias.Key) + " = ");
+                OutputContext.WriteGlobalType(outputContext, alias.Value);
+                outputContext.WriteLine(";");
+            }
         }
 
         if (_outputComponents.Count > 0)
