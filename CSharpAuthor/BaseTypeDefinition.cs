@@ -132,7 +132,81 @@ public abstract class BaseTypeDefinition : ITypeDefinition
     /// <inheritdoc />
     public ITypeDefinition? ContainingType { get; }
 
+    /// <summary>
+    /// The extern alias this type is reached through, without any <c>@</c>, or null. Set only on a
+    /// type with no container; a nested type is reached through its outermost container's.
+    /// </summary>
+    /// <remarks>
+    /// Not on <see cref="ITypeDefinition"/>, for the reason given on <see cref="IsElementNullable"/>.
+    /// Set through <see cref="ITypeDefinitionExtensions.WithExternAlias"/>.
+    /// </remarks>
+    internal string? ExternAlias { get; private set; }
+
     public abstract int CompareTo(ITypeDefinition? other);
+
+    /// <summary>
+    /// The extern alias <paramref name="type"/> is written with: its outermost container's, or null
+    /// when that is not a type this assembly can mark.
+    /// </summary>
+    internal static string? ExternAliasOf(ITypeDefinition type)
+    {
+        var outermost = type;
+
+        while (outermost.ContainingType != null)
+        {
+            outermost = outermost.ContainingType;
+        }
+
+        return (outermost as BaseTypeDefinition)?.ExternAlias;
+    }
+
+    /// <summary>
+    /// A copy of this type, declared inside <paramref name="containingType"/> instead, or null for a
+    /// class that does not say how to copy itself. Everything else carries over, the extern alias
+    /// included.
+    /// </summary>
+    private protected virtual BaseTypeDefinition? CopyWithContainer(ITypeDefinition? containingType) => null;
+
+    /// <summary>
+    /// Gives <paramref name="created"/>, a shape of this type just built, the extern alias this one
+    /// carries. Every method that returns a variant of the type goes through this.
+    /// </summary>
+    private protected T CarryExternAlias<T>(T created) where T : BaseTypeDefinition
+    {
+        created.ExternAlias = ExternAlias;
+
+        return created;
+    }
+
+    /// <inheritdoc cref="ITypeDefinitionExtensions.WithExternAlias" />
+    internal ITypeDefinition MarkExternAlias(string alias)
+    {
+        if (ContainingType != null)
+        {
+            var container = ContainingType.WithExternAlias(alias);
+
+            return CopyWithContainer(container) ?? throw CannotMark(this);
+        }
+
+        if (Namespace.Length == 0 && CSharpIdentifier.IsPredefinedTypeKeyword(Name))
+        {
+            throw new ArgumentException(
+                "'" + Name + "' is a keyword type and cannot be named through an extern alias.", nameof(alias));
+        }
+
+        var copy = CopyWithContainer(null) ?? throw CannotMark(this);
+
+        copy.ExternAlias = alias;
+
+        return copy;
+    }
+
+    internal static NotSupportedException CannotMark(ITypeDefinition type)
+    {
+        return new NotSupportedException(
+            type.GetType().FullName + " cannot be marked with an extern alias. Mark a type built by " +
+            "TypeDefinition.Get or TypeDefinition.GetNested.");
+    }
 
     /// <summary>
     /// The type's identity: what makes it the same type as another definition of it, whichever class
@@ -295,6 +369,21 @@ public abstract class BaseTypeDefinition : ITypeDefinition
 
     private protected void WriteNamespacePrefix(StringBuilder builder, TypeOutputMode typeOutputMode)
     {
+        // The alias is the only way to reach the type, so it is written in every mode, and no using
+        // can stand in for it. global:: names the global namespace of the unaliased references,
+        // which does not hold this type.
+        if (ExternAlias != null)
+        {
+            builder.Append(CSharpIdentifier.Escape(ExternAlias)).Append("::");
+
+            if (!string.IsNullOrEmpty(Namespace))
+            {
+                builder.Append(Namespace).Append('.');
+            }
+
+            return;
+        }
+
         if (string.IsNullOrEmpty(Namespace))
         {
             // An empty namespace is two different things wearing one shape: a predefined type

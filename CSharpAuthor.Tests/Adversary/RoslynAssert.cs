@@ -89,6 +89,63 @@ internal static class RoslynAssert
     }
 
     /// <summary>
+    /// Compiles <paramref name="source"/> into an assembly called <paramref name="assemblyName"/>
+    /// and returns a reference to it under <paramref name="aliases"/>, the way a project references
+    /// an assembly with <c>&lt;Aliases&gt;</c>. No aliases is the ordinary global reference.
+    /// </summary>
+    /// <remarks>
+    /// The assembly is emitted to an image rather than referenced as a compilation, so the emitted
+    /// code is bound against metadata exactly as a consumer's build binds it.
+    /// </remarks>
+    public static MetadataReference Reference(string assemblyName, string source, params string[] aliases)
+    {
+        var compilation = CSharpCompilation.Create(
+            assemblyName,
+            new[] { CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(MaxLanguageVersion)) },
+            References.Value,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        using var image = new MemoryStream();
+
+        var result = compilation.Emit(image);
+
+        if (!result.Success)
+        {
+            Assert.True(false, BuildFailureMessage(
+                source, result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToList()));
+        }
+
+        return MetadataReference.CreateFromImage(
+            image.ToArray(),
+            MetadataReferenceProperties.Assembly.WithAliases(aliases));
+    }
+
+    /// <summary>
+    /// Compiles <paramref name="source"/> against <paramref name="references"/> as well as the
+    /// usual ones, asserting the compiler reports no errors.
+    /// </summary>
+    public static void CompilesWithReferences(string source, params MetadataReference[] references)
+    {
+        var errors = ErrorsWithReferences(source, references);
+
+        if (errors.Count == 0)
+        {
+            return;
+        }
+
+        Assert.True(false, BuildFailureMessage(source, errors));
+    }
+
+    /// <summary>
+    /// The compiler's errors for <paramref name="source"/> compiled against
+    /// <paramref name="references"/> as well as the usual ones.
+    /// </summary>
+    public static IReadOnlyList<Diagnostic> ErrorsWithReferences(string source, params MetadataReference[] references) =>
+        Diagnose(source, MaxLanguageVersion, allowUnsafe: true, extraReferences: references)
+            .Where(d => d.Severity == DiagnosticSeverity.Error)
+            .ToList();
+
+    /// <summary>
     /// Compiles a member declaration by placing it in a class, for output that is not a whole file.
     /// </summary>
     public static void MemberCompiles(
@@ -171,7 +228,8 @@ internal static class RoslynAssert
     /// </remarks>
     private static IReadOnlyList<Diagnostic> Diagnose(
         string source, RoslynLangVersion languageVersion, bool allowUnsafe,
-        string[]? warningsAsErrors = null, string? support = null)
+        string[]? warningsAsErrors = null, string? support = null,
+        IReadOnlyList<MetadataReference>? extraReferences = null)
     {
         // DocumentationMode.Diagnose is what makes CS1570 - "XML comment has badly formed XML" -
         // appear at all. Without it a malformed documentation comment is parsed as ordinary trivia
@@ -198,7 +256,7 @@ internal static class RoslynAssert
         var compilation = CSharpCompilation.Create(
             "AdversaryAssembly",
             trees,
-            References.Value,
+            extraReferences is { Count: > 0 } ? References.Value.AddRange(extraReferences) : References.Value,
             options);
 
         var result = new List<Diagnostic>();

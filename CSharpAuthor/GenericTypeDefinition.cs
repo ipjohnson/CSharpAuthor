@@ -49,6 +49,13 @@ public class GenericTypeDefinition : BaseTypeDefinition
     {
         var stringBuilder = new StringBuilder();
 
+        var alias = ExternAliasOf(this);
+
+        if (alias != null)
+        {
+            stringBuilder.Append(alias).Append("::");
+        }
+
         stringBuilder.Append(Namespace);
         stringBuilder.Append('.');
         stringBuilder.Append(Name);
@@ -108,7 +115,10 @@ public class GenericTypeDefinition : BaseTypeDefinition
                 }
             }
 
-            yield return Namespace;
+            if (ExternAliasOf(this) == null)
+            {
+                yield return Namespace;
+            }
         }
     }
 
@@ -153,20 +163,25 @@ public class GenericTypeDefinition : BaseTypeDefinition
 
     public override ITypeDefinition MakeNullable(bool nullable = true)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, AnnotationsWithOuterAnnotation(nullable), ContainingType);
+        return CarryExternAlias(new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, AnnotationsWithOuterAnnotation(nullable), ContainingType));
     }
 
     /// <inheritdoc cref="TypeDefinition.MakeArray(int)" />
     public override ITypeDefinition MakeArray(int rank)
     {
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanksWithOuterRank(rank), AnnotationsWithOuterLevel(), ContainingType);
+        return CarryExternAlias(new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanksWithOuterRank(rank), AnnotationsWithOuterLevel(), ContainingType));
     }
 
     public ITypeDefinition MakeOpenType()
     {
         var emptyTypes = _closingTypes.Select(_ => TypeDefinition.Get("", "")).ToArray();
 
-        return new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, ArrayRanks, NullableAnnotations, ContainingType);
+        return CarryExternAlias(new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, emptyTypes, ArrayRanks, NullableAnnotations, ContainingType));
+    }
+
+    private protected override BaseTypeDefinition CopyWithContainer(ITypeDefinition? containingType)
+    {
+        return CarryExternAlias(new GenericTypeDefinition(TypeDefinitionEnum, Namespace, Name, _closingTypes, ArrayRanks, NullableAnnotations, containingType));
     }
         
     public override IReadOnlyList<ITypeDefinition> TypeArguments => _closingTypes;
