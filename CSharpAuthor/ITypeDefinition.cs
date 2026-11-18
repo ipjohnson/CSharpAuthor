@@ -360,25 +360,38 @@ public static class ITypeDefinitionExtensions
             throw new ArgumentNullException(nameof(typeDefinition));
         }
 
-        var bare = alias != null && alias.Length > 1 && alias[0] == '@' ? alias.Substring(1) : alias;
-
-        if (!UsingAliasList.IsIdentifier(bare))
-        {
-            throw new ArgumentException(
-                "An extern alias needs a single identifier for its name, such as V1.", nameof(alias));
-        }
-
-        if (string.Equals(bare, "global", StringComparison.Ordinal))
-        {
-            throw new ArgumentException(
-                "'global' names the global namespace and cannot be an extern alias.", nameof(alias));
-        }
+        var bare = ExternAliasName(alias, nameof(alias));
 
         if (typeDefinition is not BaseTypeDefinition baseTypeDefinition)
         {
             throw BaseTypeDefinition.CannotMark(typeDefinition);
         }
 
-        return baseTypeDefinition.MarkExternAlias(bare!);
+        return baseTypeDefinition.MarkExternAlias(bare);
+    }
+
+    /// <summary>
+    /// <paramref name="alias"/> without a leading <c>@</c>, checked to be a name an
+    /// <c>extern alias</c> directive can declare.
+    /// </summary>
+    /// <exception cref="ArgumentException"><paramref name="alias"/> is not a single identifier, or
+    /// is <c>global</c>.</exception>
+    internal static string ExternAliasName(string? alias, string parameterName)
+    {
+        var bare = alias != null && alias.Length > 1 && alias[0] == '@' ? alias.Substring(1) : alias;
+
+        if (!UsingAliasList.IsIdentifier(bare))
+        {
+            throw new ArgumentException(
+                "An extern alias needs a single identifier for its name, such as V1.", parameterName);
+        }
+
+        if (string.Equals(bare, "global", StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                "'global' names the global namespace and cannot be an extern alias.", parameterName);
+        }
+
+        return bare!;
     }
 }
