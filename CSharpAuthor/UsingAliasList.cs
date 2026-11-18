@@ -50,7 +50,7 @@ internal sealed class UsingAliasList
         _aliases.Add(new KeyValuePair<string, ITypeDefinition>(bare!, target));
     }
 
-    private static bool SameType(ITypeDefinition left, ITypeDefinition right)
+    internal static bool SameType(ITypeDefinition left, ITypeDefinition right)
     {
         return ReferenceEquals(left, right) || left.Equals(right) ||
                string.Equals(GlobalName(left), GlobalName(right), StringComparison.Ordinal);

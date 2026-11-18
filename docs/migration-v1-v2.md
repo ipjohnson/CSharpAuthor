@@ -1522,6 +1522,47 @@ Every other DependencyModules test passes (1,080 per TFM), and `Hardened.SourceG
 passes 1,041 / 0. The round-trip measures 2,542 / 2,749. The one extra file attempted is
 `UsingAliasList.cs` in the library's own corpus, and the passing count rose by one with it.
 
+## Using static directives (#38)
+
+### New API
+
+- `CSharpFileDefinition.AddUsingStatic(ITypeDefinition target)` writes `using static <target>;` with
+  the file-level usings, after the using namespace directives and before the aliases. It is written
+  in every `TypeOutputMode`, and also when `EmitExplicitUsings` is off.
+- `NamespaceDefinition.AddUsingStatic(ITypeDefinition target)` writes the same directive inside the
+  namespace declaration, after its `AddUsingInsideNamespace` directives and before its
+  `AddUsingAlias` ones. It throws on a namespace with no name.
+
+The target is written `global::`-qualified in every mode, type arguments included. The same target
+added twice is written once. A null target throws `ArgumentNullException`.
+
+### Behaviour
+
+Output changes only for a file that calls the new method. A `using static` imports the target's
+nested types as well as its static members, and the library does not know what the nested types
+are. Under a namespace-level `using static`, a nested type is found before a type imported at file
+level, so `Item` would bind to the nested type. Under a file-level one, the nested type and a type
+imported by a file-level using are ambiguous (CS0104). So in `ShortName` mode a type written under
+either is written `global::`-qualified, unless its namespace is a declaration in scope. At file
+level that is every type outside the file's namespace. A type qualified this way no longer derives
+a file-level using. `FullName` and `Global` output is unchanged apart from the directive.
+
+### Snapshot diff: `PublicApiTests.SourceGeneratorApi` (DependencyModules), 1 test per TFM
+
+**+2 lines, −0** on top of the #40 and #37 diffs above, which are still unapproved. Purely
+additive. Not re-baselined; the human approves it.
+
+```diff
+@@ CSharpAuthor.CSharpFileDefinition
++        public void AddUsingStatic(CSharpAuthor.ITypeDefinition target) { }
+@@ CSharpAuthor.NamespaceDefinition
++        public void AddUsingStatic(CSharpAuthor.ITypeDefinition target) { }
+```
+
+Every other DependencyModules test passes (1,080 per TFM), and `Hardened.SourceGenerator.Tests`
+passes 1,041 / 0. The round-trip measures 2,543 / 2,750. The one extra file attempted is
+`UsingStaticList.cs` in the library's own corpus, and the passing count rose by one with it.
+
 ---
 
 # 9. Migrating a real repository — three worked examples

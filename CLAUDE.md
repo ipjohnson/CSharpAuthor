@@ -38,9 +38,9 @@ The four things worth carrying even if you read nothing else:
 Verification, all of it:
 
 ```bash
-dotnet test CSharpAuthor.Tests                            # 1802 passed / 0 failed / 13 skipped
+dotnet test CSharpAuthor.Tests                            # 1834 passed / 0 failed / 13 skipped
 ./scripts/run-consumer-tests.sh <checkout> --scope core   # the real oracle
-./scripts/run-roundtrip.sh   <checkout> --corpus all      # 2,542 / 2,749 = 92.5% (2026-11-17)
+./scripts/run-roundtrip.sh   <checkout> --corpus all      # 2,543 / 2,750 = 92.5% (2026-11-17)
 ./scripts/run-benchmark.sh   <v1> <v2>                    # both checkouts, ONE invocation
 ./scripts/verify-roslyn-packaging.sh
 python3 tools/grammar/gen_all.py --report

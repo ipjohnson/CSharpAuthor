@@ -407,6 +407,9 @@ public class OutputContext : IOutputContext
     /// <summary>The caller-named file-level aliases, written with the generated usings.</summary>
     private IReadOnlyList<KeyValuePair<string, ITypeDefinition>>? _fileAliases;
 
+    /// <summary>The caller-named file-level <c>using static</c> targets, written with the generated usings.</summary>
+    private IReadOnlyList<ITypeDefinition>? _fileStatics;
+
     /// <summary>
     /// The names of the caller-named aliases in force where the next write lands: the file's, then
     /// each enclosing declaration's. Null until one is declared.
@@ -680,7 +683,7 @@ public class OutputContext : IOutputContext
         {
             value = new ScopeQualifiedType(typeDefinition, inFullName: aliasHit == AliasHit.FullName);
         }
-        else if (_innerUsingScope >= 0 && CapturableInScope(typeDefinition))
+        else if ((_innerUsingScope >= 0 || _fileStatics != null) && CapturableInScope(typeDefinition))
         {
             value = new ScopeQualifiedType(typeDefinition, inFullName: false);
         }
@@ -807,12 +810,18 @@ public class OutputContext : IOutputContext
     /// short name to a different type.
     /// </summary>
     /// <remarks>
+    /// A file-level <c>using static</c> counts too. The nested types it imports are not known, and
+    /// one of the same name as a type imported by a file-level using makes the short name
+    /// ambiguous. With no namespace-level using in force, every declaration being written is inside
+    /// the innermost scope.
+    /// <para>
     /// Name lookup walks the namespace declarations from the inside out, and at each one tries the
     /// namespace's own members before the declaration's usings. So a type is safe only if its
     /// namespace is one of the declarations at or inside the innermost one carrying usings: lookup
     /// finds it there before any of those usings is asked. Every other type is reached past at
     /// least one using, which can hold a type of the same name. What the using's namespace holds is
     /// not known here, so the answer has to assume it does.
+    /// </para>
     /// <para>
     /// A type with no namespace is left alone. It is a keyword or a type parameter, which no using
     /// can capture, or a global-namespace type, which this cannot tell apart from one.
@@ -824,10 +833,10 @@ public class OutputContext : IOutputContext
 
         if (!string.IsNullOrEmpty(ns))
         {
-            var scopes = _namespaceScopes!;
+            var scopes = _namespaceScopes;
             var declared = false;
 
-            for (var i = _innerUsingScope; i < scopes.Count; i++)
+            for (var i = _innerUsingScope < 0 ? 0 : _innerUsingScope; scopes != null && i < scopes.Count; i++)
             {
                 if (string.Equals(scopes[i].FullName, ns, StringComparison.Ordinal))
                 {
@@ -908,6 +917,19 @@ public class OutputContext : IOutputContext
         _fileAliases = aliases;
 
         DeclareAliasNames(aliases);
+    }
+
+    /// <summary>
+    /// Takes the caller-named <c>using static</c> targets written at the top of the file. Every
+    /// type written after this in <see cref="TypeOutputMode.ShortName"/> is checked by
+    /// <see cref="CapturableInScope"/>.
+    /// </summary>
+    internal void DeclareFileStatics(IReadOnlyList<ITypeDefinition> targets)
+    {
+        if (targets.Count > 0)
+        {
+            _fileStatics = targets;
+        }
     }
 
     private void DeclareAliasNames(IReadOnlyList<KeyValuePair<string, ITypeDefinition>> aliases)
@@ -1955,7 +1977,8 @@ public class OutputContext : IOutputContext
         {
             namePlan = BuildNamePlan();
 
-            if (namePlan.Namespaces.Count == 0 && namePlan.Aliases.Count == 0 && _fileAliases == null)
+            if (namePlan.Namespaces.Count == 0 && namePlan.Aliases.Count == 0 && _fileAliases == null &&
+                _fileStatics == null)
             {
                 namePlan = null;
             }
@@ -2054,6 +2077,18 @@ public class OutputContext : IOutputContext
 
         // In every mode, and whatever EmitExplicitUsings says: the copied code that names one of
         // these does not compile without it.
+        if (_fileStatics != null)
+        {
+            foreach (var target in _fileStatics)
+            {
+                builder.Append("using static ");
+                target.WriteTypeName(builder, TypeOutputMode.Global);
+                builder.Append(';').Append(Options.NewLine);
+
+                wroteAny = true;
+            }
+        }
+
         if (_fileAliases != null)
         {
             foreach (var alias in _fileAliases)

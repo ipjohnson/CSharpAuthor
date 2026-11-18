@@ -18,6 +18,7 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
     private readonly List<IOutputComponent> _outputComponents = new ();
     private List<string>? _innerUsings;
     private UsingAliasList? _aliases;
+    private UsingStaticList? _statics;
 
     /// <summary>
     /// Writes <c>namespace Sample;</c> rather than wrapping the contents in braces, which saves
@@ -171,6 +172,44 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
     }
 
     /// <summary>
+    /// Writes <c>using static <paramref name="target"/>;</c> inside this namespace declaration,
+    /// after the <see cref="AddUsingInsideNamespace"/> directives and before the
+    /// <see cref="AddUsingAlias"/> ones.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For a generator that copies user code, whose statements call the static members of the
+    /// target without naming it. The target is written <c>global::</c>-qualified in every
+    /// <see cref="TypeOutputMode"/>, type arguments included. Adding the same target twice writes
+    /// it once.
+    /// </para>
+    /// <para>
+    /// The directive also imports the target's nested types, and the library does not know what
+    /// they are. So in <see cref="TypeOutputMode.ShortName"/> a type written inside this
+    /// declaration is written <c>global::</c>-qualified unless the declaration itself, or one
+    /// nested in it, is the type's namespace, as under <see cref="AddUsingInsideNamespace"/>.
+    /// </para>
+    /// <para>
+    /// A target that is a nullable reference type does not compile.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="target"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// This namespace has no name, so it writes no declaration to put the directive in.
+    /// </exception>
+    public void AddUsingStatic(ITypeDefinition target)
+    {
+        if (string.IsNullOrEmpty(_namespace))
+        {
+            throw new InvalidOperationException(
+                "A namespace with no name writes no declaration to put a using static in. " +
+                "Call CSharpFileDefinition.AddUsingStatic for a file-level using static.");
+        }
+
+        (_statics ??= new UsingStaticList()).Add(target);
+    }
+
+    /// <summary>
     /// The declarations in this namespace that have a name, for inspecting a tree built elsewhere.
     /// </summary>
     public IEnumerable<IOutputComponent> GetAllNamedComponents()
@@ -256,7 +295,7 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
             }
 
             (outputContext as OutputContext)?.EnterNamespaceScope(
-                _namespace, _innerUsings is { Count: > 0 }, _aliases?.Aliases);
+                _namespace, _innerUsings is { Count: > 0 } || _statics != null, _aliases?.Aliases);
 
             WriteInnerUsings(outputContext);
         }
@@ -292,7 +331,7 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
     {
         var aliases = _aliases?.Aliases;
 
-        if (_innerUsings is not { Count: > 0 } && aliases is not { Count: > 0 })
+        if (_innerUsings is not { Count: > 0 } && aliases is not { Count: > 0 } && _statics == null)
         {
             return;
         }
@@ -302,6 +341,16 @@ public class NamespaceDefinition : BaseOutputComponent, IConstructContainer
             foreach (var ns in _innerUsings)
             {
                 outputContext.WriteIndentedLine("using " + CSharpIdentifier.EscapeQualified(ns) + ";");
+            }
+        }
+
+        if (_statics != null)
+        {
+            foreach (var target in _statics.Targets)
+            {
+                outputContext.WriteIndent("using static ");
+                OutputContext.WriteGlobalType(outputContext, target);
+                outputContext.WriteLine(";");
             }
         }
 
