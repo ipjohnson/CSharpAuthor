@@ -51,6 +51,9 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
 
     private UsingStaticList? _statics;
 
+    /// <summary>The extern alias names, without any <c>@</c>, in the order they were added.</summary>
+    private List<string>? _externAliases;
+
     /// <summary>
     /// A file declaring <paramref name="ns"/>.
     /// </summary>
@@ -253,6 +256,48 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
     }
 
     /// <summary>
+    /// Writes <c>extern alias <paramref name="name"/>;</c> at the top of the file, after the file
+    /// header and before every using directive and assembly attribute.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For a file that names types in an assembly the consuming project references with
+    /// <c>&lt;Aliases&gt;<paramref name="name"/>&lt;/Aliases&gt;</c>. A type marked with
+    /// <see cref="ITypeDefinitionExtensions.WithExternAlias"/> and written anywhere in the file adds
+    /// its alias without this call, so this is for a name used only by copied code. The directive
+    /// is written in every <see cref="TypeOutputMode"/>, whatever
+    /// <see cref="OutputContextOptions.EmitExplicitUsings"/> says. Adding the same name twice writes
+    /// it once. A name that is a keyword is written with <c>@</c>.
+    /// </para>
+    /// <para>
+    /// A type written anywhere in the file whose short name, or whose first namespace segment, is
+    /// <paramref name="name"/> is written <c>global::</c>-qualified in
+    /// <see cref="TypeOutputMode.ShortName"/> and <see cref="TypeOutputMode.FullName"/>, so it binds
+    /// to the type the tree named rather than to the alias. No alias the library generates to settle
+    /// a name collision takes <paramref name="name"/>.
+    /// </para>
+    /// </remarks>
+    /// <param name="name">The alias as the project declares it, with or without a leading
+    /// <c>@</c>.</param>
+    /// <exception cref="ArgumentException"><paramref name="name"/> is not a single identifier, or is
+    /// <c>global</c>, which C# does not allow as an extern alias.</exception>
+    public void AddExternAlias(string name)
+    {
+        var bare = ITypeDefinitionExtensions.ExternAliasName(name, nameof(name));
+        var aliases = _externAliases ??= new List<string>();
+
+        foreach (var existing in aliases)
+        {
+            if (string.Equals(existing, bare, StringComparison.Ordinal))
+            {
+                return;
+            }
+        }
+
+        aliases.Add(bare);
+    }
+
+    /// <summary>
     /// The namespace this file declares.
     /// </summary>
     public string Namespace => _namespaceDefinition.Namespace;
@@ -282,6 +327,11 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
             // header, and the generated using directives go after it rather than above it.
             context.MarkEndOfFileHeader();
 
+            if (_externAliases != null)
+            {
+                context.DeclareFileExternAliases(_externAliases);
+            }
+
             if (_statics != null)
             {
                 context.DeclareFileStatics(_statics.Targets);
@@ -294,6 +344,14 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
         }
         else
         {
+            if (_externAliases != null)
+            {
+                foreach (var name in _externAliases)
+                {
+                    outputContext.WriteIndentedLine("extern alias " + CSharpIdentifier.Escape(name) + ";");
+                }
+            }
+
             if (_statics != null)
             {
                 foreach (var target in _statics.Targets)

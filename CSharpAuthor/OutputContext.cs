@@ -411,6 +411,12 @@ public class OutputContext : IOutputContext
     private IReadOnlyList<ITypeDefinition>? _fileStatics;
 
     /// <summary>
+    /// The <c>extern alias</c> names written at the top of the file: the caller's, then each one a
+    /// written type is reached through, in the order first met. Null until there is one.
+    /// </summary>
+    private List<string>? _externAliases;
+
+    /// <summary>
     /// The names of the caller-named aliases in force where the next write lands: the file's, then
     /// each enclosing declaration's. Null until one is declared.
     /// </summary>
@@ -718,6 +724,8 @@ public class OutputContext : IOutputContext
 
     private void RecordTypeReference(ITypeDefinition typeDefinition, object value)
     {
+        NoteExternAliases(typeDefinition);
+
         if (Streaming)
         {
             var mode = Options.TypeOutputMode;
@@ -919,6 +927,11 @@ public class OutputContext : IOutputContext
         _fileAliases = aliases;
 
         DeclareAliasNames(aliases);
+
+        for (var i = 0; i < aliases.Count; i++)
+        {
+            NoteExternAliases(aliases[i].Value);
+        }
     }
 
     /// <summary>
@@ -931,7 +944,87 @@ public class OutputContext : IOutputContext
         if (targets.Count > 0)
         {
             _fileStatics = targets;
+
+            for (var i = 0; i < targets.Count; i++)
+            {
+                NoteExternAliases(targets[i]);
+            }
         }
+    }
+
+    /// <summary>
+    /// Takes the <c>extern alias</c> names the caller added to the file.
+    /// </summary>
+    internal void DeclareFileExternAliases(IReadOnlyList<string> names)
+    {
+        for (var i = 0; i < names.Count; i++)
+        {
+            DeclareExternAlias(names[i]);
+        }
+    }
+
+    /// <summary>
+    /// Declares the extern alias each part of <paramref name="type"/> is reached through, so the
+    /// file cannot name one without its directive.
+    /// </summary>
+    private void NoteExternAliases(ITypeDefinition type)
+    {
+        var current = type;
+
+        while (true)
+        {
+            if (current is AttributeTypeReference attribute)
+            {
+                current = attribute.AttributeType;
+            }
+
+            var typeArguments = current.TypeArguments;
+
+            if (typeArguments != null)
+            {
+                for (var i = 0; i < typeArguments.Count; i++)
+                {
+                    NoteExternAliases(typeArguments[i]);
+                }
+            }
+
+            var container = current.ContainingType;
+
+            if (container == null)
+            {
+                break;
+            }
+
+            current = container;
+        }
+
+        if (current is BaseTypeDefinition { ExternAlias: { } alias })
+        {
+            DeclareExternAlias(alias);
+        }
+    }
+
+    /// <remarks>
+    /// The directive is at file level, so the name is in force for every write that follows, and
+    /// no generated collision alias may take it. It goes in front of the names in force because
+    /// <see cref="ExitNamespaceScope"/> removes a declaration's names from the end.
+    /// </remarks>
+    private void DeclareExternAlias(string name)
+    {
+        var aliases = _externAliases ??= new List<string>();
+
+        for (var i = 0; i < aliases.Count; i++)
+        {
+            if (string.Equals(aliases[i], name, StringComparison.Ordinal))
+            {
+                return;
+            }
+        }
+
+        aliases.Add(name);
+
+        (_aliasNamesInForce ??= new List<string>()).Insert(0, name);
+        (_callerAliasNames ??= new HashSet<string>(StringComparer.Ordinal)).Add(name);
     }
 
     private void DeclareAliasNames(IReadOnlyList<KeyValuePair<string, ITypeDefinition>> aliases)
@@ -1984,7 +2077,7 @@ public class OutputContext : IOutputContext
             namePlan = BuildNamePlan();
 
             if (namePlan.Namespaces.Count == 0 && namePlan.Aliases.Count == 0 && _fileAliases == null &&
-                _fileStatics == null)
+                _fileStatics == null && _externAliases == null)
             {
                 namePlan = null;
             }
@@ -2060,6 +2153,18 @@ public class OutputContext : IOutputContext
     private void WriteUsings(StringBuilder builder, NamePlan namePlan)
     {
         var wroteAny = false;
+
+        // CS0439: an extern alias directive precedes every using directive and attribute.
+        if (_externAliases != null)
+        {
+            foreach (var name in _externAliases)
+            {
+                builder.Append("extern alias ").Append(CSharpIdentifier.Escape(name))
+                    .Append(';').Append(Options.NewLine);
+
+                wroteAny = true;
+            }
+        }
 
         // A namespace segment that is a keyword needs the same @ the declaration gets. The two used
         // to disagree: `namespace Company.@event.Models` was written correctly and

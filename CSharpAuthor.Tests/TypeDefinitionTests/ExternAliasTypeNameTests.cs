@@ -16,7 +16,6 @@ namespace CSharpAuthor.Tests.TypeDefinitionTests;
 /// The files are compiled against <see cref="AliasedVendor"/> and <see cref="GlobalVendor"/>, which
 /// both declare <c>Vendor.Widgets.Widget</c>. Each file reads a member only the intended assembly's
 /// type has, so a type that lost its alias binds to the other assembly and the read is CS1061.
-/// The <c>extern alias V1;</c> directive is put in front by hand until the file can write it.
 /// </remarks>
 public class ExternAliasTypeNameTests
 {
@@ -69,7 +68,7 @@ namespace Other
         new GenericTypeDefinition(TypeDefinitionEnum.ClassDefinition, "Vendor.Widgets", "Box", new[] { argument });
 
     private static string Render(CSharpFileDefinition file, TypeOutputMode mode) =>
-        "extern alias V1;\n" + Emit.File(file, new OutputContextOptions { TypeOutputMode = mode });
+        Emit.File(file, new OutputContextOptions { TypeOutputMode = mode });
 
     public static IEnumerable<object[]> Modes() => new[]
     {
@@ -146,7 +145,7 @@ namespace Other
         holder.AddProperty(marked, "Value");
         holder.AddMethod("Check").AddCode("_ = Value.FromV1;");
 
-        var output = "extern alias @event;\n" + Emit.File(file);
+        var output = Emit.File(file);
 
         RoslynAssert.CompilesWithReferences(
             output, RoslynAssert.Reference("VendorEvent", AliasedSource, "event"), GlobalVendor);
