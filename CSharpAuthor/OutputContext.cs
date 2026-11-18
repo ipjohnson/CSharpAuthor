@@ -963,7 +963,9 @@ public class OutputContext : IOutputContext
 
             var name = outermost.Name;
 
-            if (!string.IsNullOrEmpty(name) && AliasInForce(name, name.Length))
+            if (!string.IsNullOrEmpty(name) &&
+                (AliasInForce(name, name.Length) ||
+                 (outermost is AttributeTypeReference && AliasInForce(name, AttributeShortLength(name)))))
             {
                 hit = Max(hit, AliasHit.ShortName);
             }
@@ -996,6 +998,20 @@ public class OutputContext : IOutputContext
         None,
         ShortName,
         FullName,
+    }
+
+    /// <summary>
+    /// The length of an attribute's name as <see cref="AttributeTypeReference"/> writes it in
+    /// brackets. <c>[Mark]</c> looks up both <c>Mark</c> and <c>MarkAttribute</c>, so an alias of
+    /// either name makes it ambiguous or captures it.
+    /// </summary>
+    private static int AttributeShortLength(string name)
+    {
+        const string postfix = "Attribute";
+
+        return name.Length > postfix.Length && name.EndsWith(postfix, StringComparison.Ordinal)
+            ? name.Length - postfix.Length
+            : name.Length;
     }
 
     /// <summary>Whether the first <paramref name="length"/> characters of a name are an alias in force.</summary>

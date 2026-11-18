@@ -260,6 +260,89 @@ public static class BindingCheck
     }
 
     /// <summary>
+    /// <c>OtherAttribute</c> only goes on methods, so a class attribute that binds to an alias of it
+    /// fails with CS0592 even where the name is not ambiguous.
+    /// </summary>
+    private const string AttributeTypes = @"
+namespace Probe.Attrs
+{
+    public class MarkAttribute : global::System.Attribute { }
+}
+
+namespace Probe.Other
+{
+    [global::System.AttributeUsage(global::System.AttributeTargets.Method)]
+    public class OtherAttribute : global::System.Attribute { }
+}
+";
+
+    private static readonly ITypeDefinition MarkAttribute = TypeDefinition.Get("Probe.Attrs", "MarkAttribute");
+
+    private static readonly ITypeDefinition OtherAttribute = TypeDefinition.Get("Probe.Other", "OtherAttribute");
+
+    private static CSharpFileDefinition AttributeFile(string aliasName, bool atFileLevel)
+    {
+        var file = new CSharpFileDefinition(atFileLevel ? "Sample" : "");
+
+        ClassDefinition holder;
+
+        if (atFileLevel)
+        {
+            file.AddUsingAlias(aliasName, OtherAttribute);
+            holder = file.AddClass("Holder");
+        }
+        else
+        {
+            var sample = new NamespaceDefinition("Sample");
+            sample.AddUsingAlias(aliasName, OtherAttribute);
+            file.AddComponent(sample);
+            holder = sample.AddClass("Holder");
+        }
+
+        holder.AddAttribute(MarkAttribute);
+
+        return file;
+    }
+
+    [Theory]
+    [InlineData(TypeOutputMode.ShortName, "Mark", true)]
+    [InlineData(TypeOutputMode.ShortName, "Mark", false)]
+    [InlineData(TypeOutputMode.ShortName, "MarkAttribute", true)]
+    [InlineData(TypeOutputMode.ShortName, "MarkAttribute", false)]
+    [InlineData(TypeOutputMode.FullName, "Mark", true)]
+    [InlineData(TypeOutputMode.FullName, "Mark", false)]
+    [InlineData(TypeOutputMode.Global, "Mark", true)]
+    [InlineData(TypeOutputMode.Global, "Mark", false)]
+    public void AttributeWithTheAliasesNameBindsToTheIntendedType(
+        TypeOutputMode mode, string aliasName, bool atFileLevel)
+    {
+        var output = Render(AttributeFile(aliasName, atFileLevel), mode);
+
+        Assert.Contains(
+            mode == TypeOutputMode.FullName ? "[Probe.Attrs.Mark]" : "[global::Probe.Attrs.Mark]", output);
+        Assert.DoesNotContain("using Probe.Attrs;", output);
+        Assert.Contains("using " + aliasName + " = global::Probe.Other.OtherAttribute;", output);
+        RoslynAssert.CompilesWith(output, AttributeTypes);
+    }
+
+    /// <summary>
+    /// The control for the test above: the bracket name it avoided does not compile under the alias.
+    /// </summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void BracketNameUnderTheAliasDoesNotBindToTheIntendedType(bool atFileLevel)
+    {
+        var output = Render(AttributeFile("Mark", atFileLevel), TypeOutputMode.ShortName);
+
+        var captured = "using Probe.Attrs;\n" + output.Replace("[global::Probe.Attrs.Mark]", "[Mark]");
+
+        var errors = RoslynAssert.Errors(captured + AttributeTypes);
+
+        Assert.Contains(errors, e => e.Id is "CS1614" or "CS0592");
+    }
+
+    /// <summary>
     /// The check is made at serialization, so a file written in Global mode and switched to
     /// FullName still qualifies what the alias could capture.
     /// </summary>

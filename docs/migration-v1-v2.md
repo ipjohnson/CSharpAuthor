@@ -1500,7 +1500,8 @@ different target it throws `InvalidOperationException`.
 Output changes only for a file that calls the new method. An alias in force is found before a
 namespace imported at the same level, so a type written under one could bind to the alias instead.
 In `ShortName` mode a type whose short name is an alias in force is written `global::`-qualified.
-A type whose first namespace segment is an alias is written `global::`-qualified in `ShortName` and
+For an attribute that holds for the declared name (`MarkAttribute`) and for the bracket name
+(`Mark`), because `[Mark]` looks up both. A type whose first namespace segment is an alias is written `global::`-qualified in `ShortName` and
 `FullName`. The check covers type arguments. A type qualified this way no longer derives a
 file-level using. A collision alias the library generates skips every caller alias name in the
 file.
