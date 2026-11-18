@@ -49,6 +49,8 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
 
     private UsingAliasList? _aliases;
 
+    private UsingStaticList? _statics;
+
     /// <summary>
     /// A file declaring <paramref name="ns"/>.
     /// </summary>
@@ -221,6 +223,36 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
     }
 
     /// <summary>
+    /// Writes <c>using static <paramref name="target"/>;</c> at the top of the file, after the using
+    /// namespace directives and before the aliases.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// For a generator that copies user code, whose statements call the static members of the
+    /// target without naming it. The target is written <c>global::</c>-qualified in every
+    /// <see cref="TypeOutputMode"/>, type arguments included, and the directive is written even
+    /// where <see cref="OutputContextOptions.EmitExplicitUsings"/> is off. Adding the same target
+    /// twice writes it once. For the directive inside the namespace declaration, call
+    /// <see cref="NamespaceDefinition.AddUsingStatic"/> on a <see cref="NamespaceDefinition"/>.
+    /// </para>
+    /// <para>
+    /// The directive also imports the target's nested types, and the library does not know what
+    /// they are. A nested type and a type imported by a using namespace directive of the same name
+    /// are ambiguous. So in <see cref="TypeOutputMode.ShortName"/> every type written in the file
+    /// is written <c>global::</c>-qualified unless the file's namespace declaration is its
+    /// namespace.
+    /// </para>
+    /// <para>
+    /// A target that is a nullable reference type does not compile.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="target"/> is null.</exception>
+    public void AddUsingStatic(ITypeDefinition target)
+    {
+        (_statics ??= new UsingStaticList()).Add(target);
+    }
+
+    /// <summary>
     /// The namespace this file declares.
     /// </summary>
     public string Namespace => _namespaceDefinition.Namespace;
@@ -250,18 +282,36 @@ public class CSharpFileDefinition : BaseOutputComponent, IConstructContainer
             // header, and the generated using directives go after it rather than above it.
             context.MarkEndOfFileHeader();
 
+            if (_statics != null)
+            {
+                context.DeclareFileStatics(_statics.Targets);
+            }
+
             if (_aliases != null)
             {
                 context.DeclareFileAliases(_aliases.Aliases);
             }
         }
-        else if (_aliases != null)
+        else
         {
-            foreach (var alias in _aliases.Aliases)
+            if (_statics != null)
             {
-                outputContext.WriteIndent("using " + CSharpIdentifier.Escape(alias.Key) + " = ");
-                OutputContext.WriteGlobalType(outputContext, alias.Value);
-                outputContext.WriteLine(";");
+                foreach (var target in _statics.Targets)
+                {
+                    outputContext.WriteIndent("using static ");
+                    OutputContext.WriteGlobalType(outputContext, target);
+                    outputContext.WriteLine(";");
+                }
+            }
+
+            if (_aliases != null)
+            {
+                foreach (var alias in _aliases.Aliases)
+                {
+                    outputContext.WriteIndent("using " + CSharpIdentifier.Escape(alias.Key) + " = ");
+                    OutputContext.WriteGlobalType(outputContext, alias.Value);
+                    outputContext.WriteLine(";");
+                }
             }
         }
 
